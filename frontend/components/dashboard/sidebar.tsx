@@ -13,6 +13,7 @@ import {
   IconFolder,
   IconSettings,
   IconUsersGroup,
+  IconBook,
 } from "@tabler/icons-react";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 
@@ -37,6 +38,11 @@ const navItems: NavItem[] = [
     label: "Projects",
     href: "/dashboard/projects",
     icon: IconFolder,
+  },
+  {
+    label: "Docs",
+    href: "/dashboard/docs",
+    icon: IconBook,
   },
   {
     label: "Team",

@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"com.notifykit","l":"NotifyOptions.Builder"},{"p":"com.notifykit","l":"NotifyKit"},{"p":"com.notifykit","l":"NotifyOptions"}];updateSearchResults();

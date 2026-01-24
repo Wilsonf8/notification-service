@@ -35,7 +35,10 @@ import {
   IconPlus,
   IconTrash,
   IconRefresh,
+  IconArrowRight,
 } from "@tabler/icons-react";
+import Link from "next/link";
+import { CodeBlock } from "@/components/dashboard/docs/code-block";
 import {
   getProject,
   getProjectApiKeys,
@@ -82,6 +85,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   // Telegram connect state
   const [connectToken, setConnectToken] = useState<ConnectToken | null>(null);
   const [generatingConnect, setGeneratingConnect] = useState(false);
+
+  // Quick start language tab state
+  const [quickStartLang, setQuickStartLang] = useState("javascript");
 
   /**
    * Fetches all project data from the API.
@@ -343,13 +349,70 @@ export default function ProjectPage({ params }: ProjectPageProps) {
               <CardTitle>Quick Start</CardTitle>
               <CardDescription>Send your first notification</CardDescription>
             </CardHeader>
-            <CardContent>
-              <pre className="overflow-x-auto bg-muted p-4 text-xs">
-                <code>{`curl -X POST ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081"}/v1/notify \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+            <CardContent className="space-y-4">
+              <Tabs value={quickStartLang} onValueChange={setQuickStartLang}>
+                <TabsList variant="line">
+                  <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+                  <TabsTrigger value="python">Python</TabsTrigger>
+                  <TabsTrigger value="java">Java</TabsTrigger>
+                  <TabsTrigger value="curl">cURL</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="javascript" className="mt-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">Install the SDK:</p>
+                  <CodeBlock code="npm install notifykit" />
+                  <p className="text-xs text-muted-foreground">Send a notification:</p>
+                  <CodeBlock code={`import NotifyKit from 'notifykit';
+
+NotifyKit.init('${newApiKey || "YOUR_API_KEY"}');
+NotifyKit.notify('Hello from NotifyKit!');`} />
+                </TabsContent>
+
+                <TabsContent value="python" className="mt-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">Install the SDK:</p>
+                  <CodeBlock code="pip install notifykit" />
+                  <p className="text-xs text-muted-foreground">Send a notification:</p>
+                  <CodeBlock code={`from notifykit import NotifyKit
+
+NotifyKit.init("${newApiKey || "YOUR_API_KEY"}")
+NotifyKit.notify("Hello from NotifyKit!")`} />
+                </TabsContent>
+
+                <TabsContent value="java" className="mt-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">Add to your pom.xml:</p>
+                  <CodeBlock code={`<dependency>
+    <groupId>com.notifykit</groupId>
+    <artifactId>notifykit-java</artifactId>
+    <version>1.0.0</version>
+</dependency>`} />
+                  <p className="text-xs text-muted-foreground">Send a notification:</p>
+                  <CodeBlock code={`import com.notifykit.NotifyKit;
+
+NotifyKit.init("${newApiKey || "YOUR_API_KEY"}");
+NotifyKit.notify("Hello from NotifyKit!");`} />
+                </TabsContent>
+
+                <TabsContent value="curl" className="mt-4 space-y-3">
+                  <p className="text-xs text-muted-foreground">Send a notification:</p>
+                  <CodeBlock code={`curl -X POST ${process.env.NEXT_PUBLIC_API_URL || "https://api.notifykit.dev"}/v1/notify \\
+  -H "X-API-Key: ${newApiKey || "YOUR_API_KEY"}" \\
   -H "Content-Type: application/json" \\
-  -d '{"type": "test", "text": "Hello from NotifyKit!"}'`}</code>
-              </pre>
+  -d '{"message": "Hello from NotifyKit!"}'`} />
+                </TabsContent>
+              </Tabs>
+
+              <div className="flex items-center justify-between border-t pt-4">
+                <p className="text-xs text-muted-foreground">
+                  Need more examples?
+                </p>
+                <Link
+                  href="/dashboard/docs"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  View full documentation
+                  <IconArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
