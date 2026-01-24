@@ -1,37 +1,35 @@
-# Build stage
-FROM node:20 AS build
-
+# Stage 1: Dependencies
+FROM node:22-alpine AS deps
 WORKDIR /app
-
-# Copy package files
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy source code
+# Stage 2: Build
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Build args for Next.js public env vars (baked at build time)
+ARG NEXT_PUBLIC_API_URL
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
+# Copy deps from previous stage (cached if package.json unchanged)
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build the application
-ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Runtime stage
-FROM node:20-slim
-
+# Stage 3: Production
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy built assets from build stage
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
+# Copy only what's needed for production
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
 
 CMD ["node", "server.js"]
