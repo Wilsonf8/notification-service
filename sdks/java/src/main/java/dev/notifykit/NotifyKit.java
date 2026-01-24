@@ -25,7 +25,7 @@ import java.util.logging.Logger;
 public final class NotifyKit {
 
     private static final Logger LOGGER = Logger.getLogger(NotifyKit.class.getName());
-    private static final String DEFAULT_BASE_URL = "https://api.notifykit.dev";
+    private static final String DEFAULT_BASE_URL = "https://notification-service-production-8875.up.railway.app";
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(10);
 
     private static final AtomicReference<NotifyKitClient> CLIENT = new AtomicReference<>();

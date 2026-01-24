@@ -34,7 +34,7 @@ class _NotifyKitSingleton:
         cls,
         api_key: str,
         *,
-        base_url: str = "https://api.notifykit.dev",
+        base_url: str = "https://notification-service-production-8875.up.railway.app",
         timeout: float = 10.0,
         debug: bool = False,
     ) -> None:

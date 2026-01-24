@@ -1,6 +1,6 @@
 {
   "name": "notifykitdev",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Official NotifyKit SDK for JavaScript - Send notifications from your apps",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

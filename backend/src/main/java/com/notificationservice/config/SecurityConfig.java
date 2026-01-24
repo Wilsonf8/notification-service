@@ -66,15 +66,25 @@ public class SecurityConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        List<String> origins = Arrays.asList(allowedOriginsConfig.split(","));
-        configuration.setAllowedOrigins(origins.stream().map(String::trim).toList());
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+
+        // Allow all origins for /v1/notify (SDK endpoint, uses API key auth)
+        CorsConfiguration notifyConfig = new CorsConfiguration();
+        notifyConfig.setAllowedOrigins(List.of("*"));
+        notifyConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
+        notifyConfig.setAllowedHeaders(List.of("*"));
+        notifyConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/v1/notify", notifyConfig);
+
+        // Restricted origins for other endpoints
+        CorsConfiguration defaultConfig = new CorsConfiguration();
+        List<String> origins = Arrays.asList(allowedOriginsConfig.split(","));
+        defaultConfig.setAllowedOrigins(origins.stream().map(String::trim).toList());
+        defaultConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        defaultConfig.setAllowedHeaders(List.of("*"));
+        defaultConfig.setAllowCredentials(true);
+        source.registerCorsConfiguration("/**", defaultConfig);
+
         return source;
     }
 

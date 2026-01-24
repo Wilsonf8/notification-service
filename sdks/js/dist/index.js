@@ -23,7 +23,7 @@ __export(index_exports, {
   default: () => index_default
 });
 module.exports = __toCommonJS(index_exports);
-var DEFAULT_BASE_URL = "https://api.notifykit.dev";
+var DEFAULT_BASE_URL = "https://notification-service-production-8875.up.railway.app";
 var state = {
   apiKey: null,
   baseUrl: DEFAULT_BASE_URL,

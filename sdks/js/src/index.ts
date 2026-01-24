@@ -13,7 +13,7 @@ import type {
 
 export type { NotifyOptions, NotifyKitConfig, NotifyResponse };
 
-const DEFAULT_BASE_URL = "https://api.notifykit.dev";
+const DEFAULT_BASE_URL = "https://notification-service-production-8875.up.railway.app";
 
 /**
  * Internal state for the NotifyKit client.

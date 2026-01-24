@@ -14,7 +14,7 @@ import httpx
 
 logger = logging.getLogger("notifykit")
 
-DEFAULT_BASE_URL = "https://api.notifykit.dev"
+DEFAULT_BASE_URL = "https://notification-service-production-8875.up.railway.app"
 DEFAULT_TIMEOUT = 10.0
 
 
