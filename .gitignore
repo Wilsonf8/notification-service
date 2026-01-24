@@ -18,6 +18,8 @@ Thumbs.db
 # Backend
 backend/target/
 backend/*.jar
+backend/src/main/resources/application-local.properties
+backend/src/main/resources/application-dev.properties
 
 # Frontend
 frontend/node_modules/
