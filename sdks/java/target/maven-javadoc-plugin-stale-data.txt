@@ -24,25 +24,25 @@
 -version
 -windowtitle
 'NotifyKit Java SDK 1.0.0 API'
-com.notifykit
-/Users/wilsonflores/notification-service/sdks/java/src/main/java = 1769236863000
+dev.notifykit
+/Users/wilsonflores/notification-service/sdks/java/src/main/java = 1769273851960
 /Users/wilsonflores/notification-service/sdks/java/target/generated-sources/annotations = 1769269705739
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/tag-search-index.js = 1769269708377
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/overview-tree.html = 1769269708371
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/module-search-index.js = 1769269708376
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/index.html = 1769269708382
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/package-search-index.js = 1769269708376
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/link.svg = 1769269708387
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/index-all.html = 1769269708381
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/allpackages-index.html = 1769269708376
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/member-search-index.js = 1769269708377
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/copy.svg = 1769269708386
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/script.js = 1769269708386
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/stylesheet.css = 1769269708386
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search-page.js = 1769269708388
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/help-doc.html = 1769269708384
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/element-list = 1769269708359
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search.html = 1769269708381
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/allclasses-index.html = 1769269708375
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/type-search-index.js = 1769269708376
-/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search.js = 1769269708388
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/tag-search-index.js = 1769273925835
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/overview-tree.html = 1769273925826
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/module-search-index.js = 1769273925834
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/index.html = 1769273925845
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/package-search-index.js = 1769273925834
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/link.svg = 1769273925852
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/index-all.html = 1769273925841
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/allpackages-index.html = 1769273925833
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/member-search-index.js = 1769273925835
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/copy.svg = 1769273925852
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/script.js = 1769273925851
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/stylesheet.css = 1769273925851
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search-page.js = 1769273925854
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/help-doc.html = 1769273925848
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/element-list = 1769273925805
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search.html = 1769273925844
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/allclasses-index.html = 1769273925832
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/type-search-index.js = 1769273925835
+/Users/wilsonflores/notification-service/sdks/java/target/apidocs/search.js = 1769273925854

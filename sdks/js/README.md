@@ -14,22 +14,22 @@ Official NotifyKit SDK for JavaScript. Send notifications from your apps with a 
 
 ```bash
 # npm
-npm install notifykit
+npm install notifykitdev
 
 # yarn
-yarn add notifykit
+yarn add notifykitdev
 
 # pnpm
-pnpm add notifykit
+pnpm add notifykitdev
 
 # bun
-bun add notifykit
+bun add notifykitdev
 ```
 
 ## Quick Start
 
 ```typescript
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize once at startup
 NotifyKit.init('nsk_your_api_key');
@@ -97,7 +97,7 @@ if (!NotifyKit.isInitialized()) {
 
 ```typescript
 import express from 'express';
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 const app = express();
 
@@ -122,7 +122,7 @@ app.listen(3000);
 
 ```typescript
 // app/api/signup/route.ts
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize (safe to call multiple times)
 NotifyKit.init(process.env.NOTIFYKIT_API_KEY!);
@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 // components/feedback-form.tsx
 'use client';
 
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize with your write-only API key (safe for frontend)
 NotifyKit.init('nsk_your_api_key');
@@ -172,7 +172,7 @@ export function FeedbackForm() {
 
 ```typescript
 import { useEffect } from 'react';
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize outside component (runs once)
 NotifyKit.init('nsk_your_api_key');
@@ -189,7 +189,7 @@ function App() {
 ### Deno
 
 ```typescript
-import NotifyKit from 'npm:notifykit';
+import NotifyKit from 'npm:notifykitdev';
 
 NotifyKit.init(Deno.env.get('NOTIFYKIT_API_KEY')!);
 
@@ -202,7 +202,7 @@ Deno.serve(async (req) => {
 ### Bun
 
 ```typescript
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 NotifyKit.init(Bun.env.NOTIFYKIT_API_KEY!);
 
@@ -235,7 +235,7 @@ NotifyKit.init({
 Full TypeScript support is included. Import types directly:
 
 ```typescript
-import NotifyKit, { type NotifyOptions, type NotifyKitConfig } from 'notifykit';
+import NotifyKit, { type NotifyOptions, type NotifyKitConfig } from 'notifykitdev';
 
 const options: NotifyOptions = {
   topic: 'alerts',

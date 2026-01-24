@@ -17,8 +17,8 @@ Official NotifyKit SDK for Java. Send notifications from your apps with a simple
 
 ```xml
 <dependency>
-    <groupId>com.notifykit</groupId>
-    <artifactId>notifykit-java</artifactId>
+    <groupId>dev.notifykit</groupId>
+    <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>
 ```
@@ -26,19 +26,19 @@ Official NotifyKit SDK for Java. Send notifications from your apps with a simple
 ### Gradle
 
 ```groovy
-implementation 'com.notifykit:notifykit-java:1.0.0'
+implementation 'dev.notifykit:notifykitdev:1.0.0'
 ```
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
-implementation("com.notifykit:notifykit-java:1.0.0")
+implementation("dev.notifykit:notifykitdev:1.0.0")
 ```
 
 ## Quick Start
 
 ```java
-import com.notifykit.NotifyKit;
+import dev.notifykit.NotifyKit;
 
 // Initialize once at startup
 NotifyKit.init("nsk_your_api_key");
@@ -83,7 +83,7 @@ NotifyKit.notify("Hello world!");
 Send a notification with options using the builder pattern.
 
 ```java
-import com.notifykit.NotifyOptions;
+import dev.notifykit.NotifyOptions;
 
 // With topic for categorization
 NotifyKit.notify("New order received", NotifyOptions.builder()
@@ -113,7 +113,7 @@ if (!NotifyKit.isInitialized()) {
 
 ```java
 // Application.java
-import com.notifykit.NotifyKit;
+import dev.notifykit.NotifyKit;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import jakarta.annotation.PostConstruct;
@@ -136,8 +136,8 @@ public class Application {
 }
 
 // OrderController.java
-import com.notifykit.NotifyKit;
-import com.notifykit.NotifyOptions;
+import dev.notifykit.NotifyKit;
+import dev.notifykit.NotifyOptions;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -163,7 +163,7 @@ public class OrderController {
 
 ```java
 // NotifyKitConfig.java
-import com.notifykit.NotifyKit;
+import dev.notifykit.NotifyKit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import jakarta.annotation.PostConstruct;
@@ -198,8 +198,8 @@ notifykit.debug=false
 ### Plain Java
 
 ```java
-import com.notifykit.NotifyKit;
-import com.notifykit.NotifyOptions;
+import dev.notifykit.NotifyKit;
+import dev.notifykit.NotifyOptions;
 
 public class Main {
     public static void main(String[] args) {

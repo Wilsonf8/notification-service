@@ -1,4 +1,4 @@
-package com.notifykit;
+package dev.notifykit;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;

@@ -1,4 +1,4 @@
-package com.notifykit;
+package dev.notifykit;
 
 /**
  * Options for configuring a notification.

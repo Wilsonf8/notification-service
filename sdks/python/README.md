@@ -15,16 +15,16 @@ Official NotifyKit SDK for Python. Send notifications from your apps with a simp
 
 ```bash
 # pip
-pip install notifykit
+pip install notifykitdev
 
 # uv
-uv add notifykit
+uv add notifykitdev
 
 # poetry
-poetry add notifykit
+poetry add notifykitdev
 
 # pipenv
-pipenv install notifykit
+pipenv install notifykitdev
 ```
 
 ## Quick Start

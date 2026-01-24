@@ -26,45 +26,45 @@ import {
 /** Code examples for each language */
 const INSTALL_COMMANDS: Record<string, string> = {
   javascript: `# npm
-npm install notifykit
+npm install notifykitdev
 
 # yarn
-yarn add notifykit
+yarn add notifykitdev
 
 # pnpm
-pnpm add notifykit
+pnpm add notifykitdev
 
 # bun
-bun add notifykit`,
+bun add notifykitdev`,
   python: `# pip
-pip install notifykit
+pip install notifykitdev
 
 # uv
-uv add notifykit
+uv add notifykitdev
 
 # poetry
-poetry add notifykit`,
+poetry add notifykitdev`,
   java: `<!-- Maven -->
 <dependency>
-    <groupId>com.notifykit</groupId>
-    <artifactId>notifykit-java</artifactId>
+    <groupId>dev.notifykit</groupId>
+    <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>
 
 // Gradle
-implementation 'com.notifykit:notifykit-java:1.0.0'`,
+implementation 'dev.notifykit:notifykitdev:1.0.0'`,
   curl: `# No installation needed
 # cURL is available on most systems`,
 };
 
 const INIT_CODE: Record<string, string> = {
-  javascript: `import NotifyKit from 'notifykit';
+  javascript: `import NotifyKit from 'notifykitdev';
 
 NotifyKit.init('nsk_your_api_key');`,
   python: `from notifykit import NotifyKit
 
 NotifyKit.init("nsk_your_api_key")`,
-  java: `import com.notifykit.NotifyKit;
+  java: `import dev.notifykit.NotifyKit;
 
 NotifyKit.init("nsk_your_api_key");`,
   curl: `# Set your API key as an environment variable
@@ -114,7 +114,7 @@ curl -X POST https://api.notifykit.dev/v1/notify \\
 const FRAMEWORK_EXAMPLES: Record<string, Record<string, string>> = {
   javascript: {
     express: `import express from 'express';
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 const app = express();
 
@@ -134,7 +134,7 @@ app.post('/api/orders', async (req, res) => {
 
 app.listen(3000);`,
     nextjs: `// app/api/signup/route.ts
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize (safe to call multiple times)
 NotifyKit.init(process.env.NOTIFYKIT_API_KEY);
@@ -151,7 +151,7 @@ export async function POST(request: Request) {
   return Response.json({ success: true });
 }`,
     react: `import { useEffect } from 'react';
-import NotifyKit from 'notifykit';
+import NotifyKit from 'notifykitdev';
 
 // Initialize outside component (runs once)
 NotifyKit.init('nsk_your_api_key');
@@ -243,7 +243,7 @@ def create_order(request):
   },
   java: {
     spring: `// NotifyKitConfig.java
-import com.notifykit.NotifyKit;
+import dev.notifykit.NotifyKit;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import jakarta.annotation.PostConstruct;
@@ -260,8 +260,8 @@ public class NotifyKitConfig {
 }
 
 // OrderController.java
-import com.notifykit.NotifyKit;
-import com.notifykit.NotifyOptions;
+import dev.notifykit.NotifyKit;
+import dev.notifykit.NotifyOptions;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -281,8 +281,8 @@ public class OrderController {
         return order;
     }
 }`,
-    plain: `import com.notifykit.NotifyKit;
-import com.notifykit.NotifyOptions;
+    plain: `import dev.notifykit.NotifyKit;
+import dev.notifykit.NotifyOptions;
 
 public class Main {
     public static void main(String[] args) {

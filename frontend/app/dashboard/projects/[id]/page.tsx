@@ -360,9 +360,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
                 <TabsContent value="javascript" className="mt-4 space-y-3">
                   <p className="text-xs text-muted-foreground">Install the SDK:</p>
-                  <CodeBlock code="npm install notifykit" />
+                  <CodeBlock code="npm install notifykitdev" />
                   <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`import NotifyKit from 'notifykit';
+                  <CodeBlock code={`import NotifyKit from 'notifykitdev';
 
 NotifyKit.init('${newApiKey || "YOUR_API_KEY"}');
 NotifyKit.notify('Hello from NotifyKit!');`} />
@@ -370,7 +370,7 @@ NotifyKit.notify('Hello from NotifyKit!');`} />
 
                 <TabsContent value="python" className="mt-4 space-y-3">
                   <p className="text-xs text-muted-foreground">Install the SDK:</p>
-                  <CodeBlock code="pip install notifykit" />
+                  <CodeBlock code="pip install notifykitdev" />
                   <p className="text-xs text-muted-foreground">Send a notification:</p>
                   <CodeBlock code={`from notifykit import NotifyKit
 
@@ -381,12 +381,12 @@ NotifyKit.notify("Hello from NotifyKit!")`} />
                 <TabsContent value="java" className="mt-4 space-y-3">
                   <p className="text-xs text-muted-foreground">Add to your pom.xml:</p>
                   <CodeBlock code={`<dependency>
-    <groupId>com.notifykit</groupId>
-    <artifactId>notifykit-java</artifactId>
+    <groupId>dev.notifykit</groupId>
+    <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>`} />
                   <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`import com.notifykit.NotifyKit;
+                  <CodeBlock code={`import dev.notifykit.NotifyKit;
 
 NotifyKit.init("${newApiKey || "YOUR_API_KEY"}");
 NotifyKit.notify("Hello from NotifyKit!");`} />
