@@ -381,7 +381,7 @@ NotifyKit.notify("Hello from NotifyKit!")`} />
                 <TabsContent value="java" className="mt-4 space-y-3">
                   <p className="text-xs text-muted-foreground">Add to your pom.xml:</p>
                   <CodeBlock code={`<dependency>
-    <groupId>dev.notifykit</groupId>
+    <groupId>io.github.wilsonf8</groupId>
     <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>`} />

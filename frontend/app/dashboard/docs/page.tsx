@@ -46,7 +46,7 @@ uv add notifykitdev
 poetry add notifykitdev`,
   java: `<!-- Maven -->
 <dependency>
-    <groupId>dev.notifykit</groupId>
+    <groupId>io.github.wilsonf8</groupId>
     <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>

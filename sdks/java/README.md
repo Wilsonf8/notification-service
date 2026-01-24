@@ -17,7 +17,7 @@ Official NotifyKit SDK for Java. Send notifications from your apps with a simple
 
 ```xml
 <dependency>
-    <groupId>dev.notifykit</groupId>
+    <groupId>io.github.wilsonf8</groupId>
     <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -26,13 +26,13 @@ Official NotifyKit SDK for Java. Send notifications from your apps with a simple
 ### Gradle
 
 ```groovy
-implementation 'dev.notifykit:notifykitdev:1.0.0'
+implementation 'io.github.wilsonf8:notifykitdev:1.0.0'
 ```
 
 ### Gradle (Kotlin DSL)
 
 ```kotlin
-implementation("dev.notifykit:notifykitdev:1.0.0")
+implementation("io.github.wilsonf8:notifykitdev:1.0.0")
 ```
 
 ## Quick Start
