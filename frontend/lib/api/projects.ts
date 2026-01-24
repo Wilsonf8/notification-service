@@ -77,11 +77,13 @@ export async function getProjectApiKeys(projectId: string): Promise<ApiKey[]> {
 /**
  * Generates a new API key for a project.
  * @param projectId - The project ID
+ * @param name - Optional name for the API key
  * @returns The new API key with the secret (only shown once)
  */
-export async function generateApiKey(projectId: string): Promise<ApiKeyWithSecret> {
+export async function generateApiKey(projectId: string, name?: string): Promise<ApiKeyWithSecret> {
   return apiFetch<ApiKeyWithSecret>(`/api/projects/${projectId}/api-keys`, {
     method: "POST",
+    body: JSON.stringify({ name: name || `Key ${new Date().toLocaleDateString()}` }),
   });
 }
 
