@@ -1,11 +1,11 @@
 /**
  * Projects list page.
- * Displays all user projects with ability to create new ones.
+ * Displays all projects for the current organization.
  * @module app/dashboard/projects/page
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,15 +28,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IconPlus, IconFolder } from "@tabler/icons-react";
-import { getProjects, createProject } from "@/lib/api";
+import { getOrganizationProjects, createOrganizationProject } from "@/lib/api";
+import { useOrganization } from "@/lib/contexts/organization-context";
 import type { Project } from "@/lib/types";
 
 /**
  * Projects list page component.
- * Shows all projects belonging to the current user.
+ * Shows all projects belonging to the current organization.
  * Provides UI to create new projects.
  */
 export default function ProjectsPage() {
+  const { currentOrg, isLoading: orgLoading } = useOrganization();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,30 +47,34 @@ export default function ProjectsPage() {
   const [creating, setCreating] = useState(false);
 
   /**
-   * Fetches projects from the API.
+   * Fetches projects from the API for the current organization.
    */
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
+    if (!currentOrg) return;
+
     try {
       setLoading(true);
       setError(null);
-      const data = await getProjects();
+      const data = await getOrganizationProjects(currentOrg.slug);
       setProjects(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load projects");
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentOrg]);
 
   /**
-   * Handles creating a new project.
+   * Handles creating a new project in the current organization.
    */
   const handleCreate = async () => {
-    if (!newProjectName.trim()) return;
+    if (!newProjectName.trim() || !currentOrg) return;
 
     try {
       setCreating(true);
-      const project = await createProject({ name: newProjectName.trim() });
+      const project = await createOrganizationProject(currentOrg.slug, {
+        name: newProjectName.trim(),
+      });
       setProjects((prev) => [...prev, project]);
       setNewProjectName("");
       setIsCreateOpen(false);
@@ -80,10 +86,12 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    if (currentOrg) {
+      fetchProjects();
+    }
+  }, [currentOrg, fetchProjects]);
 
-  if (loading) {
+  if (orgLoading || loading) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

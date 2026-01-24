@@ -16,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -100,24 +101,26 @@ export function OrgSwitcher() {
           <IconSelector className="h-4 w-4 shrink-0 text-muted-foreground" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56">
-          <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-          {organizations.map((org) => (
-            <DropdownMenuItem
-              key={org.id}
-              onClick={() => switchOrg(org.slug)}
-              className="gap-2"
-            >
-              {org.isPersonal ? (
-                <IconUser className="h-4 w-4" />
-              ) : (
-                <IconUsers className="h-4 w-4" />
-              )}
-              <span className="flex-1 truncate">{org.name}</span>
-              {org.id === currentOrg.id && (
-                <IconCheck className="h-4 w-4 text-primary" />
-              )}
-            </DropdownMenuItem>
-          ))}
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            {organizations.map((org) => (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => switchOrg(org.slug)}
+                className="gap-2"
+              >
+                {org.isPersonal ? (
+                  <IconUser className="h-4 w-4" />
+                ) : (
+                  <IconUsers className="h-4 w-4" />
+                )}
+                <span className="flex-1 truncate">{org.name}</span>
+                {org.id === currentOrg.id && (
+                  <IconCheck className="h-4 w-4 text-primary" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setIsCreateOpen(true)}

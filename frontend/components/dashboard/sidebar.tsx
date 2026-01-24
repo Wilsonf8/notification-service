@@ -12,7 +12,9 @@ import {
   IconLayoutDashboard,
   IconFolder,
   IconSettings,
+  IconUsersGroup,
 } from "@tabler/icons-react";
+import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 
 /** Navigation item configuration */
 interface NavItem {
@@ -35,6 +37,11 @@ const navItems: NavItem[] = [
     label: "Projects",
     href: "/dashboard/projects",
     icon: IconFolder,
+  },
+  {
+    label: "Team",
+    href: "/dashboard/team",
+    icon: IconUsersGroup,
   },
   {
     label: "Settings",
@@ -70,6 +77,9 @@ export function DashboardSidebar() {
             NotifyKit
           </span>
         </Link>
+      </div>
+      <div className="border-b border-border py-2">
+        <OrgSwitcher />
       </div>
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
