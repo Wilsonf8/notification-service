@@ -35,9 +35,11 @@ function LoginForm() {
   /**
    * Initiates the OAuth flow by redirecting to the backend's GitHub OAuth endpoint.
    * The backend handles the OAuth dance and redirects back to /auth/callback with a JWT.
+   * Passes the current origin so the backend knows where to redirect after auth.
    */
   const handleLogin = () => {
-    window.location.href = `${API_URL}/oauth2/authorization/github`;
+    const origin = encodeURIComponent(window.location.origin);
+    window.location.href = `${API_URL}/oauth2/authorization/github?redirect_origin=${origin}`;
   };
 
   return (

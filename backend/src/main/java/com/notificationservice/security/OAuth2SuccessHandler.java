@@ -2,6 +2,7 @@ package com.notificationservice.security;
 
 import com.notificationservice.entity.AuthProvider;
 import com.notificationservice.repository.UserIdentityRepository;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
+/**
+ * Handles successful OAuth2 authentication.
+ * Generates a JWT token and redirects back to the frontend with the token.
+ * Supports dynamic redirect origins for multiple frontend environments.
+ */
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -24,6 +32,9 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
+
+    @Value("${app.allowed-origins:}")
+    private String allowedOriginsConfig;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -40,13 +51,23 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         String token = tokenProvider.generateToken(identity.getUser().getId());
 
-        String targetUrl = UriComponentsBuilder.fromUriString(frontendUrl + "/auth/callback")
+        // Determine redirect URL from cookie or fall back to default
+        String redirectOrigin = getRedirectOriginFromCookie(request);
+        String baseUrl = isAllowedOrigin(redirectOrigin) ? redirectOrigin : frontendUrl;
+
+        // Clear the cookie
+        clearRedirectCookie(response);
+
+        String targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/auth/callback")
                 .queryParam("token", token)
                 .build().toUriString();
 
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
+    /**
+     * Extracts the provider-specific user ID from OAuth2 attributes.
+     */
     private String extractProviderUserId(AuthProvider provider, OAuth2User oauth2User) {
         var attributes = oauth2User.getAttributes();
         return switch (provider) {
@@ -54,5 +75,40 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             case GOOGLE, APPLE -> (String) attributes.get("sub");
             case EMAIL -> throw new IllegalArgumentException("EMAIL provider not supported for OAuth2");
         };
+    }
+
+    /**
+     * Reads the redirect origin from the cookie set by OAuth2RedirectFilter.
+     */
+    private String getRedirectOriginFromCookie(HttpServletRequest request) {
+        if (request.getCookies() == null) return null;
+
+        return Arrays.stream(request.getCookies())
+                .filter(c -> OAuth2RedirectFilter.REDIRECT_ORIGIN_COOKIE.equals(c.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Validates that the origin is in the allowed list.
+     */
+    private boolean isAllowedOrigin(String origin) {
+        if (origin == null || origin.isBlank()) return false;
+
+        List<String> allowedOrigins = Arrays.asList(allowedOriginsConfig.split(","));
+        return allowedOrigins.stream()
+                .map(String::trim)
+                .anyMatch(allowed -> allowed.equalsIgnoreCase(origin));
+    }
+
+    /**
+     * Clears the redirect origin cookie after use.
+     */
+    private void clearRedirectCookie(HttpServletResponse response) {
+        Cookie cookie = new Cookie(OAuth2RedirectFilter.REDIRECT_ORIGIN_COOKIE, "");
+        cookie.setPath("/");
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
     }
 }
