@@ -71,7 +71,7 @@ public class EventService {
         }
 
         // Truncate message if needed (Telegram limit is ~4096, leave room for formatting)
-        String text = request.text();
+        String text = request.message();
         if (text.length() > 3500) {
             text = text.substring(0, 3500) + "... (truncated)";
         }
