@@ -11,6 +11,7 @@ import type {
   ApiKey,
   ApiKeyWithSecret,
   Event,
+  ConnectToken,
 } from "@/lib/types";
 
 /**
@@ -120,4 +121,25 @@ export interface ProjectStats {
  */
 export async function getProjectStats(projectId: string): Promise<ProjectStats> {
   return apiFetch<ProjectStats>(`/api/projects/${projectId}/stats`);
+}
+
+/**
+ * Generates a Telegram connect token for a project.
+ * @param projectId - The project ID
+ * @returns Connect token with deep link to open Telegram
+ */
+export async function generateTelegramConnectToken(projectId: string): Promise<ConnectToken> {
+  return apiFetch<ConnectToken>(`/api/projects/${projectId}/telegram/connect`, {
+    method: "POST",
+  });
+}
+
+/**
+ * Disconnects Telegram from a project.
+ * @param projectId - The project ID
+ */
+export async function disconnectTelegram(projectId: string): Promise<void> {
+  await apiFetch(`/api/projects/${projectId}/telegram`, {
+    method: "DELETE",
+  });
 }

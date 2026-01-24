@@ -43,8 +43,9 @@ import {
   generateApiKey,
   updateProject,
   deleteProject,
+  generateTelegramConnectToken,
 } from "@/lib/api";
-import type { Project, ApiKey, ApiKeyWithSecret, Event } from "@/lib/types";
+import type { Project, ApiKey, ApiKeyWithSecret, Event, ConnectToken } from "@/lib/types";
 
 /** Page params containing the dynamic route segment */
 interface ProjectPageProps {
@@ -77,6 +78,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [projectName, setProjectName] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Telegram connect state
+  const [connectToken, setConnectToken] = useState<ConnectToken | null>(null);
+  const [generatingConnect, setGeneratingConnect] = useState(false);
 
   /**
    * Fetches all project data from the API.
@@ -166,6 +171,22 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete project");
       setDeleting(false);
+    }
+  };
+
+  /**
+   * Generates a Telegram connect link.
+   */
+  const handleGenerateConnectLink = async () => {
+    try {
+      setGeneratingConnect(true);
+      setError(null);
+      const token = await generateTelegramConnectToken(id);
+      setConnectToken(token);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate connect link");
+    } finally {
+      setGeneratingConnect(false);
     }
   };
 
@@ -336,25 +357,62 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         <TabsContent value="chats" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Connected Chats</CardTitle>
+              <CardTitle>Connect Telegram</CardTitle>
               <CardDescription>
-                Telegram chats that will receive notifications from this project
+                Link a Telegram chat to receive notifications from this project
               </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col items-center py-8">
-              <IconBrandTelegram className="h-12 w-12 text-muted-foreground" />
-              <p className="mt-4 text-sm text-muted-foreground text-center max-w-sm">
-                No chats connected yet. Use the Telegram bot to connect a chat
-                to this project.
-              </p>
-              <div className="mt-4 p-4 bg-muted text-xs">
-                <p className="font-medium mb-2">To connect a Telegram chat:</p>
-                <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                  <li>Open Telegram and search for @notifykit_bot</li>
-                  <li>Start a chat or add the bot to a group</li>
-                  <li>Send /connect {id.slice(0, 8)}...</li>
-                </ol>
-              </div>
+            <CardContent className="space-y-4">
+              {connectToken ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-primary/10 border border-primary">
+                    <p className="text-sm font-medium mb-2">Connect Link Generated</p>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Click the button below to open Telegram and connect this project.
+                      The link expires in 24 hours.
+                    </p>
+                    <div className="flex gap-2">
+                      <a
+                        href={connectToken.deepLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
+                      >
+                        <IconBrandTelegram className="h-4 w-4" />
+                        Open in Telegram
+                      </a>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => copyToClipboard(connectToken.deepLink)}
+                      >
+                        <IconCopy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setConnectToken(null)}
+                  >
+                    Generate New Link
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center py-8">
+                  <IconBrandTelegram className="h-12 w-12 text-muted-foreground" />
+                  <p className="mt-4 text-sm text-muted-foreground text-center max-w-sm">
+                    Generate a connect link to link your Telegram chat to this project.
+                  </p>
+                  <Button
+                    className="mt-4 gap-2"
+                    onClick={handleGenerateConnectLink}
+                    disabled={generatingConnect}
+                  >
+                    <IconPlus className="h-4 w-4" />
+                    {generatingConnect ? "Generating..." : "Generate Connect Link"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

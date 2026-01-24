@@ -90,3 +90,9 @@ export interface DashboardStats {
   totalEventsSent: number;
   connectedChats: number;
 }
+
+/** Connect token response for Telegram linking */
+export interface ConnectToken {
+  token: string;
+  deepLink: string;
+}
