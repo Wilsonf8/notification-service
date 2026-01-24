@@ -28,7 +28,7 @@ interface NavItem {
 }
 
 /** Main navigation items for the dashboard */
-const navItems: NavItem[] = [
+export const navItems: NavItem[] = [
   {
     label: "Overview",
     href: "/dashboard",
@@ -57,26 +57,28 @@ const navItems: NavItem[] = [
 ];
 
 /**
+ * Checks if a nav item should be marked as active based on current pathname.
+ * @param href - The nav item's href
+ * @param pathname - The current pathname
+ * @returns True if the item is active
+ */
+export function isNavItemActive(href: string, pathname: string): boolean {
+  if (href === "/dashboard") {
+    return pathname === "/dashboard";
+  }
+  return pathname.startsWith(href);
+}
+
+/**
  * Sidebar navigation for the dashboard.
  * Highlights the active route and provides links to all dashboard sections.
+ * Hidden on mobile viewports (use MobileNav in header instead).
  */
 export function DashboardSidebar() {
   const pathname = usePathname();
 
-  /**
-   * Checks if a nav item should be marked as active.
-   * @param href - The nav item's href
-   * @returns True if the item is active
-   */
-  const isActive = (href: string) => {
-    if (href === "/dashboard") {
-      return pathname === "/dashboard";
-    }
-    return pathname.startsWith(href);
-  };
-
   return (
-    <aside className="flex w-64 flex-col border-r border-border bg-sidebar">
+    <aside className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar">
       <div className="flex h-14 items-center border-b border-border px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg font-semibold text-sidebar-foreground">
@@ -91,7 +93,7 @@ export function DashboardSidebar() {
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = isNavItemActive(item.href, pathname);
             return (
               <li key={item.href}>
                 <Link

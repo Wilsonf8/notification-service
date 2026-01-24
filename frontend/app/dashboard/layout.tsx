@@ -30,7 +30,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <DashboardSidebar />
         <div className="flex flex-1 flex-col">
           <DashboardHeader />
-          <main className="flex-1 p-6">{children}</main>
+          <main className="flex-1 p-3 md:p-6">{children}</main>
         </div>
       </div>
     </OrganizationProvider>

@@ -80,20 +80,20 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <h1 className="text-xl md:text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">
           Welcome to NotifyKit. Manage your notification projects.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
             <IconFolder className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProjects}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.totalProjects}</div>
             <p className="text-xs text-muted-foreground">
               {stats.totalProjects === 0
                 ? "Create your first project to get started"
@@ -108,7 +108,7 @@ export default function DashboardPage() {
             <IconSend className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEvents}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.totalEvents}</div>
             <p className="text-xs text-muted-foreground">
               Total notifications sent
             </p>
@@ -121,7 +121,7 @@ export default function DashboardPage() {
             <IconBrandTelegram className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.connectedChats}</div>
+            <div className="text-xl md:text-2xl font-bold">{stats.connectedChats}</div>
             <p className="text-xs text-muted-foreground">
               Telegram chats receiving notifications
             </p>

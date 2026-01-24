@@ -226,7 +226,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{project.name}</h1>
+        <h1 className="text-xl md:text-2xl font-semibold">{project.name}</h1>
         <p className="text-muted-foreground">
           Manage your project settings and API access
         </p>
@@ -241,7 +241,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       )}
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="chats">Telegram Chats</TabsTrigger>
           <TabsTrigger value="events">Events</TabsTrigger>
@@ -309,7 +309,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                       <TableRow>
                         <TableHead>Key</TableHead>
                         <TableHead>Created</TableHead>
-                        <TableHead>Last Used</TableHead>
+                        <TableHead className="hidden sm:table-cell">Last Used</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -321,7 +321,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                           <TableCell>
                             {new Date(key.createdAt).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden sm:table-cell">
                             {key.lastUsedAt
                               ? new Date(key.lastUsedAt).toLocaleDateString()
                               : "Never"}
@@ -351,7 +351,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               <Tabs value={quickStartLang} onValueChange={setQuickStartLang}>
-                <TabsList variant="line">
+                <TabsList variant="line" className="overflow-x-auto">
                   <TabsTrigger value="javascript">JavaScript</TabsTrigger>
                   <TabsTrigger value="python">Python</TabsTrigger>
                   <TabsTrigger value="java">Java</TabsTrigger>

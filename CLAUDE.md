@@ -2,34 +2,16 @@
 
 Project-specific instructions for Claude Code.
 
-## Documentation Requirements
+## Documentation
 
-**Always document all classes, functions, and components.**
+**Document all classes, functions, and components** using JSDoc (TypeScript) or Javadoc (Java):
 
-### TypeScript/React/Next.js
-
-Use JSDoc comments:
-
-```typescript
-/**
- * Brief description of what it does.
- * @param paramName - Description of parameter
- * @returns Description of return value
- * @throws {ErrorType} When this error occurs
- */
 ```
-
-### Java/Spring Boot
-
-Use Javadoc comments:
-
-```java
 /**
- * Brief description of what it does.
- *
- * @param paramName description of parameter
- * @return description of return value
- * @throws ExceptionType when this error occurs
+ * Brief description.
+ * @param paramName - Description
+ * @returns Description (@return for Java)
+ * @throws When this error occurs
  */
 ```
 
@@ -37,6 +19,7 @@ Use Javadoc comments:
 
 - `/backend` - Spring Boot 4.0.2, Java 21, PostgreSQL, Redis
 - `/frontend` - Next.js 16, React 19, TypeScript, shadcn (base-lyra style)
+- `/sdks` - Published SDKs (notifykitdev on npm/PyPI, io.github.wilsonf8:notifykitdev on Maven)
 
 ## Running Locally
 
@@ -53,3 +36,4 @@ cd frontend && npm run dev
 - Frontend uses base-lyra style with Stone/Yellow theme, Tabler icons, JetBrains Mono font
 - No border radius (sharp corners)
 - Dark mode is default
+- Ensure responsive design (mobile/portrait/landscape)

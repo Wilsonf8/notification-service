@@ -101,7 +101,7 @@ export default function ProjectsPage() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32" />
           ))}
@@ -114,7 +114,7 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Projects</h1>
+          <h1 className="text-xl md:text-2xl font-semibold">Projects</h1>
           <p className="text-muted-foreground">
             Manage your notification projects
           </p>
@@ -183,7 +183,7 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
               <Card className="cursor-pointer transition-colors hover:bg-accent">

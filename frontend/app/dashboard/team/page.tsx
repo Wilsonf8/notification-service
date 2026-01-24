@@ -276,7 +276,7 @@ export default function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           {currentOrg.isPersonal ? (
             <IconUser className="h-8 w-8 text-muted-foreground" />
@@ -284,7 +284,7 @@ export default function TeamPage() {
             <IconUsers className="h-8 w-8 text-muted-foreground" />
           )}
           <div>
-            <h1 className="text-2xl font-semibold">{currentOrg.name}</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">{currentOrg.name}</h1>
             <p className="text-muted-foreground">
               {currentOrg.isPersonal ? "Personal workspace" : "Team workspace"}
             </p>
@@ -312,7 +312,7 @@ export default function TeamPage() {
       )}
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <CardTitle>Members</CardTitle>
             <CardDescription>
@@ -333,7 +333,7 @@ export default function TeamPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
+                <TableHead className="hidden sm:table-cell">Joined</TableHead>
                 {canManageMembers && <TableHead className="w-24">Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -379,7 +379,7 @@ export default function TeamPage() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="hidden sm:table-cell text-muted-foreground">
                     {new Date(member.joinedAt).toLocaleDateString()}
                   </TableCell>
                   {canManageMembers && (
@@ -431,7 +431,7 @@ export default function TeamPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {!isOwner && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p className="font-medium">Leave Organization</p>
                   <p className="text-sm text-muted-foreground">
@@ -469,7 +469,7 @@ export default function TeamPage() {
               </div>
             )}
             {isOwner && (
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p className="font-medium">Delete Organization</p>
                   <p className="text-sm text-muted-foreground">

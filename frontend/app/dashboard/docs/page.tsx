@@ -329,7 +329,7 @@ export default function DocsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold">Documentation</h1>
+        <h1 className="text-xl md:text-2xl font-semibold">Documentation</h1>
         <p className="text-muted-foreground">
           Get started with NotifyKit SDKs in your favorite language
         </p>
@@ -543,26 +543,26 @@ export default function DocsPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Header</th>
-                    <th className="px-4 py-2 text-left font-medium">Required</th>
-                    <th className="px-4 py-2 text-left font-medium">Description</th>
+                    <th className="px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Header</th>
+                    <th className="px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Required</th>
+                    <th className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="px-4 py-2 font-mono">X-API-Key</td>
-                    <td className="px-4 py-2">Yes</td>
-                    <td className="px-4 py-2">Your NotifyKit API key</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2 font-mono">X-API-Key</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">Yes</td>
+                    <td className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2">Your NotifyKit API key</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="px-4 py-2 font-mono">Content-Type</td>
-                    <td className="px-4 py-2">Yes</td>
-                    <td className="px-4 py-2">Must be application/json</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2 font-mono">Content-Type</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">Yes</td>
+                    <td className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2">Must be application/json</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="px-4 py-2 font-mono">Idempotency-Key</td>
-                    <td className="px-4 py-2">No</td>
-                    <td className="px-4 py-2">Unique key to prevent duplicate notifications</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2 font-mono">Idempotency-Key</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">No</td>
+                    <td className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2">Unique key to prevent duplicate notifications</td>
                   </tr>
                 </tbody>
               </table>
@@ -575,24 +575,24 @@ export default function DocsPage() {
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b">
-                    <th className="px-4 py-2 text-left font-medium">Field</th>
-                    <th className="px-4 py-2 text-left font-medium">Type</th>
-                    <th className="px-4 py-2 text-left font-medium">Required</th>
-                    <th className="px-4 py-2 text-left font-medium">Description</th>
+                    <th className="px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Field</th>
+                    <th className="px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Type</th>
+                    <th className="px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Required</th>
+                    <th className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2 text-left font-medium">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b">
-                    <td className="px-4 py-2 font-mono">message</td>
-                    <td className="px-4 py-2">string</td>
-                    <td className="px-4 py-2">Yes</td>
-                    <td className="px-4 py-2">The notification message</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2 font-mono">message</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">string</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">Yes</td>
+                    <td className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2">The notification message</td>
                   </tr>
                   <tr className="border-b">
-                    <td className="px-4 py-2 font-mono">topic</td>
-                    <td className="px-4 py-2">string</td>
-                    <td className="px-4 py-2">No</td>
-                    <td className="px-4 py-2">Topic for categorization</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2 font-mono">topic</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">string</td>
+                    <td className="px-2 py-1.5 md:px-4 md:py-2">No</td>
+                    <td className="hidden md:table-cell px-2 py-1.5 md:px-4 md:py-2">Topic for categorization</td>
                   </tr>
                 </tbody>
               </table>
