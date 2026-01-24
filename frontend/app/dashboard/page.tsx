@@ -5,14 +5,13 @@
  */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { IconFolder, IconSend, IconBrandTelegram, IconPlus } from "@tabler/icons-react";
-import { getOrganizationProjects } from "@/lib/api";
-import { useOrganization } from "@/lib/contexts/organization-context";
+import { getProjects } from "@/lib/api";
 import type { Project } from "@/lib/types";
 
 /** Dashboard statistics */
@@ -27,7 +26,6 @@ interface Stats {
  * Shows key metrics and quick actions for the user.
  */
 export default function DashboardPage() {
-  const { currentOrg, isLoading: orgLoading } = useOrganization();
   const [stats, setStats] = useState<Stats>({
     totalProjects: 0,
     totalEvents: 0,
@@ -36,32 +34,27 @@ export default function DashboardPage() {
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    if (!currentOrg) return;
-
-    try {
-      setLoading(true);
-      const projects = await getOrganizationProjects(currentOrg.slug);
-      setRecentProjects(projects.slice(0, 5));
-      setStats({
-        totalProjects: projects.length,
-        totalEvents: 0, // TODO: Aggregate from project stats
-        connectedChats: 0, // TODO: Aggregate from project stats
-      });
-    } catch (err) {
-      console.error("Failed to fetch dashboard data:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [currentOrg]);
-
   useEffect(() => {
-    if (currentOrg) {
-      fetchData();
-    }
-  }, [currentOrg, fetchData]);
+    const fetchData = async () => {
+      try {
+        const projects = await getProjects();
+        setRecentProjects(projects.slice(0, 5));
+        setStats({
+          totalProjects: projects.length,
+          totalEvents: 0, // TODO: Aggregate from project stats
+          connectedChats: 0, // TODO: Aggregate from project stats
+        });
+      } catch (err) {
+        console.error("Failed to fetch dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (orgLoading || loading) {
+    fetchData();
+  }, []);
+
+  if (loading) {
     return (
       <div className="space-y-6">
         <div>
