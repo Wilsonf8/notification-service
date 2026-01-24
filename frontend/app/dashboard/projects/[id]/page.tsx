@@ -345,10 +345,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             </CardHeader>
             <CardContent>
               <pre className="overflow-x-auto bg-muted p-4 text-xs">
-                <code>{`curl -X POST http://localhost:8081/v1/notify \\
+                <code>{`curl -X POST ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081"}/v1/notify \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
-  -d '{"type": "test", "data": {"message": "Hello!"}}'`}</code>
+  -d '{"type": "test", "text": "Hello from NotifyKit!"}'`}</code>
               </pre>
             </CardContent>
           </Card>
