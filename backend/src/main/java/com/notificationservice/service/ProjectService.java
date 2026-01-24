@@ -1,7 +1,9 @@
 package com.notificationservice.service;
 
 import com.notificationservice.dto.*;
+import com.notificationservice.entity.OrgRole;
 import com.notificationservice.entity.Organization;
+import com.notificationservice.entity.OrganizationMember;
 import com.notificationservice.entity.Project;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.OrganizationRepository;
@@ -91,12 +93,20 @@ public class ProjectService {
         return toDto(projectRepository.save(project));
     }
 
+    /**
+     * Deletes a project (soft delete). Only organization OWNER can delete projects.
+     *
+     * @param projectId the project ID
+     * @param userId the requesting user's ID
+     * @throws ResourceNotFoundException if project not found
+     * @throws AccessDeniedException if user is not the organization OWNER
+     */
     @Transactional
     public void deleteProject(UUID projectId, UUID userId) {
         Project project = projectRepository.findByIdAndNotDeleted(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        verifyOrgMembership(project.getOrganization().getId(), userId);
+        verifyOwnerRole(project.getOrganization().getId(), userId);
 
         project.setDeletedAt(OffsetDateTime.now());
         projectRepository.save(project);
@@ -111,6 +121,16 @@ public class ProjectService {
             throw new AccessDeniedException("You are not a member of this organization");
         }
         return org;
+    }
+
+    private void verifyOwnerRole(UUID orgId, UUID userId) {
+        OrganizationMember member = organizationMemberRepository
+                .findByOrganizationIdAndUserId(orgId, userId)
+                .orElseThrow(() -> new AccessDeniedException("You are not a member of this organization"));
+
+        if (member.getRole() != OrgRole.OWNER) {
+            throw new AccessDeniedException("Only the organization owner can delete projects");
+        }
     }
 
     private ProjectDto toDto(Project project) {

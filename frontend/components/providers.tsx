@@ -6,6 +6,7 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
+import { OrganizationProvider } from "@/lib/contexts/organization-context";
 
 /** Props for the Providers component */
 interface ProvidersProps {
@@ -17,6 +18,7 @@ interface ProvidersProps {
  * Root providers component that wraps the application with necessary context providers.
  * Currently provides:
  * - ThemeProvider: Dark/light mode support with dark as default
+ * - OrganizationProvider: Organization switching and state management
  *
  * @param props - Component props
  * @param props.children - Child components to render within providers
@@ -24,7 +26,7 @@ interface ProvidersProps {
 export function Providers({ children }: ProvidersProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      {children}
+      <OrganizationProvider>{children}</OrganizationProvider>
     </ThemeProvider>
   );
 }

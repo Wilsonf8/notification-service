@@ -105,3 +105,48 @@ export interface ConnectToken {
   token: string;
   deepLink: string;
 }
+
+/** Organization role enum */
+export type OrgRole = "OWNER" | "ADMIN" | "MEMBER";
+
+/** Organization entity returned from the API */
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  isPersonal: boolean;
+  userRole: OrgRole;
+  createdAt: string;
+}
+
+/** Organization member returned from the API */
+export interface OrganizationMember {
+  id: string;
+  userId: string;
+  username: string;
+  email: string | null;
+  avatarUrl: string | null;
+  role: OrgRole;
+  joinedAt: string;
+}
+
+/** Request body for creating an organization */
+export interface CreateOrganizationRequest {
+  name: string;
+}
+
+/** Request body for updating an organization */
+export interface UpdateOrganizationRequest {
+  name: string;
+}
+
+/** Request body for adding a member to an organization */
+export interface AddMemberRequest {
+  username: string;
+  role: OrgRole;
+}
+
+/** Request body for updating a member's role */
+export interface UpdateMemberRoleRequest {
+  role: OrgRole;
+}
