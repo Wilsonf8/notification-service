@@ -13,13 +13,22 @@ export interface User {
   updatedAt: string;
 }
 
+/** Telegram destination status */
+export interface TelegramDestination {
+  username: string | null;
+  isEnabled: boolean;
+  disabledReason: string | null;
+  healthStatus: "HEALTHY" | "DEGRADED" | "UNHEALTHY" | "UNKNOWN";
+}
+
 /** Project entity returned from the API */
 export interface Project {
   id: string;
   name: string;
-  userId: string;
+  description: string | null;
+  telegramDestination: TelegramDestination | null;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 /** API key entity returned from the API */
