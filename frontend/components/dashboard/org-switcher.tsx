@@ -6,6 +6,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { createOrganization } from "@/lib/api/organizations";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ import {
  * Displays a dropdown with all user's organizations and option to create new teams.
  */
 export function OrgSwitcher() {
+  const router = useRouter();
   const { organizations, currentOrg, isLoading, switchOrg, refreshOrgs } =
     useOrganization();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -52,6 +54,7 @@ export function OrgSwitcher() {
 
   /**
    * Handles creating a new team organization.
+   * After creation, navigates to the new team's dashboard.
    */
   const handleCreateTeam = async () => {
     if (!teamName.trim()) return;
@@ -61,7 +64,8 @@ export function OrgSwitcher() {
       setError(null);
       const newOrg = await createOrganization({ name: teamName.trim() });
       await refreshOrgs();
-      switchOrg(newOrg.slug);
+      // Navigate to the new team's dashboard
+      router.push(`/dashboard/${newOrg.slug}`);
       setTeamName("");
       setIsCreateOpen(false);
     } catch (err) {

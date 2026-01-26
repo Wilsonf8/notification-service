@@ -28,8 +28,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { IconLogout, IconUser, IconMenu2 } from "@tabler/icons-react";
-import { navItems, isNavItemActive } from "@/components/dashboard/sidebar";
+import { getNavItems, isNavItemActive } from "@/components/dashboard/sidebar";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
+import { useOrganization } from "@/lib/contexts/organization-context";
 
 /**
  * Dashboard header with user dropdown menu and mobile navigation.
@@ -39,6 +40,10 @@ export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { currentOrg } = useOrganization();
+
+  // Get nav items based on current org
+  const navItems = getNavItems(currentOrg?.slug || "");
 
   /**
    * Handles user logout by clearing the token and redirecting to login.

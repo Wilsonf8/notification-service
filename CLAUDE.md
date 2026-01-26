@@ -37,3 +37,16 @@ cd frontend && npm run dev
 - No border radius (sharp corners)
 - Dark mode is default
 - Ensure responsive design (mobile/portrait/landscape)
+
+## Planning Structure
+
+Two-tier planning approach for large features:
+
+| File | Name | Purpose |
+|------|------|---------|
+| `docs/plans/*.md` | **Master Spec** | Full feature design, architecture, schema, APIs. Stable reference. |
+| `.claude/plans/*.md` | **Working Plan** | Detailed steps for current phase. Rewritten each phase. |
+
+- Master spec stays clean as the source of truth
+- Working plan has granular implementation details for active work
+- Each phase starts fresh with focused context

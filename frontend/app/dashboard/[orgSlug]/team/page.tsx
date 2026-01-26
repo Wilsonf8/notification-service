@@ -1,11 +1,11 @@
 /**
  * Team settings page.
  * Allows organization owners and admins to manage team members.
- * @module app/dashboard/team/page
+ * @module app/dashboard/[orgSlug]/team/page
  */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -74,11 +74,20 @@ import {
 } from "@/lib/api/organizations";
 import type { OrganizationMember, OrgRole } from "@/lib/types";
 
+/** Page params containing the org slug */
+interface TeamPageProps {
+  params: Promise<{ orgSlug: string }>;
+}
+
 /**
  * Team settings page component.
  * Displays team members and provides management controls.
+ *
+ * @param props - Component props
+ * @param props.params - Route params with orgSlug
  */
-export default function TeamPage() {
+export default function TeamPage({ params }: TeamPageProps) {
+  const { orgSlug } = use(params);
   const router = useRouter();
   const { currentOrg, isLoading: orgLoading, refreshOrgs } = useOrganization();
   const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -111,36 +120,37 @@ export default function TeamPage() {
    * Fetches members from the API.
    */
   const fetchMembers = useCallback(async () => {
-    if (!currentOrg) return;
-
     try {
       setLoading(true);
       setError(null);
-      const data = await getOrganizationMembers(currentOrg.slug);
+      // Use orgSlug from URL directly to avoid race conditions
+      const data = await getOrganizationMembers(orgSlug);
       setMembers(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
     } finally {
       setLoading(false);
     }
-  }, [currentOrg]);
+  }, [orgSlug]);
 
   useEffect(() => {
-    if (currentOrg) {
+    // Only fetch when org context is loaded and matches URL
+    if (!orgLoading && currentOrg?.slug === orgSlug) {
       fetchMembers();
     }
-  }, [currentOrg, fetchMembers]);
+  }, [orgLoading, currentOrg?.slug, orgSlug, fetchMembers]);
 
   /**
    * Handles adding a new member.
    */
   const handleAddMember = async () => {
-    if (!newUsername.trim() || !currentOrg) return;
+    if (!newUsername.trim()) return;
 
     try {
       setAdding(true);
       setAddError(null);
-      const member = await addMemberByUsername(currentOrg.slug, {
+      // Use orgSlug from URL directly
+      const member = await addMemberByUsername(orgSlug, {
         username: newUsername.trim(),
         role: newRole,
       });
@@ -159,10 +169,9 @@ export default function TeamPage() {
    * Handles updating a member's role.
    */
   const handleRoleChange = async (memberId: string, role: OrgRole) => {
-    if (!currentOrg) return;
-
     try {
-      const updated = await updateMemberRole(currentOrg.slug, memberId, { role });
+      // Use orgSlug from URL directly
+      const updated = await updateMemberRole(orgSlug, memberId, { role });
       setMembers((prev) =>
         prev.map((m) => (m.id === memberId ? updated : m))
       );
@@ -175,10 +184,9 @@ export default function TeamPage() {
    * Handles removing a member.
    */
   const handleRemoveMember = async (memberId: string) => {
-    if (!currentOrg) return;
-
     try {
-      await removeMember(currentOrg.slug, memberId);
+      // Use orgSlug from URL directly
+      await removeMember(orgSlug, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove member");
@@ -189,12 +197,12 @@ export default function TeamPage() {
    * Handles leaving the organization.
    */
   const handleLeave = async () => {
-    if (!currentOrg) return;
-
     try {
       setLeaving(true);
-      await leaveOrganization(currentOrg.slug);
+      // Use orgSlug from URL directly
+      await leaveOrganization(orgSlug);
       await refreshOrgs();
+      // Redirect to dashboard - let it handle finding the new default org
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to leave organization");
@@ -206,12 +214,12 @@ export default function TeamPage() {
    * Handles deleting the organization.
    */
   const handleDelete = async () => {
-    if (!currentOrg) return;
-
     try {
       setDeleting(true);
-      await deleteOrganization(currentOrg.slug);
+      // Use orgSlug from URL directly
+      await deleteOrganization(orgSlug);
       await refreshOrgs();
+      // Redirect to dashboard - let it handle finding the new default org
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete organization");
@@ -223,11 +231,12 @@ export default function TeamPage() {
    * Handles updating the organization name.
    */
   const handleUpdateName = async () => {
-    if (!editedName.trim() || !currentOrg) return;
+    if (!editedName.trim()) return;
 
     try {
       setSaving(true);
-      await updateOrganization(currentOrg.slug, { name: editedName.trim() });
+      // Use orgSlug from URL directly
+      await updateOrganization(orgSlug, { name: editedName.trim() });
       await refreshOrgs();
       setIsEditNameOpen(false);
     } catch (err) {

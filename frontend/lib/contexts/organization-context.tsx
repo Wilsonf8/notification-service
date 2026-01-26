@@ -1,6 +1,6 @@
 /**
  * Organization context for managing the current organization state.
- * Provides organization switching and persistence across the application.
+ * Provides organization switching with URL navigation.
  * @module lib/contexts/organization-context
  */
 "use client";
@@ -13,6 +13,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import type { Organization } from "@/lib/types";
 import { getOrganizations } from "@/lib/api/organizations";
 import { isAuthenticated } from "@/lib/auth";
@@ -30,7 +31,7 @@ interface OrganizationContextValue {
   isLoading: boolean;
   /** Error message if loading failed */
   error: string | null;
-  /** Switch to a different organization by slug */
+  /** Switch to a different organization by slug (navigates to new URL) */
   switchOrg: (slug: string) => void;
   /** Refresh the organizations list from the API */
   refreshOrgs: () => Promise<void>;
@@ -46,12 +47,14 @@ interface OrganizationProviderProps {
 
 /**
  * Provider component that manages organization state.
- * Fetches organizations on mount and persists selection in localStorage.
+ * Fetches organizations on mount and handles URL-based navigation.
  *
  * @param props - Component props
  * @param props.children - Child components to render within provider
  */
 export function OrganizationProvider({ children }: OrganizationProviderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,19 +103,37 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
   /**
    * Switches to a different organization by slug.
-   * Persists the selection in localStorage.
+   * Navigates to the equivalent page in the new org's context.
    *
    * @param slug - The organization slug to switch to
    */
   const switchOrg = useCallback(
     (slug: string) => {
       const org = organizations.find((o) => o.slug === slug);
-      if (org) {
-        setCurrentOrg(org);
-        localStorage.setItem(CURRENT_ORG_KEY, slug);
+      if (!org) return;
+
+      // Update state and localStorage
+      setCurrentOrg(org);
+      localStorage.setItem(CURRENT_ORG_KEY, slug);
+
+      // Extract the current path after the org slug
+      // Pattern: /dashboard/[orgSlug]/... -> extract the part after orgSlug
+      const orgPathMatch = pathname.match(/^\/dashboard\/([^/]+)(\/.*)?$/);
+
+      if (orgPathMatch) {
+        const currentOrgSlug = orgPathMatch[1];
+        const restOfPath = orgPathMatch[2] || "";
+
+        // Only navigate if we're actually changing orgs
+        if (currentOrgSlug !== slug) {
+          router.push(`/dashboard/${slug}${restOfPath}`);
+        }
+      } else if (pathname === "/dashboard") {
+        // On the redirect page, navigate to the new org's overview
+        router.push(`/dashboard/${slug}`);
       }
     },
-    [organizations]
+    [organizations, pathname, router]
   );
 
   // Fetch organizations on mount

@@ -1,11 +1,11 @@
 /**
  * Projects list page.
  * Displays all projects for the current organization.
- * @module app/dashboard/projects/page
+ * @module app/dashboard/[orgSlug]/projects/page
  */
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,12 +32,21 @@ import { getOrganizationProjects, createOrganizationProject } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import type { Project } from "@/lib/types";
 
+/** Page params containing the org slug */
+interface ProjectsPageProps {
+  params: Promise<{ orgSlug: string }>;
+}
+
 /**
  * Projects list page component.
  * Shows all projects belonging to the current organization.
  * Provides UI to create new projects.
+ *
+ * @param props - Component props
+ * @param props.params - Route params with orgSlug
  */
-export default function ProjectsPage() {
+export default function ProjectsPage({ params }: ProjectsPageProps) {
+  const { orgSlug } = use(params);
   const { currentOrg, isLoading: orgLoading } = useOrganization();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,29 +59,29 @@ export default function ProjectsPage() {
    * Fetches projects from the API for the current organization.
    */
   const fetchProjects = useCallback(async () => {
-    if (!currentOrg) return;
-
     try {
       setLoading(true);
       setError(null);
-      const data = await getOrganizationProjects(currentOrg.slug);
+      // Use orgSlug from URL directly to avoid race conditions
+      const data = await getOrganizationProjects(orgSlug);
       setProjects(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load projects");
     } finally {
       setLoading(false);
     }
-  }, [currentOrg]);
+  }, [orgSlug]);
 
   /**
    * Handles creating a new project in the current organization.
    */
   const handleCreate = async () => {
-    if (!newProjectName.trim() || !currentOrg) return;
+    if (!newProjectName.trim()) return;
 
     try {
       setCreating(true);
-      const project = await createOrganizationProject(currentOrg.slug, {
+      // Use orgSlug from URL directly
+      const project = await createOrganizationProject(orgSlug, {
         name: newProjectName.trim(),
       });
       setProjects((prev) => [...prev, project]);
@@ -86,10 +95,11 @@ export default function ProjectsPage() {
   };
 
   useEffect(() => {
-    if (currentOrg) {
+    // Only fetch when org context is loaded and matches URL
+    if (!orgLoading && currentOrg?.slug === orgSlug) {
       fetchProjects();
     }
-  }, [currentOrg, fetchProjects]);
+  }, [orgLoading, currentOrg?.slug, orgSlug, fetchProjects]);
 
   if (orgLoading || loading) {
     return (
@@ -185,7 +195,7 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <Link key={project.id} href={`/dashboard/projects/${project.id}`}>
+            <Link key={project.id} href={`/dashboard/${orgSlug}/projects/${project.id}`}>
               <Card className="cursor-pointer transition-colors hover:bg-accent">
                 <CardHeader>
                   <CardTitle className="text-lg">{project.name}</CardTitle>

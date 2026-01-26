@@ -1,7 +1,7 @@
 /**
  * Project detail page.
  * Displays project settings, API key, and connected Telegram chats.
- * @module app/dashboard/projects/[id]/page
+ * @module app/dashboard/[orgSlug]/projects/[projectId]/page
  */
 "use client";
 
@@ -50,9 +50,9 @@ import {
 } from "@/lib/api";
 import type { Project, ApiKey, ApiKeyWithSecret, Event, ConnectToken } from "@/lib/types";
 
-/** Page params containing the dynamic route segment */
+/** Page params containing the dynamic route segments */
 interface ProjectPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ orgSlug: string; projectId: string }>;
 }
 
 /**
@@ -60,10 +60,10 @@ interface ProjectPageProps {
  * Shows project configuration, API key management, and connected chats.
  *
  * @param props - Component props
- * @param props.params - Route parameters containing the project ID
+ * @param props.params - Route parameters containing orgSlug and projectId
  */
 export default function ProjectPage({ params }: ProjectPageProps) {
-  const { id } = use(params);
+  const { orgSlug, projectId } = use(params);
   const router = useRouter();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -98,9 +98,9 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       setError(null);
 
       const [projectData, keysData, eventsData] = await Promise.all([
-        getProject(id),
-        getProjectApiKeys(id),
-        getProjectEvents(id),
+        getProject(projectId),
+        getProjectApiKeys(projectId),
+        getProjectEvents(projectId),
       ]);
 
       setProject(projectData);
@@ -116,7 +116,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
   useEffect(() => {
     fetchData();
-  }, [id]);
+  }, [projectId]);
 
   /**
    * Generates a new API key for the project.
@@ -124,11 +124,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const handleGenerateKey = async () => {
     try {
       setGeneratingKey(true);
-      const result: ApiKeyWithSecret = await generateApiKey(id);
+      const result: ApiKeyWithSecret = await generateApiKey(projectId);
       setNewApiKey(result.key);
       setShowNewKey(true);
       // Refresh the keys list
-      const keys = await getProjectApiKeys(id);
+      const keys = await getProjectApiKeys(projectId);
       setApiKeys(keys);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate API key");
@@ -153,7 +153,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
     try {
       setSaving(true);
-      const updated = await updateProject(id, { name: projectName.trim() });
+      const updated = await updateProject(projectId, { name: projectName.trim() });
       setProject(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save project");
@@ -172,8 +172,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
     try {
       setDeleting(true);
-      await deleteProject(id);
-      router.push("/dashboard/projects");
+      await deleteProject(projectId);
+      router.push(`/dashboard/${orgSlug}/projects`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete project");
       setDeleting(false);
@@ -187,7 +187,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     try {
       setGeneratingConnect(true);
       setError(null);
-      const token = await generateTelegramConnectToken(id);
+      const token = await generateTelegramConnectToken(projectId);
       setConnectToken(token);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate connect link");

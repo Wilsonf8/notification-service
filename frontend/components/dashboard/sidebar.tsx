@@ -16,6 +16,7 @@ import {
   IconBook,
 } from "@tabler/icons-react";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
+import { useOrganization } from "@/lib/contexts/organization-context";
 
 /** Navigation item configuration */
 interface NavItem {
@@ -27,45 +28,62 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
 }
 
-/** Main navigation items for the dashboard */
-export const navItems: NavItem[] = [
-  {
-    label: "Overview",
-    href: "/dashboard",
-    icon: IconLayoutDashboard,
-  },
-  {
-    label: "Projects",
-    href: "/dashboard/projects",
-    icon: IconFolder,
-  },
-  {
-    label: "Docs",
-    href: "/dashboard/docs",
-    icon: IconBook,
-  },
-  {
-    label: "Team",
-    href: "/dashboard/team",
-    icon: IconUsersGroup,
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/settings",
-    icon: IconSettings,
-  },
-];
+/**
+ * Generates navigation items with org-scoped URLs.
+ * @param orgSlug - The current organization slug
+ * @returns Array of navigation items
+ */
+export function getNavItems(orgSlug: string): NavItem[] {
+  return [
+    {
+      label: "Overview",
+      href: `/dashboard/${orgSlug}`,
+      icon: IconLayoutDashboard,
+    },
+    {
+      label: "Projects",
+      href: `/dashboard/${orgSlug}/projects`,
+      icon: IconFolder,
+    },
+    {
+      label: "Docs",
+      href: "/dashboard/docs",
+      icon: IconBook,
+    },
+    {
+      label: "Team",
+      href: `/dashboard/${orgSlug}/team`,
+      icon: IconUsersGroup,
+    },
+    {
+      label: "Settings",
+      href: "/dashboard/settings",
+      icon: IconSettings,
+    },
+  ];
+}
 
 /**
  * Checks if a nav item should be marked as active based on current pathname.
+ * Handles both static routes (docs, settings) and dynamic org-scoped routes.
  * @param href - The nav item's href
  * @param pathname - The current pathname
  * @returns True if the item is active
  */
 export function isNavItemActive(href: string, pathname: string): boolean {
-  if (href === "/dashboard") {
-    return pathname === "/dashboard";
+  // For org-scoped overview, exact match only
+  const overviewMatch = href.match(/^\/dashboard\/([^/]+)$/);
+  if (overviewMatch) {
+    const orgSlug = overviewMatch[1];
+    return pathname === `/dashboard/${orgSlug}`;
   }
+
+  // For static routes (docs, settings), use startsWith
+  if (href === "/dashboard/docs" || href === "/dashboard/settings") {
+    return pathname.startsWith(href);
+  }
+
+  // For other org-scoped routes, use startsWith
   return pathname.startsWith(href);
 }
 
@@ -76,6 +94,10 @@ export function isNavItemActive(href: string, pathname: string): boolean {
  */
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const { currentOrg } = useOrganization();
+
+  // Get nav items based on current org (fallback to empty slug if no org)
+  const navItems = getNavItems(currentOrg?.slug || "");
 
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar">

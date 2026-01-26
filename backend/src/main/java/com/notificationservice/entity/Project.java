@@ -31,6 +31,11 @@ public class Project {
 
     private String description;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ProjectType type = ProjectType.NOTIFYKIT;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;
