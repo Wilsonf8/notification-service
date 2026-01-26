@@ -30,4 +30,7 @@ public interface LiveConnectRepRepository extends JpaRepository<LiveConnectRep, 
 
     @Query("SELECT r FROM LiveConnectRep r WHERE r.presence = 'ONLINE' AND r.lastHeartbeat < :threshold")
     List<LiveConnectRep> findStaleOnlineReps(OffsetDateTime threshold);
+
+    @Query("SELECT r FROM LiveConnectRep r WHERE r.user.id = :userId")
+    List<LiveConnectRep> findByUserId(UUID userId);
 }

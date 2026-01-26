@@ -4,6 +4,7 @@ import com.notificationservice.entity.LiveConnectVisitor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -21,4 +22,7 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
 
     @Query("SELECT v FROM LiveConnectVisitor v WHERE v.project.id = :projectId ORDER BY v.lastSeenAt DESC")
     List<LiveConnectVisitor> findByProjectIdOrderByLastSeenAtDesc(UUID projectId);
+
+    @Query("SELECT v FROM LiveConnectVisitor v WHERE v.project.id = :projectId AND v.lastSeenAt > :threshold ORDER BY v.lastSeenAt DESC")
+    List<LiveConnectVisitor> findOnlineByProjectId(UUID projectId, OffsetDateTime threshold);
 }
