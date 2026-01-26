@@ -16,6 +16,8 @@ import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
+import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.IncomingPingEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ public class LiveConnectVisitorService {
     private final LiveConnectRepRepository repRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final WebSocketBroadcaster broadcaster;
 
     /**
      * Gets visitors for the dashboard, split into browsing and queue.
@@ -130,6 +133,14 @@ public class LiveConnectVisitorService {
                 .build();
 
         request = requestRepository.save(request);
+
+        // Broadcast ping to visitor
+        IncomingPingEvent event = new IncomingPingEvent(
+                request.getId(),
+                rep.getUser().getUsername(),
+                expiresAt
+        );
+        broadcaster.sendToVisitor(visitor.getId(), event);
 
         return new PingVisitorResponse(request.getId(), expiresAt);
     }

@@ -17,6 +17,9 @@ import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
+import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.CallStartingEvent;
+import com.notificationservice.websocket.event.ConversationStartedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +40,7 @@ public class LiveConnectRequestService {
     private final LiveConnectConversationRepository conversationRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final WebSocketBroadcaster broadcaster;
 
     /**
      * Gets pending requests for a project.
@@ -127,6 +131,23 @@ public class LiveConnectRequestService {
         // Generate room name and token (placeholders for now)
         String roomName = "lc-" + conversation.getId().toString().substring(0, 8);
         String token = "placeholder-token";
+
+        // Broadcast to rep
+        ConversationStartedEvent repEvent = new ConversationStartedEvent(
+                conversation.getId(),
+                request.getVisitor().getId(),
+                roomName,
+                token
+        );
+        broadcaster.sendToRep(rep.getUser().getId(), repEvent);
+
+        // Broadcast to visitor
+        CallStartingEvent visitorEvent = new CallStartingEvent(
+                conversation.getId(),
+                roomName,
+                token
+        );
+        broadcaster.sendToVisitor(request.getVisitor().getId(), visitorEvent);
 
         return new AcceptRequestResponse(conversation.getId(), roomName, token);
     }

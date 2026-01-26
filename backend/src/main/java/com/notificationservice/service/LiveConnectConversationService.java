@@ -23,6 +23,9 @@ import com.notificationservice.repository.LiveConnectMessageRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
+import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.CallEndedEvent;
+import com.notificationservice.websocket.event.MessageReceivedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +49,7 @@ public class LiveConnectConversationService {
     private final LiveConnectRepRepository repRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final WebSocketBroadcaster broadcaster;
 
     /**
      * Gets paginated conversations for a project.
@@ -222,6 +226,17 @@ public class LiveConnectConversationService {
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
 
+        // Broadcast message to visitor
+        MessageReceivedEvent event = new MessageReceivedEvent(
+                conversationId,
+                message.getId(),
+                MessageSenderType.REP.name(),
+                rep.getUser().getUsername(),
+                request.content(),
+                message.getCreatedAt()
+        );
+        broadcaster.sendToVisitor(conversation.getVisitor().getId(), event);
+
         return toMessageDto(message, conversation);
     }
 
@@ -270,6 +285,13 @@ public class LiveConnectConversationService {
         rep.setCurrentConversation(null);
         rep.setPresence(RepPresence.ONLINE);
         repRepository.save(rep);
+
+        // Broadcast call ended to visitor
+        CallEndedEvent event = new CallEndedEvent(
+                conversationId,
+                conversation.getCallDurationSeconds()
+        );
+        broadcaster.sendToVisitor(conversation.getVisitor().getId(), event);
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {

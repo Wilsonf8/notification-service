@@ -12,6 +12,8 @@ import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.repository.UserRepository;
+import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class LiveConnectRepService {
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
+    private final WebSocketBroadcaster broadcaster;
 
     /**
      * Gets all reps for a project.
@@ -130,7 +133,14 @@ public class LiveConnectRepService {
                 : RepAvailability.UNAVAILABLE;
 
         rep.setAvailability(availability);
-        return toDto(repRepository.save(rep));
+        LiveConnectRep savedRep = repRepository.save(rep);
+
+        // Broadcast availability change to all visitors in the project
+        boolean hasAvailableReps = !repRepository.findAvailableByProjectId(projectId).isEmpty();
+        RepAvailabilityChangedEvent event = new RepAvailabilityChangedEvent(hasAvailableReps);
+        broadcaster.broadcastToProjectVisitors(projectId, event);
+
+        return toDto(savedRep);
     }
 
     /**
