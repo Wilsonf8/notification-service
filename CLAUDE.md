@@ -42,10 +42,10 @@ cd frontend && npm run dev
 
 Two-tier planning approach for large features:
 
-| File | Name | Purpose |
-|------|------|---------|
-| `docs/plans/*.md` | **Master Spec** | Full feature design, architecture, schema, APIs. Stable reference. |
-| `.claude/plans/*.md` | **Working Plan** | Detailed steps for current phase. Rewritten each phase. |
+| File                 | Name             | Purpose                                                            |
+|----------------------|------------------|--------------------------------------------------------------------|
+| `docs/plans/*.md`    | **Master Spec**  | Full feature design, architecture, schema, APIs. Stable reference. |
+| `.claude/plans/*.md` | **Working Plan** | Detailed steps for current phase. Rewritten each phase.            |
 
 - Master spec stays clean as the source of truth
 - Working plan has granular implementation details for active work

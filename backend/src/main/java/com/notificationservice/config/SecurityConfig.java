@@ -49,6 +49,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/**", "/login/**").permitAll()
                         .requestMatchers("/v1/notify").permitAll()  // API key auth handled separately
+                        .requestMatchers("/v1/liveconnect/**").permitAll()  // Embed key auth handled separately
                         .requestMatchers("/internal/telegram/webhook").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
@@ -75,6 +76,14 @@ public class SecurityConfig {
         notifyConfig.setAllowedHeaders(List.of("*"));
         notifyConfig.setAllowCredentials(false);
         source.registerCorsConfiguration("/v1/notify", notifyConfig);
+
+        // Allow all origins for /v1/liveconnect/** (widget endpoints, uses embed key auth)
+        CorsConfiguration liveconnectConfig = new CorsConfiguration();
+        liveconnectConfig.setAllowedOrigins(List.of("*"));
+        liveconnectConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
+        liveconnectConfig.setAllowedHeaders(List.of("*"));
+        liveconnectConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/v1/liveconnect/**", liveconnectConfig);
 
         // Restricted origins for other endpoints
         CorsConfiguration defaultConfig = new CorsConfiguration();
