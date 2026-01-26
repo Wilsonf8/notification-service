@@ -2,11 +2,17 @@ package com.notificationservice.controller;
 
 import com.notificationservice.dto.AcceptRequestResponse;
 import com.notificationservice.dto.AddRepRequest;
+import com.notificationservice.dto.ConversationListResponse;
+import com.notificationservice.dto.LiveConnectConversationDto;
+import com.notificationservice.dto.LiveConnectMessageDto;
 import com.notificationservice.dto.LiveConnectRepDto;
 import com.notificationservice.dto.LiveConnectRequestDto;
+import com.notificationservice.dto.MessageListResponse;
 import com.notificationservice.dto.PingVisitorResponse;
+import com.notificationservice.dto.SendMessageRequest;
 import com.notificationservice.dto.UpdateAvailabilityRequest;
 import com.notificationservice.dto.VisitorListResponse;
+import com.notificationservice.service.LiveConnectConversationService;
 import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
 import com.notificationservice.service.LiveConnectVisitorService;
@@ -31,6 +37,7 @@ public class LiveConnectDashboardController {
     private final LiveConnectRepService repService;
     private final LiveConnectVisitorService visitorService;
     private final LiveConnectRequestService requestService;
+    private final LiveConnectConversationService conversationService;
 
     // Rep Management Endpoints
 
@@ -177,6 +184,101 @@ public class LiveConnectDashboardController {
             @PathVariable UUID requestId,
             @AuthenticationPrincipal UUID userId) {
         requestService.dismissRequest(projectId, requestId, userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Conversation Endpoints
+
+    /**
+     * Gets paginated conversations for a project.
+     *
+     * @param projectId the project ID
+     * @param page the page number (0-indexed)
+     * @param size the page size
+     * @param status optional status filter (ACTIVE, ENDED)
+     * @param type optional type filter (VIDEO_CALL, CONTACT_FORM)
+     * @param userId the authenticated user's ID
+     * @return paginated list of conversations
+     */
+    @GetMapping("/conversations")
+    public ResponseEntity<ConversationListResponse> getConversations(
+            @PathVariable UUID projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(conversationService.getConversations(projectId, userId, page, size, status, type));
+    }
+
+    /**
+     * Gets a single conversation by ID.
+     *
+     * @param projectId the project ID
+     * @param conversationId the conversation ID
+     * @param userId the authenticated user's ID
+     * @return the conversation details
+     */
+    @GetMapping("/conversations/{conversationId}")
+    public ResponseEntity<LiveConnectConversationDto> getConversation(
+            @PathVariable UUID projectId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(conversationService.getConversation(projectId, conversationId, userId));
+    }
+
+    /**
+     * Gets paginated messages for a conversation.
+     *
+     * @param projectId the project ID
+     * @param conversationId the conversation ID
+     * @param page the page number (0-indexed)
+     * @param size the page size
+     * @param userId the authenticated user's ID
+     * @return paginated list of messages
+     */
+    @GetMapping("/conversations/{conversationId}/messages")
+    public ResponseEntity<MessageListResponse> getMessages(
+            @PathVariable UUID projectId,
+            @PathVariable UUID conversationId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(conversationService.getMessages(projectId, conversationId, userId, page, size));
+    }
+
+    /**
+     * Sends a message in a conversation.
+     *
+     * @param projectId the project ID
+     * @param conversationId the conversation ID
+     * @param request the message request
+     * @param userId the authenticated user's ID (must be the assigned rep)
+     * @return the created message
+     */
+    @PostMapping("/conversations/{conversationId}/message")
+    public ResponseEntity<LiveConnectMessageDto> sendMessage(
+            @PathVariable UUID projectId,
+            @PathVariable UUID conversationId,
+            @Valid @RequestBody SendMessageRequest request,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(conversationService.sendMessage(projectId, conversationId, request, userId));
+    }
+
+    /**
+     * Ends an active conversation.
+     *
+     * @param projectId the project ID
+     * @param conversationId the conversation ID
+     * @param userId the authenticated user's ID (must be the assigned rep)
+     * @return no content on success
+     */
+    @PostMapping("/conversations/{conversationId}/end")
+    public ResponseEntity<Void> endConversation(
+            @PathVariable UUID projectId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UUID userId) {
+        conversationService.endConversation(projectId, conversationId, userId);
         return ResponseEntity.noContent().build();
     }
 }

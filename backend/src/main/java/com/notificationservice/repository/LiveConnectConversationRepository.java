@@ -29,8 +29,14 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.status = :status ORDER BY c.startedAt DESC")
     List<LiveConnectConversation> findByProjectIdAndStatus(UUID projectId, ConversationStatus status);
 
+    @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.status = :status ORDER BY c.startedAt DESC")
+    Page<LiveConnectConversation> findByProjectIdAndStatusPaged(UUID projectId, ConversationStatus status, Pageable pageable);
+
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.type = :type ORDER BY c.startedAt DESC")
     Page<LiveConnectConversation> findByProjectIdAndType(UUID projectId, ConversationType type, Pageable pageable);
+
+    @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.status = :status AND c.type = :type ORDER BY c.startedAt DESC")
+    Page<LiveConnectConversation> findByProjectIdAndStatusAndType(UUID projectId, ConversationStatus status, ConversationType type, Pageable pageable);
 
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId ORDER BY c.startedAt DESC")
     List<LiveConnectConversation> findByVisitorId(UUID visitorId);
