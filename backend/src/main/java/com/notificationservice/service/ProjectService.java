@@ -5,6 +5,7 @@ import com.notificationservice.entity.OrgRole;
 import com.notificationservice.entity.Organization;
 import com.notificationservice.entity.OrganizationMember;
 import com.notificationservice.entity.Project;
+import com.notificationservice.entity.ProjectType;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.OrganizationRepository;
 import com.notificationservice.repository.ProjectRepository;
@@ -56,10 +57,13 @@ public class ProjectService {
     public ProjectDto createProject(CreateProjectRequest request, UUID orgId, UUID userId) {
         Organization org = verifyOrgMembership(orgId, userId);
 
+        ProjectType type = request.type() != null ? request.type() : ProjectType.NOTIFYKIT;
+
         Project project = Project.builder()
                 .organization(org)
                 .name(request.name())
                 .description(request.description())
+                .type(type)
                 .build();
 
         return toDto(projectRepository.save(project));
@@ -71,10 +75,13 @@ public class ProjectService {
         Organization personalOrg = organizationRepository.findPersonalOrgByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Personal organization not found"));
 
+        ProjectType type = request.type() != null ? request.type() : ProjectType.NOTIFYKIT;
+
         Project project = Project.builder()
                 .organization(personalOrg)
                 .name(request.name())
                 .description(request.description())
+                .type(type)
                 .build();
 
         return toDto(projectRepository.save(project));
@@ -149,6 +156,7 @@ public class ProjectService {
                 project.getId(),
                 project.getName(),
                 project.getDescription(),
+                project.getType(),
                 telegramDto,
                 project.getCreatedAt()
         );
