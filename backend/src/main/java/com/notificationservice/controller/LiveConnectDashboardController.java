@@ -10,12 +10,20 @@ import com.notificationservice.dto.LiveConnectRequestDto;
 import com.notificationservice.dto.MessageListResponse;
 import com.notificationservice.dto.PingVisitorResponse;
 import com.notificationservice.dto.SendMessageRequest;
+import com.notificationservice.dto.TokenResponse;
 import com.notificationservice.dto.UpdateAvailabilityRequest;
 import com.notificationservice.dto.VisitorListResponse;
+import com.notificationservice.entity.ConversationStatus;
+import com.notificationservice.entity.LiveConnectConversation;
+import com.notificationservice.entity.LiveConnectRep;
+import com.notificationservice.service.LiveKitTokenService;
+import com.notificationservice.repository.LiveConnectConversationRepository;
+import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.LiveConnectConversationService;
 import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
 import com.notificationservice.service.LiveConnectVisitorService;
+import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +46,8 @@ public class LiveConnectDashboardController {
     private final LiveConnectVisitorService visitorService;
     private final LiveConnectRequestService requestService;
     private final LiveConnectConversationService conversationService;
+    private final LiveConnectConversationRepository conversationRepository;
+    private final LiveKitTokenService liveKitTokenService;
 
     // Rep Management Endpoints
 
@@ -280,5 +290,54 @@ public class LiveConnectDashboardController {
             @AuthenticationPrincipal UUID userId) {
         conversationService.endConversation(projectId, conversationId, userId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Gets a LiveKit token for an active conversation.
+     * Used for reconnection scenarios (e.g., page refresh during a call).
+     *
+     * @param projectId the project ID
+     * @param conversationId the conversation ID
+     * @param userId the authenticated user's ID (must be the assigned rep)
+     * @return the token response with LiveKit token and room info
+     */
+    @PostMapping("/conversations/{conversationId}/token")
+    public ResponseEntity<TokenResponse> getRepToken(
+            @PathVariable UUID projectId,
+            @PathVariable UUID conversationId,
+            @AuthenticationPrincipal UUID userId) {
+
+        // Verify rep access to project
+        LiveConnectRep rep = repService.verifyRepAccess(projectId, userId);
+
+        LiveConnectConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+
+        // Verify conversation belongs to this project
+        if (!conversation.getProject().getId().equals(projectId)) {
+            throw new ResourceNotFoundException("Conversation not found");
+        }
+
+        // Verify this rep is assigned to this conversation
+        if (conversation.getRep() == null || !conversation.getRep().getId().equals(rep.getId())) {
+            throw new AccessDeniedException("Not your conversation");
+        }
+
+        // Verify conversation is active
+        if (conversation.getStatus() != ConversationStatus.ACTIVE) {
+            throw new IllegalArgumentException("Conversation is not active");
+        }
+
+        String token = liveKitTokenService.generateToken(
+                conversation.getLiveKitRoomName(),
+                "rep_" + userId,
+                rep.getUser().getUsername()
+        );
+
+        return ResponseEntity.ok(new TokenResponse(
+                token,
+                conversation.getLiveKitRoomName(),
+                liveKitTokenService.getLiveKitUrl()
+        ));
     }
 }

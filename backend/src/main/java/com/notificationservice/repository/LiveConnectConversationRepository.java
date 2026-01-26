@@ -40,4 +40,12 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
 
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId ORDER BY c.startedAt DESC")
     List<LiveConnectConversation> findByVisitorId(UUID visitorId);
+
+    /**
+     * Finds a conversation by its LiveKit room name.
+     *
+     * @param liveKitRoomName the LiveKit room name
+     * @return the conversation if found
+     */
+    Optional<LiveConnectConversation> findByLiveKitRoomName(String liveKitRoomName);
 }

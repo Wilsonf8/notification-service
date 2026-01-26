@@ -1,11 +1,20 @@
 package com.notificationservice.controller;
 
+import com.notificationservice.dto.TokenRequest;
+import com.notificationservice.dto.TokenResponse;
 import com.notificationservice.dto.WidgetInitRequest;
 import com.notificationservice.dto.WidgetInitResponse;
+import com.notificationservice.entity.ConversationStatus;
+import com.notificationservice.entity.LiveConnectConversation;
 import com.notificationservice.entity.LiveConnectEmbedKey;
+import com.notificationservice.entity.LiveConnectSession;
+import com.notificationservice.service.LiveKitTokenService;
+import com.notificationservice.repository.LiveConnectConversationRepository;
+import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.LiveConnectEmbedKeyService;
 import com.notificationservice.service.LiveConnectRateLimitService;
 import com.notificationservice.service.LiveConnectSessionService;
+import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +35,8 @@ public class LiveConnectWidgetController {
     private final LiveConnectRateLimitService rateLimitService;
     private final LiveConnectEmbedKeyService embedKeyService;
     private final LiveConnectSessionService sessionService;
+    private final LiveConnectConversationRepository conversationRepository;
+    private final LiveKitTokenService liveKitTokenService;
 
     /**
      * Initializes a widget session.
@@ -59,6 +70,47 @@ public class LiveConnectWidgetController {
         WidgetInitResponse response = sessionService.initializeSession(request, embedKey);
 
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Gets a LiveKit token for an active conversation.
+     * Used for reconnection scenarios (e.g., page refresh during a call).
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param request the token request containing conversation ID
+     * @return the token response with LiveKit token and room info
+     */
+    @PostMapping("/token")
+    public ResponseEntity<TokenResponse> getToken(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @Valid @RequestBody TokenRequest request) {
+
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        LiveConnectConversation conversation = conversationRepository.findById(request.conversationId())
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+
+        // Verify visitor owns this conversation
+        if (!conversation.getVisitor().getId().equals(session.getVisitor().getId())) {
+            throw new AccessDeniedException("Not your conversation");
+        }
+
+        // Verify conversation is active
+        if (conversation.getStatus() != ConversationStatus.ACTIVE) {
+            throw new IllegalArgumentException("Conversation is not active");
+        }
+
+        String token = liveKitTokenService.generateToken(
+                conversation.getLiveKitRoomName(),
+                "visitor_" + session.getVisitor().getId(),
+                session.getVisitor().getName() != null ? session.getVisitor().getName() : "Visitor"
+        );
+
+        return ResponseEntity.ok(new TokenResponse(
+                token,
+                conversation.getLiveKitRoomName(),
+                liveKitTokenService.getLiveKitUrl()
+        ));
     }
 
     /**

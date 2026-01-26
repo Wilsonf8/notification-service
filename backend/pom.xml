@@ -93,6 +93,13 @@
             <optional>true</optional>
         </dependency>
 
+        <!-- LiveKit Server SDK (Kotlin, works with Java) -->
+        <dependency>
+            <groupId>io.livekit</groupId>
+            <artifactId>livekit-server</artifactId>
+            <version>0.12.0</version>
+        </dependency>
+
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

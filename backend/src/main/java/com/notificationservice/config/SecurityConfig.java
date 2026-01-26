@@ -51,6 +51,7 @@ public class SecurityConfig {
                         .requestMatchers("/v1/notify").permitAll()  // API key auth handled separately
                         .requestMatchers("/v1/liveconnect/**").permitAll()  // Embed key auth handled separately
                         .requestMatchers("/internal/telegram/webhook").permitAll()
+                        .requestMatchers("/webhooks/livekit").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()

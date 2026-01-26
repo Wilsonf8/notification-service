@@ -21,6 +21,9 @@ public class LiveConnectProcessedWebhook {
     @Column(name = "event_id")
     private String eventId;
 
+    @Column(name = "event_type")
+    private String eventType;
+
     @CreationTimestamp
     @Column(name = "processed_at")
     private OffsetDateTime processedAt;

@@ -12,6 +12,7 @@ import com.notificationservice.entity.ProjectType;
 import com.notificationservice.entity.RepAvailability;
 import com.notificationservice.entity.RepPresence;
 import com.notificationservice.entity.RequestStatus;
+import com.notificationservice.service.LiveKitTokenService;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
@@ -41,6 +42,7 @@ public class LiveConnectRequestService {
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
+    private final LiveKitTokenService liveKitTokenService;
 
     /**
      * Gets pending requests for a project.
@@ -128,28 +130,41 @@ public class LiveConnectRequestService {
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
 
-        // Generate room name and token (placeholders for now)
-        String roomName = "lc-" + conversation.getId().toString().substring(0, 8);
-        String token = "placeholder-token";
+        // Generate LiveKit room name and tokens
+        String roomName = liveKitTokenService.generateRoomName(conversation.getId());
+        conversation.setLiveKitRoomName(roomName);
+        conversationRepository.save(conversation);
 
-        // Broadcast to rep
+        // Generate separate tokens for rep and visitor
+        String repToken = liveKitTokenService.generateToken(
+                roomName,
+                "rep_" + rep.getUser().getId(),
+                rep.getUser().getUsername()
+        );
+        String visitorToken = liveKitTokenService.generateToken(
+                roomName,
+                "visitor_" + request.getVisitor().getId(),
+                request.getVisitor().getName() != null ? request.getVisitor().getName() : "Visitor"
+        );
+
+        // Broadcast to rep with rep's token
         ConversationStartedEvent repEvent = new ConversationStartedEvent(
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
-                token
+                repToken
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 
-        // Broadcast to visitor
+        // Broadcast to visitor with visitor's token
         CallStartingEvent visitorEvent = new CallStartingEvent(
                 conversation.getId(),
                 roomName,
-                token
+                visitorToken
         );
         broadcaster.sendToVisitor(request.getVisitor().getId(), visitorEvent);
 
-        return new AcceptRequestResponse(conversation.getId(), roomName, token);
+        return new AcceptRequestResponse(conversation.getId(), roomName, repToken);
     }
 
     /**

@@ -58,4 +58,7 @@ public class LiveConnectConversation {
 
     @Column(name = "disconnect_grace_until")
     private OffsetDateTime disconnectGraceUntil;
+
+    @Column(name = "livekit_room_name")
+    private String liveKitRoomName;
 }
