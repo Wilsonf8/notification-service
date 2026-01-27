@@ -14,6 +14,6 @@ import java.util.List;
  */
 public record CreateLiveConnectEmbedKeyRequest(
         @NotBlank @Size(max = 100) String name,
-        List<@Pattern(regexp = "^[a-zA-Z0-9][a-zA-Z0-9\\-\\.]*\\.[a-zA-Z]{2,}$",
+        List<@Pattern(regexp = "^(localhost|[a-zA-Z0-9][a-zA-Z0-9\\-\\.]*\\.[a-zA-Z]{2,}|\\*\\.[a-zA-Z0-9][a-zA-Z0-9\\-\\.]*\\.[a-zA-Z]{2,})$",
                 message = "Invalid domain format") String> allowedDomains
 ) {}
