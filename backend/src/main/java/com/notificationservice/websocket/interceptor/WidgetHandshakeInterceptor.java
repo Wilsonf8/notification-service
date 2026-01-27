@@ -31,25 +31,33 @@ public class WidgetHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes) {
 
+        log.info("[WidgetWS] Handshake attempt from: {}", request.getURI());
+
         try {
             // Extract session token from query string (supports both "token" and "session" params)
             var queryParams = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
+            log.info("[WidgetWS] Query params: {}", queryParams);
+
             String sessionToken = queryParams.getFirst("token");
             if (sessionToken == null) {
                 sessionToken = queryParams.getFirst("session");
             }
 
             if (sessionToken == null || sessionToken.isBlank()) {
-                log.warn("Widget handshake failed: No session token provided");
+                log.warn("[WidgetWS] Handshake failed: No session token provided");
                 return false;
             }
+
+            log.info("[WidgetWS] Session token found: {}...", sessionToken.substring(0, Math.min(20, sessionToken.length())));
 
             // Validate session
             LiveConnectSession session;
             try {
+                log.info("[WidgetWS] Validating session token...");
                 session = sessionService.validateSession(sessionToken);
+                log.info("[WidgetWS] Session valid: sessionId={}", session.getId());
             } catch (Exception e) {
-                log.warn("Widget handshake failed: Invalid or expired session token");
+                log.warn("[WidgetWS] Handshake failed: Invalid or expired session token - {}", e.getMessage());
                 return false;
             }
 
