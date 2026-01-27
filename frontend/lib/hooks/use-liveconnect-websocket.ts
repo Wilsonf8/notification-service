@@ -106,28 +106,34 @@ interface QueueUpdatedData {
 
 /** Hook return type */
 export interface UseLiveConnectWebSocketReturn {
-  visitors: LiveConnectVisitor[];
-  requests: LiveConnectRequest[];
   isConnected: boolean;
   error: string | null;
   sendHeartbeat: () => void;
   reconnect: () => void;
 }
 
+/** State setter type for visitors */
+type SetVisitors = React.Dispatch<React.SetStateAction<LiveConnectVisitor[]>>;
+
+/** State setter type for requests */
+type SetRequests = React.Dispatch<React.SetStateAction<LiveConnectRequest[]>>;
+
 /**
  * Custom hook for managing WebSocket connection to LiveConnect dashboard.
- * Provides real-time updates for visitors and requests.
+ * Updates visitors and requests state via provided setters for real-time updates.
  *
  * @param projectId - The project ID to connect to
  * @param enabled - Whether to enable the WebSocket connection
- * @returns Object containing visitors, requests, connection status, and control functions
+ * @param setVisitors - State setter for visitors array
+ * @param setRequests - State setter for requests array
+ * @returns Object containing connection status and control functions
  */
 export function useLiveConnectWebSocket(
   projectId: string,
-  enabled: boolean = true
+  enabled: boolean = true,
+  setVisitors?: SetVisitors,
+  setRequests?: SetRequests
 ): UseLiveConnectWebSocketReturn {
-  const [visitors, setVisitors] = useState<LiveConnectVisitor[]>([]);
-  const [requests, setRequests] = useState<LiveConnectRequest[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -173,7 +179,7 @@ export function useLiveConnectWebSocket(
     switch (event.type) {
       case "visitor_joined": {
         const { visitor } = event.data as VisitorJoinedData;
-        setVisitors((prev) => {
+        setVisitors?.((prev) => {
           // Avoid duplicates
           if (prev.some((v) => v.id === visitor.id)) return prev;
           return [...prev, visitor];
@@ -183,13 +189,13 @@ export function useLiveConnectWebSocket(
 
       case "visitor_left": {
         const { visitorId } = event.data as VisitorLeftData;
-        setVisitors((prev) => prev.filter((v) => v.visitorId !== visitorId));
+        setVisitors?.((prev) => prev.filter((v) => v.visitorId !== visitorId));
         break;
       }
 
       case "visitor_updated": {
         const { visitor } = event.data as VisitorUpdatedData;
-        setVisitors((prev) =>
+        setVisitors?.((prev) =>
           prev.map((v) => (v.id === visitor.id ? visitor : v))
         );
         break;
@@ -197,7 +203,7 @@ export function useLiveConnectWebSocket(
 
       case "request_received": {
         const { request } = event.data as RequestReceivedData;
-        setRequests((prev) => {
+        setRequests?.((prev) => {
           // Avoid duplicates
           if (prev.some((r) => r.id === request.id)) return prev;
           return [...prev, request];
@@ -207,20 +213,20 @@ export function useLiveConnectWebSocket(
 
       case "request_expired": {
         const { requestId } = event.data as RequestExpiredData;
-        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests?.((prev) => prev.filter((r) => r.id !== requestId));
         break;
       }
 
       case "request_accepted_by_other": {
         const { requestId } = event.data as RequestAcceptedByOtherData;
-        setRequests((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests?.((prev) => prev.filter((r) => r.id !== requestId));
         break;
       }
 
       case "queue_updated": {
         const { browsing, queue } = event.data as QueueUpdatedData;
-        setVisitors(browsing);
-        setRequests(queue);
+        setVisitors?.(browsing);
+        setRequests?.(queue);
         break;
       }
 
@@ -241,7 +247,7 @@ export function useLiveConnectWebSocket(
       default:
         console.warn("[WS] Unknown event type:", event.type);
     }
-  }, []);
+  }, [setVisitors, setRequests]);
 
   /**
    * Connects to the WebSocket server.
@@ -359,8 +365,6 @@ export function useLiveConnectWebSocket(
   }, [clearTimers]);
 
   return {
-    visitors,
-    requests,
     isConnected,
     error,
     sendHeartbeat,

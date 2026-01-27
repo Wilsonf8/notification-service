@@ -17,7 +17,7 @@ import {
 import { useLiveConnectWebSocket } from "@/lib/hooks/use-liveconnect-websocket";
 import { useRepPresence } from "@/lib/hooks/use-rep-presence";
 import { getVisitors, getReps } from "@/lib/api/liveconnect-dashboard";
-import type { LiveConnectRep, VisitorsResponse } from "@/lib/types";
+import type { LiveConnectRep, LiveConnectVisitor, LiveConnectRequest, VisitorsResponse } from "@/lib/types";
 import { AvailabilityToggle } from "./availability-toggle";
 import { RequestQueue } from "./request-queue";
 import { VisitorList } from "./visitor-list";
@@ -38,13 +38,15 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
   const [currentRep, setCurrentRep] = useState<LiveConnectRep | null>(null);
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
 
-  // WebSocket for real-time updates
+  // Local state for visitors/requests
+  const [visitors, setVisitors] = useState<LiveConnectVisitor[]>([]);
+  const [requests, setRequests] = useState<LiveConnectRequest[]>([]);
+
+  // WebSocket for real-time updates - connect immediately
   const {
-    visitors: wsVisitors,
-    requests: wsRequests,
     isConnected,
     reconnect,
-  } = useLiveConnectWebSocket(projectId, !!currentRep);
+  } = useLiveConnectWebSocket(projectId, true, setVisitors, setRequests);
 
   // Rep presence management
   const {
@@ -57,18 +59,6 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
     currentRep?.availability,
     currentRep?.presence
   );
-
-  // Local state for visitors/requests (merged with WS updates)
-  const [visitors, setVisitors] = useState(wsVisitors);
-  const [requests, setRequests] = useState(wsRequests);
-
-  // Sync WS data with local state
-  useEffect(() => {
-    if (wsVisitors.length > 0 || wsRequests.length > 0) {
-      setVisitors(wsVisitors);
-      setRequests(wsRequests);
-    }
-  }, [wsVisitors, wsRequests]);
 
   // Initial data fetch
   useEffect(() => {
