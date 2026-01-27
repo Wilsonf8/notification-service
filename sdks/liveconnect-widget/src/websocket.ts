@@ -244,6 +244,7 @@ export class WebSocketClient {
    * Prevents auto-reconnect until connect() is called again.
    */
   public disconnect(): void {
+    console.log('[LiveConnect WebSocket] Manual disconnect requested');
     this.manualDisconnect = true;
     this.cleanup();
     this.setConnectionState('disconnected');
@@ -315,6 +316,7 @@ export class WebSocketClient {
     this.setConnectionState('connecting');
 
     const wsUrl = `wss://${this.apiHost}/v1/liveconnect/ws?token=${encodeURIComponent(this.sessionToken!)}`;
+    console.log('[LiveConnect WebSocket] Connecting to:', wsUrl.replace(/token=[^&]+/, 'token=***'));
 
     try {
       this.socket = new WebSocket(wsUrl);
@@ -333,13 +335,14 @@ export class WebSocketClient {
     if (!this.socket) return;
 
     this.socket.onopen = () => {
-      // Connected successfully
+      console.log('[LiveConnect WebSocket] Connected');
       this.reconnectAttempt = 0;
       this.setConnectionState('connected');
       this.startHeartbeat();
     };
 
-    this.socket.onclose = () => {
+    this.socket.onclose = (event) => {
+      console.log('[LiveConnect WebSocket] Disconnected:', { code: event.code, reason: event.reason, wasClean: event.wasClean });
       this.stopHeartbeat();
       this.setConnectionState('disconnected');
 
@@ -349,8 +352,8 @@ export class WebSocketClient {
       }
     };
 
-    this.socket.onerror = () => {
-      // Error details come through the close event with reason
+    this.socket.onerror = (event) => {
+      console.error('[LiveConnect WebSocket] Error:', event);
       this.emit('error', new Error('WebSocket error occurred'));
     };
 
@@ -444,6 +447,7 @@ export class WebSocketClient {
    */
   private scheduleReconnect(): void {
     if (this.manualDisconnect) {
+      console.log('[LiveConnect WebSocket] Skipping reconnect (manual disconnect)');
       return;
     }
 
@@ -453,7 +457,7 @@ export class WebSocketClient {
       MAX_RECONNECT_DELAY_MS
     );
 
-    // Reconnecting with exponential backoff
+    console.log(`[LiveConnect WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt + 1})`);
 
     this.reconnectTimeoutId = setTimeout(() => {
       this.reconnectAttempt++;
