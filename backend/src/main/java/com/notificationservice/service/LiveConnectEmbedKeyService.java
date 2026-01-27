@@ -72,12 +72,16 @@ public class LiveConnectEmbedKeyService {
         String keyHash = passwordEncoder.encode(fullKey);
         String keyPrefixDisplay = KEY_PREFIX + rawKey.substring(0, 8) + "...";
 
+        List<String> allowedDomains = request.allowedDomains() != null
+                ? request.allowedDomains()
+                : List.of();
+
         LiveConnectEmbedKey embedKey = LiveConnectEmbedKey.builder()
                 .project(project)
                 .name(request.name())
                 .keyHash(keyHash)
                 .keyPrefix(keyPrefixDisplay)
-                .allowedDomains(request.allowedDomains())
+                .allowedDomains(allowedDomains)
                 .build();
 
         embedKeyRepository.save(embedKey);
