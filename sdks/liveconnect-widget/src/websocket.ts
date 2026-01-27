@@ -357,6 +357,10 @@ export class WebSocketClient {
 
       // Emit the event to registered listeners
       switch (message.type) {
+        case 'connected':
+        case 'pong':
+          // Server acknowledgements - no action needed
+          break;
         case 'incoming_ping':
           this.emit('incoming_ping', message as IncomingPingEvent);
           break;
