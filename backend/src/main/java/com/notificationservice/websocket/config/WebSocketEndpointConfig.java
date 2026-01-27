@@ -16,6 +16,10 @@ public class WebSocketEndpointConfig {
     @Bean
     public ServerEndpointExporter serverEndpointExporter() {
         log.info("[WebSocketEndpointConfig] Registering ServerEndpointExporter for JSR 356 endpoints");
-        return new ServerEndpointExporter();
+        ServerEndpointExporter exporter = new ServerEndpointExporter();
+        // Explicitly register the endpoint class
+        exporter.setAnnotatedEndpointClasses(WidgetWebSocketEndpoint.class);
+        log.info("[WebSocketEndpointConfig] Registered WidgetWebSocketEndpoint at /v1/liveconnect/ws");
+        return exporter;
     }
 }
