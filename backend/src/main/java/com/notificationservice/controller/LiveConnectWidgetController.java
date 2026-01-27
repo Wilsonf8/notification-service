@@ -62,6 +62,15 @@ public class LiveConnectWidgetController {
     }
 
     /**
+     * WebSocket test endpoint - verifies the path is reachable.
+     */
+    @GetMapping("/ws-test")
+    public ResponseEntity<String> wsTest() {
+        log.info("[LiveConnect] WebSocket test endpoint called");
+        return ResponseEntity.ok("WebSocket path is reachable");
+    }
+
+    /**
      * Initializes a widget session.
      *
      * @param embedKeyHeader the embed key from X-Embed-Key header

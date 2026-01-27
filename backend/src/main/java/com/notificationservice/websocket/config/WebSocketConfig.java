@@ -35,5 +35,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry.addHandler(widgetWebSocketHandler, "/v1/liveconnect/ws")
                 .addInterceptors(widgetHandshakeInterceptor)
                 .setAllowedOriginPatterns("*");
+
+        // Widget with SockJS fallback for better compatibility
+        registry.addHandler(widgetWebSocketHandler, "/v1/liveconnect/ws-sockjs")
+                .addInterceptors(widgetHandshakeInterceptor)
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
     }
 }
