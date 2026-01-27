@@ -25,6 +25,13 @@ public class RequestLoggingFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         String path = httpRequest.getRequestURI();
 
+        // Skip WebSocket paths entirely - let Spring handle them
+        if (path.contains("/ws")) {
+            log.info("[RequestLog] Skipping filter for WebSocket path: {}", path);
+            chain.doFilter(request, response);
+            return;
+        }
+
         // Only log LiveConnect requests
         if (path.startsWith("/v1/liveconnect")) {
             log.info("[RequestLog] {} {} - Upgrade: {}, Connection: {}",
@@ -32,13 +39,6 @@ public class RequestLoggingFilter implements Filter {
                     path,
                     httpRequest.getHeader("Upgrade"),
                     httpRequest.getHeader("Connection"));
-
-            // Log all headers for websocket requests
-            if (path.contains("/ws")) {
-                Collections.list(httpRequest.getHeaderNames()).forEach(headerName ->
-                    log.info("[RequestLog] Header: {} = {}", headerName, httpRequest.getHeader(headerName))
-                );
-            }
         }
 
         chain.doFilter(request, response);

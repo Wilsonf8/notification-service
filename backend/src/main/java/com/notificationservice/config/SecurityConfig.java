@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**", "/login/**").permitAll()
                         .requestMatchers("/v1/notify").permitAll()  // API key auth handled separately
                         .requestMatchers("/v1/liveconnect/**").permitAll()  // Embed key auth handled separately
+                        .requestMatchers("/api/projects/*/liveconnect/ws").permitAll()  // Rep WebSocket
                         .requestMatchers("/internal/telegram/webhook").permitAll()
                         .requestMatchers("/webhooks/livekit").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
