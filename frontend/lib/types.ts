@@ -21,11 +21,15 @@ export interface TelegramDestination {
   healthStatus: "HEALTHY" | "DEGRADED" | "UNHEALTHY" | "UNKNOWN";
 }
 
+/** Project type enum */
+export type ProjectType = "NOTIFYKIT" | "LIVECONNECT";
+
 /** Project entity returned from the API */
 export interface Project {
   id: string;
   name: string;
   description: string | null;
+  type: ProjectType;
   telegramDestination: TelegramDestination | null;
   createdAt: string;
   updatedAt?: string;
@@ -149,4 +153,35 @@ export interface AddMemberRequest {
 /** Request body for updating a member's role */
 export interface UpdateMemberRoleRequest {
   role: OrgRole;
+}
+
+/** LiveConnect embed key returned from the API */
+export interface LiveConnectEmbedKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  allowedDomains: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** Response when creating a new embed key (includes full key shown once) */
+export interface LiveConnectEmbedKeyCreated {
+  id: string;
+  name: string;
+  key: string;
+  allowedDomains: string[];
+  createdAt: string;
+}
+
+/** Request body for creating an embed key */
+export interface CreateEmbedKeyRequest {
+  name: string;
+  allowedDomains: string[];
+}
+
+/** Request body for updating an embed key */
+export interface UpdateEmbedKeyRequest {
+  name: string;
+  allowedDomains: string[];
 }

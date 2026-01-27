@@ -36,9 +36,32 @@ import {
   IconTrash,
   IconRefresh,
   IconArrowRight,
+  IconPencil,
+  IconCode,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { CodeBlock } from "@/components/dashboard/docs/code-block";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   getProject,
   getProjectApiKeys,
@@ -47,8 +70,20 @@ import {
   updateProject,
   deleteProject,
   generateTelegramConnectToken,
+  getLiveConnectEmbedKeys,
+  createLiveConnectEmbedKey,
+  updateLiveConnectEmbedKey,
+  deleteLiveConnectEmbedKey,
 } from "@/lib/api";
-import type { Project, ApiKey, ApiKeyWithSecret, Event, ConnectToken } from "@/lib/types";
+import type {
+  Project,
+  ApiKey,
+  ApiKeyWithSecret,
+  Event,
+  ConnectToken,
+  LiveConnectEmbedKey,
+  LiveConnectEmbedKeyCreated,
+} from "@/lib/types";
 
 /** Page params containing the dynamic route segments */
 interface ProjectPageProps {
@@ -89,6 +124,19 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   // Quick start language tab state
   const [quickStartLang, setQuickStartLang] = useState("javascript");
 
+  // Embed keys state (for LIVECONNECT projects)
+  const [embedKeys, setEmbedKeys] = useState<LiveConnectEmbedKey[]>([]);
+  const [newEmbedKey, setNewEmbedKey] = useState<LiveConnectEmbedKeyCreated | null>(null);
+  const [showEmbedKeySuccess, setShowEmbedKeySuccess] = useState(false);
+  const [creatingEmbedKey, setCreatingEmbedKey] = useState(false);
+  const [embedKeyName, setEmbedKeyName] = useState("");
+  const [embedKeyDomains, setEmbedKeyDomains] = useState("");
+  const [showCreateEmbedKeyDialog, setShowCreateEmbedKeyDialog] = useState(false);
+  const [editingEmbedKey, setEditingEmbedKey] = useState<LiveConnectEmbedKey | null>(null);
+  const [showEditEmbedKeyDialog, setShowEditEmbedKeyDialog] = useState(false);
+  const [updatingEmbedKey, setUpdatingEmbedKey] = useState(false);
+  const [deletingEmbedKeyId, setDeletingEmbedKeyId] = useState<string | null>(null);
+
   /**
    * Fetches all project data from the API.
    */
@@ -107,6 +155,17 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       setProjectName(projectData.name);
       setApiKeys(Array.isArray(keysData) ? keysData : []);
       setEvents(Array.isArray(eventsData) ? eventsData : []);
+
+      // Fetch embed keys for LIVECONNECT projects
+      if (projectData.type === "LIVECONNECT") {
+        try {
+          const embedKeysData = await getLiveConnectEmbedKeys(projectId);
+          setEmbedKeys(Array.isArray(embedKeysData) ? embedKeysData : []);
+        } catch {
+          // Embed keys are optional, don't fail the whole page
+          setEmbedKeys([]);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load project");
     } finally {
@@ -196,6 +255,97 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     }
   };
 
+  /**
+   * Creates a new embed key.
+   */
+  const handleCreateEmbedKey = async () => {
+    if (!embedKeyName.trim()) return;
+
+    try {
+      setCreatingEmbedKey(true);
+      setError(null);
+      const domains = embedKeyDomains
+        .split(",")
+        .map((d) => d.trim())
+        .filter((d) => d.length > 0);
+      const result = await createLiveConnectEmbedKey(projectId, {
+        name: embedKeyName.trim(),
+        allowedDomains: domains,
+      });
+      setNewEmbedKey(result);
+      setShowCreateEmbedKeyDialog(false);
+      setShowEmbedKeySuccess(true);
+      setEmbedKeyName("");
+      setEmbedKeyDomains("");
+      // Refresh embed keys
+      const keys = await getLiveConnectEmbedKeys(projectId);
+      setEmbedKeys(keys);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create embed key");
+    } finally {
+      setCreatingEmbedKey(false);
+    }
+  };
+
+  /**
+   * Opens the edit dialog for an embed key.
+   */
+  const handleEditEmbedKey = (key: LiveConnectEmbedKey) => {
+    setEditingEmbedKey(key);
+    setEmbedKeyName(key.name);
+    setEmbedKeyDomains(key.allowedDomains.join(", "));
+    setShowEditEmbedKeyDialog(true);
+  };
+
+  /**
+   * Updates an embed key.
+   */
+  const handleUpdateEmbedKey = async () => {
+    if (!editingEmbedKey || !embedKeyName.trim()) return;
+
+    try {
+      setUpdatingEmbedKey(true);
+      setError(null);
+      const domains = embedKeyDomains
+        .split(",")
+        .map((d) => d.trim())
+        .filter((d) => d.length > 0);
+      await updateLiveConnectEmbedKey(projectId, editingEmbedKey.id, {
+        name: embedKeyName.trim(),
+        allowedDomains: domains,
+      });
+      setShowEditEmbedKeyDialog(false);
+      setEditingEmbedKey(null);
+      setEmbedKeyName("");
+      setEmbedKeyDomains("");
+      // Refresh embed keys
+      const keys = await getLiveConnectEmbedKeys(projectId);
+      setEmbedKeys(keys);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update embed key");
+    } finally {
+      setUpdatingEmbedKey(false);
+    }
+  };
+
+  /**
+   * Deletes an embed key.
+   */
+  const handleDeleteEmbedKey = async (keyId: string) => {
+    try {
+      setDeletingEmbedKeyId(keyId);
+      setError(null);
+      await deleteLiveConnectEmbedKey(projectId, keyId);
+      // Refresh embed keys
+      const keys = await getLiveConnectEmbedKeys(projectId);
+      setEmbedKeys(keys);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete embed key");
+    } finally {
+      setDeletingEmbedKeyId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -243,7 +393,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
       <Tabs defaultValue="overview">
         <TabsList className="overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="chats">Telegram Chats</TabsTrigger>
+          {project.type === "LIVECONNECT" && (
+            <TabsTrigger value="embed">Embed</TabsTrigger>
+          )}
+          {project.type !== "LIVECONNECT" && (
+            <TabsTrigger value="chats">Telegram Chats</TabsTrigger>
+          )}
           <TabsTrigger value="events">Events</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
@@ -416,6 +571,267 @@ NotifyKit.notify("Hello from NotifyKit!");`} />
             </CardContent>
           </Card>
         </TabsContent>
+
+        {project.type === "LIVECONNECT" && (
+          <TabsContent value="embed" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Embed Keys</CardTitle>
+                    <CardDescription>
+                      Keys to authenticate widget installations on customer websites
+                    </CardDescription>
+                  </div>
+                  <Dialog open={showCreateEmbedKeyDialog} onOpenChange={setShowCreateEmbedKeyDialog}>
+                    <DialogTrigger render={<Button className="gap-2" />}>
+                      <IconPlus className="h-4 w-4" />
+                      Create Key
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create Embed Key</DialogTitle>
+                        <DialogDescription>
+                          Create a key to embed the LiveConnect widget on your website.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="embedKeyName">Name</Label>
+                          <Input
+                            id="embedKeyName"
+                            placeholder="Production Website"
+                            value={embedKeyName}
+                            onChange={(e) => setEmbedKeyName(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="embedKeyDomains">Allowed Domains</Label>
+                          <Input
+                            id="embedKeyDomains"
+                            placeholder="example.com, *.example.com"
+                            value={embedKeyDomains}
+                            onChange={(e) => setEmbedKeyDomains(e.target.value)}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Comma-separated list of domains. Use * for wildcards. Leave empty to allow all domains.
+                          </p>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={handleCreateEmbedKey}
+                          disabled={creatingEmbedKey || !embedKeyName.trim()}
+                        >
+                          {creatingEmbedKey ? "Creating..." : "Create Key"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {embedKeys.length === 0 ? (
+                  <div className="text-center py-8">
+                    <IconCode className="h-12 w-12 text-muted-foreground mx-auto" />
+                    <p className="mt-4 text-sm text-muted-foreground">
+                      No embed keys yet. Create one to start embedding the widget.
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Key</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden md:table-cell">Domains</TableHead>
+                        <TableHead className="hidden sm:table-cell">Created</TableHead>
+                        <TableHead className="hidden lg:table-cell">Last Used</TableHead>
+                        <TableHead className="w-[100px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {embedKeys.map((key) => (
+                        <TableRow key={key.id}>
+                          <TableCell className="font-mono text-xs">
+                            {key.keyPrefix}...
+                          </TableCell>
+                          <TableCell>{key.name}</TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {key.allowedDomains.length > 0 ? (
+                              <span className="text-xs">
+                                {key.allowedDomains.slice(0, 2).join(", ")}
+                                {key.allowedDomains.length > 2 && ` +${key.allowedDomains.length - 2}`}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">All domains</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">
+                            {new Date(key.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {key.lastUsedAt
+                              ? new Date(key.lastUsedAt).toLocaleDateString()
+                              : "Never"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                onClick={() => handleEditEmbedKey(key)}
+                              >
+                                <IconPencil className="h-4 w-4" />
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger
+                                  render={
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      disabled={deletingEmbedKeyId === key.id}
+                                    />
+                                  }
+                                >
+                                  <IconTrash className="h-4 w-4 text-destructive" />
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Revoke Embed Key</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to revoke this embed key? Any widgets using this key will stop working immediately.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      variant="destructive"
+                                      onClick={() => handleDeleteEmbedKey(key.id)}
+                                    >
+                                      Revoke Key
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Edit Embed Key Dialog */}
+            <Dialog open={showEditEmbedKeyDialog} onOpenChange={setShowEditEmbedKeyDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Edit Embed Key</DialogTitle>
+                  <DialogDescription>
+                    Update the name and allowed domains for this embed key.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="editEmbedKeyName">Name</Label>
+                    <Input
+                      id="editEmbedKeyName"
+                      value={embedKeyName}
+                      onChange={(e) => setEmbedKeyName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="editEmbedKeyDomains">Allowed Domains</Label>
+                    <Input
+                      id="editEmbedKeyDomains"
+                      placeholder="example.com, *.example.com"
+                      value={embedKeyDomains}
+                      onChange={(e) => setEmbedKeyDomains(e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Comma-separated list of domains. Use * for wildcards. Leave empty to allow all domains.
+                    </p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    onClick={handleUpdateEmbedKey}
+                    disabled={updatingEmbedKey || !embedKeyName.trim()}
+                  >
+                    {updatingEmbedKey ? "Saving..." : "Save Changes"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Success Dialog - Shows Full Key */}
+            <Dialog open={showEmbedKeySuccess} onOpenChange={setShowEmbedKeySuccess}>
+              <DialogContent showCloseButton={false}>
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <IconAlertTriangle className="h-5 w-5 text-primary" />
+                    Embed Key Created
+                  </DialogTitle>
+                  <DialogDescription>
+                    Copy your embed key now. You won&apos;t be able to see it again.
+                  </DialogDescription>
+                </DialogHeader>
+                {newEmbedKey && (
+                  <div className="space-y-4">
+                    <div className="p-3 bg-muted">
+                      <p className="text-xs text-muted-foreground mb-1">Embed Key</p>
+                      <div className="flex gap-2">
+                        <Input
+                          value={newEmbedKey.key}
+                          readOnly
+                          className="font-mono text-xs"
+                        />
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => copyToClipboard(newEmbedKey.key)}
+                        >
+                          <IconCopy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button onClick={() => setShowEmbedKeySuccess(false)}>
+                    I&apos;ve Copied the Key
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Code Snippet Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Embed Code</CardTitle>
+                <CardDescription>
+                  Add this code snippet to your website to embed the LiveConnect widget
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <CodeBlock
+                  code={`<script
+  src="${process.env.NEXT_PUBLIC_APP_URL || "https://app.notifykit.dev"}/sdk/liveconnect.js"
+  data-key="${newEmbedKey?.key || embedKeys[0]?.keyPrefix + "..." || "YOUR_EMBED_KEY"}"
+  async
+></script>`}
+                />
+                <div className="p-3 bg-muted">
+                  <p className="text-xs text-muted-foreground">
+                    <strong>Note:</strong> Replace <code className="font-mono bg-background px-1">YOUR_EMBED_KEY</code> with your actual embed key. The widget will automatically appear in the bottom-right corner of your website.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="chats" className="space-y-4">
           {project.telegramDestination ? (
