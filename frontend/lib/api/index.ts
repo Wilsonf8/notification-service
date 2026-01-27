@@ -8,3 +8,4 @@ export * from "./projects";
 export * from "./user";
 export * from "./organizations";
 export * from "./liveconnect";
+export * from "./liveconnect-dashboard";

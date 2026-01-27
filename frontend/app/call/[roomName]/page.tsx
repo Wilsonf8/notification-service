@@ -36,8 +36,11 @@ import {
   IconUser,
   IconLoader2,
   IconAlertTriangle,
+  IconMessage,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
+import { CallChat } from '@/components/liveconnect/call-chat';
+import { getToken } from '@/lib/auth';
 
 // ============================================================================
 // Types
@@ -136,7 +139,14 @@ function CallPageContent() {
   const searchParams = useSearchParams();
   const roomName = params.roomName as string;
   const sessionToken = searchParams.get('session');
+  const repToken = searchParams.get('token');
   const conversationId = searchParams.get('conversation');
+  const projectId = searchParams.get('project');
+
+  // Determine auth type - rep uses JWT token from localStorage, visitor uses session token
+  const isRepCall = !!repToken;
+  const authToken = isRepCall ? (getToken() || '') : (sessionToken || '');
+  const authType: 'session' | 'jwt' = isRepCall ? 'jwt' : 'session';
 
   // Refs
   const roomRef = useRef<Room | null>(null);
@@ -156,6 +166,7 @@ function CallPageContent() {
     hasRemoteVideo: false,
     callDuration: 0,
   });
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   /**
    * Attaches a track to a video element.
@@ -270,11 +281,11 @@ function CallPageContent() {
    * Connects to the LiveKit room.
    */
   const connectToRoom = useCallback(async () => {
-    if (!sessionToken || !conversationId) {
+    if (!conversationId || (!sessionToken && !repToken)) {
       setCallState((prev) => ({
         ...prev,
         status: 'error',
-        error: 'Missing session token or conversation ID',
+        error: 'Missing authentication or conversation ID',
       }));
       return;
     }
@@ -282,8 +293,22 @@ function CallPageContent() {
     try {
       setCallState((prev) => ({ ...prev, status: 'connecting' }));
 
-      // Fetch LiveKit token from API
-      const config = await fetchLiveKitToken(sessionToken, conversationId);
+      // Fetch LiveKit token from API - different endpoint for rep vs visitor
+      let config: LiveKitConfig;
+      if (isRepCall && repToken) {
+        // Rep auth - token was provided directly in URL (from acceptRequest response)
+        // The repToken IS the LiveKit token
+        config = {
+          token: repToken,
+          roomName: roomName,
+          url: process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://livekit.notifykit.dev',
+        };
+      } else if (sessionToken) {
+        // Visitor auth - fetch token from API
+        config = await fetchLiveKitToken(sessionToken, conversationId);
+      } else {
+        throw new Error('No valid authentication');
+      }
       console.log('[CallPage] Got LiveKit config:', config.roomName);
 
       // Create room instance
@@ -363,7 +388,10 @@ function CallPageContent() {
     }
   }, [
     sessionToken,
+    repToken,
     conversationId,
+    roomName,
+    isRepCall,
     attachTrack,
     handleTrackSubscribed,
     handleTrackUnsubscribed,
@@ -470,107 +498,147 @@ function CallPageContent() {
 
   // Render connected state
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-background">
-      {/* Remote video (full screen) */}
-      <video
-        ref={remoteVideoRef}
-        autoPlay
-        playsInline
-        className="absolute inset-0 size-full bg-muted object-cover"
-        aria-label="Remote participant video"
-      />
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
+      {/* Main video area */}
+      <div className={cn(
+        'relative flex-1 overflow-hidden',
+        isChatOpen && 'hidden sm:block'
+      )}>
+        {/* Remote video (full screen) */}
+        <video
+          ref={remoteVideoRef}
+          autoPlay
+          playsInline
+          className="absolute inset-0 size-full bg-muted object-cover"
+          aria-label="Remote participant video"
+        />
 
-      {/* Remote video placeholder */}
-      {!callState.hasRemoteVideo && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
-          <IconUser className="size-16 text-muted-foreground opacity-50" />
-          <p className="mt-4 font-mono text-sm text-muted-foreground">
-            Waiting for participant...
-          </p>
+        {/* Remote video placeholder */}
+        {!callState.hasRemoteVideo && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
+            <IconUser className="size-16 text-muted-foreground opacity-50" />
+            <p className="mt-4 font-mono text-sm text-muted-foreground">
+              Waiting for participant...
+            </p>
+          </div>
+        )}
+
+        {/* Info bar (top) */}
+        <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent px-4 py-3">
+          <div className="font-mono text-sm font-medium text-white">
+            {roomName}
+          </div>
+          <div
+            className="font-mono text-sm tabular-nums text-white/80"
+            aria-label={`Call duration: ${formatDuration(callState.callDuration)}`}
+          >
+            {formatDuration(callState.callDuration)}
+          </div>
+        </div>
+
+        {/* Local video PIP (bottom right) */}
+        <video
+          ref={localVideoRef}
+          autoPlay
+          playsInline
+          muted
+          className={cn(
+            'absolute bottom-24 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover transition-opacity',
+            isChatOpen ? 'right-4' : 'right-4',
+            !callState.isCameraEnabled && 'opacity-0'
+          )}
+          aria-label="Your video"
+        />
+
+        {/* Controls bar (bottom) */}
+        <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-6">
+          {/* Microphone toggle */}
+          <button
+            type="button"
+            onClick={toggleMicrophone}
+            className={cn(
+              'flex size-12 items-center justify-center border transition-colors',
+              callState.isMicEnabled
+                ? 'border-border bg-card text-foreground hover:bg-muted'
+                : 'border-destructive bg-destructive/20 text-destructive'
+            )}
+            aria-label={callState.isMicEnabled ? 'Mute microphone' : 'Unmute microphone'}
+            aria-pressed={!callState.isMicEnabled}
+            title={callState.isMicEnabled ? 'Mute' : 'Unmute'}
+          >
+            {callState.isMicEnabled ? (
+              <IconMicrophone className="size-6" />
+            ) : (
+              <IconMicrophoneOff className="size-6" />
+            )}
+          </button>
+
+          {/* Camera toggle */}
+          <button
+            type="button"
+            onClick={toggleCamera}
+            className={cn(
+              'flex size-12 items-center justify-center border transition-colors',
+              callState.isCameraEnabled
+                ? 'border-border bg-card text-foreground hover:bg-muted'
+                : 'border-destructive bg-destructive/20 text-destructive'
+            )}
+            aria-label={callState.isCameraEnabled ? 'Turn off camera' : 'Turn on camera'}
+            aria-pressed={!callState.isCameraEnabled}
+            title={callState.isCameraEnabled ? 'Camera Off' : 'Camera On'}
+          >
+            {callState.isCameraEnabled ? (
+              <IconVideo className="size-6" />
+            ) : (
+              <IconVideoOff className="size-6" />
+            )}
+          </button>
+
+          {/* Chat toggle */}
+          <button
+            type="button"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={cn(
+              'flex size-12 items-center justify-center border transition-colors',
+              isChatOpen
+                ? 'border-primary bg-primary/20 text-primary'
+                : 'border-border bg-card text-foreground hover:bg-muted'
+            )}
+            aria-label={isChatOpen ? 'Close chat' : 'Open chat'}
+            aria-pressed={isChatOpen}
+            title={isChatOpen ? 'Close Chat' : 'Open Chat'}
+          >
+            <IconMessage className="size-6" />
+          </button>
+
+          {/* End call */}
+          <button
+            type="button"
+            onClick={endCall}
+            className="flex size-12 items-center justify-center border border-destructive bg-destructive text-white transition-colors hover:bg-destructive/80"
+            aria-label="End call"
+            title="End Call"
+          >
+            <IconPhoneOff className="size-6" />
+          </button>
+        </div>
+      </div>
+
+      {/* Chat sidebar */}
+      {isChatOpen && conversationId && (
+        <div className={cn(
+          'h-full w-full sm:w-80',
+          isChatOpen ? 'block' : 'hidden'
+        )}>
+          <CallChat
+            conversationId={conversationId}
+            projectId={projectId || undefined}
+            authToken={authToken}
+            authType={authType}
+            onClose={() => setIsChatOpen(false)}
+          />
         </div>
       )}
-
-      {/* Info bar (top) */}
-      <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-gradient-to-b from-black/80 to-transparent px-4 py-3">
-        <div className="font-mono text-sm font-medium text-white">
-          {roomName}
-        </div>
-        <div
-          className="font-mono text-sm tabular-nums text-white/80"
-          aria-label={`Call duration: ${formatDuration(callState.callDuration)}`}
-        >
-          {formatDuration(callState.callDuration)}
-        </div>
-      </div>
-
-      {/* Local video PIP (bottom right) */}
-      <video
-        ref={localVideoRef}
-        autoPlay
-        playsInline
-        muted
-        className={cn(
-          'absolute bottom-24 right-4 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover transition-opacity',
-          !callState.isCameraEnabled && 'opacity-0'
-        )}
-        aria-label="Your video"
-      />
-
-      {/* Controls bar (bottom) */}
-      <div className="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center gap-3 bg-gradient-to-t from-black/80 to-transparent px-4 py-6">
-        {/* Microphone toggle */}
-        <button
-          type="button"
-          onClick={toggleMicrophone}
-          className={cn(
-            'flex size-12 items-center justify-center border transition-colors',
-            callState.isMicEnabled
-              ? 'border-border bg-card text-foreground hover:bg-muted'
-              : 'border-destructive bg-destructive/20 text-destructive'
-          )}
-          aria-label={callState.isMicEnabled ? 'Mute microphone' : 'Unmute microphone'}
-          aria-pressed={!callState.isMicEnabled}
-          title={callState.isMicEnabled ? 'Mute' : 'Unmute'}
-        >
-          {callState.isMicEnabled ? (
-            <IconMicrophone className="size-6" />
-          ) : (
-            <IconMicrophoneOff className="size-6" />
-          )}
-        </button>
-
-        {/* Camera toggle */}
-        <button
-          type="button"
-          onClick={toggleCamera}
-          className={cn(
-            'flex size-12 items-center justify-center border transition-colors',
-            callState.isCameraEnabled
-              ? 'border-border bg-card text-foreground hover:bg-muted'
-              : 'border-destructive bg-destructive/20 text-destructive'
-          )}
-          aria-label={callState.isCameraEnabled ? 'Turn off camera' : 'Turn on camera'}
-          aria-pressed={!callState.isCameraEnabled}
-          title={callState.isCameraEnabled ? 'Camera Off' : 'Camera On'}
-        >
-          {callState.isCameraEnabled ? (
-            <IconVideo className="size-6" />
-          ) : (
-            <IconVideoOff className="size-6" />
-          )}
-        </button>
-
-        {/* End call */}
-        <button
-          type="button"
-          onClick={endCall}
-          className="flex size-12 items-center justify-center border border-destructive bg-destructive text-white transition-colors hover:bg-destructive/80"
-          aria-label="End call"
-          title="End Call"
-        >
-          <IconPhoneOff className="size-6" />
-        </button>
-      </div>
     </div>
   );
 }

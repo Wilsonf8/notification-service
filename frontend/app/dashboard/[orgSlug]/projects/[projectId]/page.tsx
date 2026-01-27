@@ -1,12 +1,11 @@
 /**
- * Project detail page.
- * Displays project settings, API key, and connected Telegram chats.
+ * Project default page.
+ * Shows Live Users for LiveConnect or Overview for NotifyKit.
  * @module app/dashboard/[orgSlug]/projects/[projectId]/page
  */
 "use client";
 
-import { use, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,9 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -31,79 +28,47 @@ import {
   IconCopy,
   IconEye,
   IconEyeOff,
-  IconBrandTelegram,
   IconPlus,
-  IconTrash,
   IconRefresh,
   IconArrowRight,
-  IconPencil,
-  IconCode,
-  IconAlertTriangle,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { CodeBlock } from "@/components/dashboard/docs/code-block";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  getProject,
-  getProjectApiKeys,
-  getProjectEvents,
-  generateApiKey,
-  updateProject,
-  deleteProject,
-  generateTelegramConnectToken,
-  getLiveConnectEmbedKeys,
-  createLiveConnectEmbedKey,
-  updateLiveConnectEmbedKey,
-  deleteLiveConnectEmbedKey,
-} from "@/lib/api";
-import type {
-  Project,
-  ApiKey,
-  ApiKeyWithSecret,
-  Event,
-  ConnectToken,
-  LiveConnectEmbedKey,
-  LiveConnectEmbedKeyCreated,
-} from "@/lib/types";
+import { useProject } from "./layout";
+import { getProjectApiKeys, generateApiKey } from "@/lib/api";
+import type { ApiKey, ApiKeyWithSecret } from "@/lib/types";
+import { LiveUsersPanel } from "@/components/liveconnect/live-users-panel";
 
-/** Page params containing the dynamic route segments */
-interface ProjectPageProps {
-  params: Promise<{ orgSlug: string; projectId: string }>;
+/**
+ * Project default page component.
+ * Renders different content based on project type.
+ */
+export default function ProjectPage() {
+  const { project } = useProject();
+
+  if (project.type === "LIVECONNECT") {
+    return <LiveConnectOverview />;
+  }
+
+  return <NotifyKitOverview />;
 }
 
 /**
- * Project detail page component.
- * Shows project configuration, API key management, and connected chats.
- *
- * @param props - Component props
- * @param props.params - Route parameters containing orgSlug and projectId
+ * LiveConnect overview - Live Users panel.
  */
-export default function ProjectPage({ params }: ProjectPageProps) {
-  const { orgSlug, projectId } = use(params);
-  const router = useRouter();
+function LiveConnectOverview() {
+  const { projectId } = useProject();
 
-  const [project, setProject] = useState<Project | null>(null);
+  return <LiveUsersPanel projectId={projectId} />;
+}
+
+/**
+ * NotifyKit overview - API Keys and Quick Start.
+ */
+function NotifyKitOverview() {
+  const { projectId } = useProject();
+
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -112,69 +77,27 @@ export default function ProjectPage({ params }: ProjectPageProps) {
   const [showNewKey, setShowNewKey] = useState(false);
   const [generatingKey, setGeneratingKey] = useState(false);
 
-  // Settings state
-  const [projectName, setProjectName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-
-  // Telegram connect state
-  const [connectToken, setConnectToken] = useState<ConnectToken | null>(null);
-  const [generatingConnect, setGeneratingConnect] = useState(false);
-
   // Quick start language tab state
   const [quickStartLang, setQuickStartLang] = useState("javascript");
 
-  // Embed keys state (for LIVECONNECT projects)
-  const [embedKeys, setEmbedKeys] = useState<LiveConnectEmbedKey[]>([]);
-  const [newEmbedKey, setNewEmbedKey] = useState<LiveConnectEmbedKeyCreated | null>(null);
-  const [showEmbedKeySuccess, setShowEmbedKeySuccess] = useState(false);
-  const [creatingEmbedKey, setCreatingEmbedKey] = useState(false);
-  const [embedKeyName, setEmbedKeyName] = useState("");
-  const [embedKeyDomains, setEmbedKeyDomains] = useState("");
-  const [showCreateEmbedKeyDialog, setShowCreateEmbedKeyDialog] = useState(false);
-  const [editingEmbedKey, setEditingEmbedKey] = useState<LiveConnectEmbedKey | null>(null);
-  const [showEditEmbedKeyDialog, setShowEditEmbedKeyDialog] = useState(false);
-  const [updatingEmbedKey, setUpdatingEmbedKey] = useState(false);
-  const [deletingEmbedKeyId, setDeletingEmbedKeyId] = useState<string | null>(null);
-
   /**
-   * Fetches all project data from the API.
+   * Fetches API keys for the project.
    */
-  const fetchData = async () => {
+  const fetchApiKeys = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      const [projectData, keysData, eventsData] = await Promise.all([
-        getProject(projectId),
-        getProjectApiKeys(projectId),
-        getProjectEvents(projectId),
-      ]);
-
-      setProject(projectData);
-      setProjectName(projectData.name);
+      const keysData = await getProjectApiKeys(projectId);
       setApiKeys(Array.isArray(keysData) ? keysData : []);
-      setEvents(Array.isArray(eventsData) ? eventsData : []);
-
-      // Fetch embed keys for LIVECONNECT projects
-      if (projectData.type === "LIVECONNECT") {
-        try {
-          const embedKeysData = await getLiveConnectEmbedKeys(projectId);
-          setEmbedKeys(Array.isArray(embedKeysData) ? embedKeysData : []);
-        } catch {
-          // Embed keys are optional, don't fail the whole page
-          setEmbedKeys([]);
-        }
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load project");
+      setError(err instanceof Error ? err.message : "Failed to load API keys");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
+    fetchApiKeys();
   }, [projectId]);
 
   /**
@@ -201,187 +124,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
    */
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // TODO: Show toast notification
   };
-
-  /**
-   * Saves project settings.
-   */
-  const handleSave = async () => {
-    if (!projectName.trim()) return;
-
-    try {
-      setSaving(true);
-      const updated = await updateProject(projectId, { name: projectName.trim() });
-      setProject(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save project");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  /**
-   * Deletes the project.
-   */
-  const handleDelete = async () => {
-    if (!confirm("Are you sure you want to delete this project? This cannot be undone.")) {
-      return;
-    }
-
-    try {
-      setDeleting(true);
-      await deleteProject(projectId);
-      router.push(`/dashboard/${orgSlug}/projects`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete project");
-      setDeleting(false);
-    }
-  };
-
-  /**
-   * Generates a Telegram connect link.
-   */
-  const handleGenerateConnectLink = async () => {
-    try {
-      setGeneratingConnect(true);
-      setError(null);
-      const token = await generateTelegramConnectToken(projectId);
-      setConnectToken(token);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to generate connect link");
-    } finally {
-      setGeneratingConnect(false);
-    }
-  };
-
-  /**
-   * Creates a new embed key.
-   */
-  const handleCreateEmbedKey = async () => {
-    if (!embedKeyName.trim()) return;
-
-    try {
-      setCreatingEmbedKey(true);
-      setError(null);
-      const domains = embedKeyDomains
-        .split(",")
-        .map((d) => d.trim())
-        .filter((d) => d.length > 0);
-      const result = await createLiveConnectEmbedKey(projectId, {
-        name: embedKeyName.trim(),
-        allowedDomains: domains,
-      });
-      setNewEmbedKey(result);
-      setShowCreateEmbedKeyDialog(false);
-      setShowEmbedKeySuccess(true);
-      setEmbedKeyName("");
-      setEmbedKeyDomains("");
-      // Refresh embed keys
-      const keys = await getLiveConnectEmbedKeys(projectId);
-      setEmbedKeys(keys);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create embed key");
-    } finally {
-      setCreatingEmbedKey(false);
-    }
-  };
-
-  /**
-   * Opens the edit dialog for an embed key.
-   */
-  const handleEditEmbedKey = (key: LiveConnectEmbedKey) => {
-    setEditingEmbedKey(key);
-    setEmbedKeyName(key.name);
-    setEmbedKeyDomains(key.allowedDomains.join(", "));
-    setShowEditEmbedKeyDialog(true);
-  };
-
-  /**
-   * Updates an embed key.
-   */
-  const handleUpdateEmbedKey = async () => {
-    if (!editingEmbedKey || !embedKeyName.trim()) return;
-
-    try {
-      setUpdatingEmbedKey(true);
-      setError(null);
-      const domains = embedKeyDomains
-        .split(",")
-        .map((d) => d.trim())
-        .filter((d) => d.length > 0);
-      await updateLiveConnectEmbedKey(projectId, editingEmbedKey.id, {
-        name: embedKeyName.trim(),
-        allowedDomains: domains,
-      });
-      setShowEditEmbedKeyDialog(false);
-      setEditingEmbedKey(null);
-      setEmbedKeyName("");
-      setEmbedKeyDomains("");
-      // Refresh embed keys
-      const keys = await getLiveConnectEmbedKeys(projectId);
-      setEmbedKeys(keys);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update embed key");
-    } finally {
-      setUpdatingEmbedKey(false);
-    }
-  };
-
-  /**
-   * Deletes an embed key.
-   */
-  const handleDeleteEmbedKey = async (keyId: string) => {
-    try {
-      setDeletingEmbedKeyId(keyId);
-      setError(null);
-      await deleteLiveConnectEmbedKey(projectId, keyId);
-      // Refresh embed keys
-      const keys = await getLiveConnectEmbedKeys(projectId);
-      setEmbedKeys(keys);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete embed key");
-    } finally {
-      setDeletingEmbedKeyId(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="mt-2 h-4 w-64" />
-        </div>
-        <Skeleton className="h-64" />
-      </div>
-    );
-  }
-
-  if (error && !project) {
-    return (
-      <Card className="border-destructive">
-        <CardContent className="py-8 text-center">
-          <p className="text-destructive">{error}</p>
-          <Button className="mt-4" variant="outline" onClick={() => router.back()}>
-            Go Back
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (!project) return null;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-xl md:text-2xl font-semibold">{project.name}</h1>
-        <p className="text-muted-foreground">
-          Manage your project settings and API access
-        </p>
-      </div>
-
+    <div className="space-y-4">
       {error && (
         <Card className="border-destructive">
           <CardContent className="py-4">
@@ -390,652 +136,176 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         </Card>
       )}
 
-      <Tabs defaultValue="overview">
-        <TabsList className="overflow-x-auto">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          {project.type === "LIVECONNECT" && (
-            <TabsTrigger value="embed">Embed</TabsTrigger>
+      <Card>
+        <CardHeader>
+          <CardTitle>API Keys</CardTitle>
+          <CardDescription>
+            Use API keys to authenticate requests for this project
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {newApiKey && (
+            <div className="space-y-2 border border-primary bg-primary/10 p-4">
+              <p className="text-sm font-medium">New API Key Generated</p>
+              <p className="text-xs text-muted-foreground">
+                Copy this key now. You won&apos;t be able to see it again.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  type={showNewKey ? "text" : "password"}
+                  value={newApiKey}
+                  readOnly
+                  className="font-mono text-xs"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setShowNewKey(!showNewKey)}
+                >
+                  {showNewKey ? (
+                    <IconEyeOff className="h-4 w-4" />
+                  ) : (
+                    <IconEye className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => copyToClipboard(newApiKey)}
+                >
+                  <IconCopy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
-          {project.type !== "LIVECONNECT" && (
-            <TabsTrigger value="chats">Telegram Chats</TabsTrigger>
+
+          {loading ? (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground">Loading API keys...</p>
+            </div>
+          ) : apiKeys.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="mb-4 text-sm text-muted-foreground">
+                No API keys yet. Generate one to start using the API.
+              </p>
+              <Button onClick={handleGenerateKey} disabled={generatingKey} className="gap-2">
+                <IconPlus className="h-4 w-4" />
+                {generatingKey ? "Generating..." : "Generate API Key"}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Key</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="hidden sm:table-cell">Last Used</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apiKeys.map((key) => (
+                    <TableRow key={key.id}>
+                      <TableCell className="font-mono">
+                        {key.keyPrefix}...
+                      </TableCell>
+                      <TableCell>
+                        {new Date(key.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {key.lastUsedAt
+                          ? new Date(key.lastUsedAt).toLocaleDateString()
+                          : "Never"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Button
+                variant="outline"
+                onClick={handleGenerateKey}
+                disabled={generatingKey}
+                className="gap-2"
+              >
+                <IconRefresh className="h-4 w-4" />
+                {generatingKey ? "Generating..." : "Regenerate Key"}
+              </Button>
+            </>
           )}
-          <TabsTrigger value="events">Events</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="overview" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>
-                Use API keys to authenticate requests for this project
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {newApiKey && (
-                <div className="space-y-2 p-4 bg-primary/10 border border-primary">
-                  <p className="text-sm font-medium">New API Key Generated</p>
-                  <p className="text-xs text-muted-foreground">
-                    Copy this key now. You won&apos;t be able to see it again.
-                  </p>
-                  <div className="flex gap-2">
-                    <Input
-                      type={showNewKey ? "text" : "password"}
-                      value={newApiKey}
-                      readOnly
-                      className="font-mono text-xs"
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => setShowNewKey(!showNewKey)}
-                    >
-                      {showNewKey ? (
-                        <IconEyeOff className="h-4 w-4" />
-                      ) : (
-                        <IconEye className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => copyToClipboard(newApiKey)}
-                    >
-                      <IconCopy className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Start</CardTitle>
+          <CardDescription>Send your first notification</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Tabs value={quickStartLang} onValueChange={setQuickStartLang}>
+            <TabsList variant="line" className="overflow-x-auto">
+              <TabsTrigger value="javascript">JavaScript</TabsTrigger>
+              <TabsTrigger value="python">Python</TabsTrigger>
+              <TabsTrigger value="java">Java</TabsTrigger>
+              <TabsTrigger value="curl">cURL</TabsTrigger>
+            </TabsList>
 
-              {apiKeys.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-sm text-muted-foreground mb-4">
-                    No API keys yet. Generate one to start using the API.
-                  </p>
-                  <Button onClick={handleGenerateKey} disabled={generatingKey} className="gap-2">
-                    <IconPlus className="h-4 w-4" />
-                    {generatingKey ? "Generating..." : "Generate API Key"}
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Key</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead className="hidden sm:table-cell">Last Used</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {apiKeys.map((key) => (
-                        <TableRow key={key.id}>
-                          <TableCell className="font-mono">
-                            {key.keyPrefix}...
-                          </TableCell>
-                          <TableCell>
-                            {new Date(key.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {key.lastUsedAt
-                              ? new Date(key.lastUsedAt).toLocaleDateString()
-                              : "Never"}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                  <Button
-                    variant="outline"
-                    onClick={handleGenerateKey}
-                    disabled={generatingKey}
-                    className="gap-2"
-                  >
-                    <IconRefresh className="h-4 w-4" />
-                    {generatingKey ? "Generating..." : "Regenerate Key"}
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Start</CardTitle>
-              <CardDescription>Send your first notification</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Tabs value={quickStartLang} onValueChange={setQuickStartLang}>
-                <TabsList variant="line" className="overflow-x-auto">
-                  <TabsTrigger value="javascript">JavaScript</TabsTrigger>
-                  <TabsTrigger value="python">Python</TabsTrigger>
-                  <TabsTrigger value="java">Java</TabsTrigger>
-                  <TabsTrigger value="curl">cURL</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="javascript" className="mt-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">Install the SDK:</p>
-                  <CodeBlock code="npm install notifykitdev" />
-                  <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`import NotifyKit from 'notifykitdev';
+            <TabsContent value="javascript" className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">Install the SDK:</p>
+              <CodeBlock code="npm install notifykitdev" />
+              <p className="text-xs text-muted-foreground">Send a notification:</p>
+              <CodeBlock code={`import NotifyKit from 'notifykitdev';
 
 NotifyKit.init('${newApiKey || "YOUR_API_KEY"}');
 NotifyKit.notify('Hello from NotifyKit!');`} />
-                </TabsContent>
+            </TabsContent>
 
-                <TabsContent value="python" className="mt-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">Install the SDK:</p>
-                  <CodeBlock code="pip install notifykitdev" />
-                  <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`from notifykit import NotifyKit
+            <TabsContent value="python" className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">Install the SDK:</p>
+              <CodeBlock code="pip install notifykitdev" />
+              <p className="text-xs text-muted-foreground">Send a notification:</p>
+              <CodeBlock code={`from notifykit import NotifyKit
 
 NotifyKit.init("${newApiKey || "YOUR_API_KEY"}")
 NotifyKit.notify("Hello from NotifyKit!")`} />
-                </TabsContent>
+            </TabsContent>
 
-                <TabsContent value="java" className="mt-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">Add to your pom.xml:</p>
-                  <CodeBlock code={`<dependency>
+            <TabsContent value="java" className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">Add to your pom.xml:</p>
+              <CodeBlock code={`<dependency>
     <groupId>io.github.wilsonf8</groupId>
     <artifactId>notifykitdev</artifactId>
     <version>1.0.0</version>
 </dependency>`} />
-                  <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`import dev.notifykit.NotifyKit;
+              <p className="text-xs text-muted-foreground">Send a notification:</p>
+              <CodeBlock code={`import dev.notifykit.NotifyKit;
 
 NotifyKit.init("${newApiKey || "YOUR_API_KEY"}");
 NotifyKit.notify("Hello from NotifyKit!");`} />
-                </TabsContent>
+            </TabsContent>
 
-                <TabsContent value="curl" className="mt-4 space-y-3">
-                  <p className="text-xs text-muted-foreground">Send a notification:</p>
-                  <CodeBlock code={`curl -X POST ${process.env.NEXT_PUBLIC_API_URL || "https://api.notifykit.dev"}/v1/notify \\
+            <TabsContent value="curl" className="mt-4 space-y-3">
+              <p className="text-xs text-muted-foreground">Send a notification:</p>
+              <CodeBlock code={`curl -X POST ${process.env.NEXT_PUBLIC_API_URL || "https://api.notifykit.dev"}/v1/notify \\
   -H "X-API-Key: ${newApiKey || "YOUR_API_KEY"}" \\
   -H "Content-Type: application/json" \\
   -d '{"message": "Hello from NotifyKit!"}'`} />
-                </TabsContent>
-              </Tabs>
+            </TabsContent>
+          </Tabs>
 
-              <div className="flex items-center justify-between border-t pt-4">
-                <p className="text-xs text-muted-foreground">
-                  Need more examples?
-                </p>
-                <Link
-                  href="/dashboard/docs"
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  View full documentation
-                  <IconArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {project.type === "LIVECONNECT" && (
-          <TabsContent value="embed" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Embed Keys</CardTitle>
-                    <CardDescription>
-                      Keys to authenticate widget installations on customer websites
-                    </CardDescription>
-                  </div>
-                  <Dialog open={showCreateEmbedKeyDialog} onOpenChange={setShowCreateEmbedKeyDialog}>
-                    <DialogTrigger render={<Button className="gap-2" />}>
-                      <IconPlus className="h-4 w-4" />
-                      Create Key
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Create Embed Key</DialogTitle>
-                        <DialogDescription>
-                          Create a key to embed the LiveConnect widget on your website.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="embedKeyName">Name</Label>
-                          <Input
-                            id="embedKeyName"
-                            placeholder="Production Website"
-                            value={embedKeyName}
-                            onChange={(e) => setEmbedKeyName(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="embedKeyDomains">Allowed Domains</Label>
-                          <Input
-                            id="embedKeyDomains"
-                            placeholder="example.com, *.example.com"
-                            value={embedKeyDomains}
-                            onChange={(e) => setEmbedKeyDomains(e.target.value)}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Comma-separated list of domains. Use * for wildcards. Leave empty to allow all domains.
-                          </p>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          onClick={handleCreateEmbedKey}
-                          disabled={creatingEmbedKey || !embedKeyName.trim()}
-                        >
-                          {creatingEmbedKey ? "Creating..." : "Create Key"}
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {embedKeys.length === 0 ? (
-                  <div className="text-center py-8">
-                    <IconCode className="h-12 w-12 text-muted-foreground mx-auto" />
-                    <p className="mt-4 text-sm text-muted-foreground">
-                      No embed keys yet. Create one to start embedding the widget.
-                    </p>
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Key</TableHead>
-                        <TableHead>Name</TableHead>
-                        <TableHead className="hidden md:table-cell">Domains</TableHead>
-                        <TableHead className="hidden sm:table-cell">Created</TableHead>
-                        <TableHead className="hidden lg:table-cell">Last Used</TableHead>
-                        <TableHead className="w-[100px]">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {embedKeys.map((key) => (
-                        <TableRow key={key.id}>
-                          <TableCell className="font-mono text-xs">
-                            {key.keyPrefix}...
-                          </TableCell>
-                          <TableCell>{key.name}</TableCell>
-                          <TableCell className="hidden md:table-cell">
-                            {key.allowedDomains.length > 0 ? (
-                              <span className="text-xs">
-                                {key.allowedDomains.slice(0, 2).join(", ")}
-                                {key.allowedDomains.length > 2 && ` +${key.allowedDomains.length - 2}`}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">All domains</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">
-                            {new Date(key.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell">
-                            {key.lastUsedAt
-                              ? new Date(key.lastUsedAt).toLocaleDateString()
-                              : "Never"}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => handleEditEmbedKey(key)}
-                              >
-                                <IconPencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger
-                                  render={
-                                    <Button
-                                      variant="ghost"
-                                      size="icon-sm"
-                                      disabled={deletingEmbedKeyId === key.id}
-                                    />
-                                  }
-                                >
-                                  <IconTrash className="h-4 w-4 text-destructive" />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Revoke Embed Key</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to revoke this embed key? Any widgets using this key will stop working immediately.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      variant="destructive"
-                                      onClick={() => handleDeleteEmbedKey(key.id)}
-                                    >
-                                      Revoke Key
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Edit Embed Key Dialog */}
-            <Dialog open={showEditEmbedKeyDialog} onOpenChange={setShowEditEmbedKeyDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Embed Key</DialogTitle>
-                  <DialogDescription>
-                    Update the name and allowed domains for this embed key.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="editEmbedKeyName">Name</Label>
-                    <Input
-                      id="editEmbedKeyName"
-                      value={embedKeyName}
-                      onChange={(e) => setEmbedKeyName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="editEmbedKeyDomains">Allowed Domains</Label>
-                    <Input
-                      id="editEmbedKeyDomains"
-                      placeholder="example.com, *.example.com"
-                      value={embedKeyDomains}
-                      onChange={(e) => setEmbedKeyDomains(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Comma-separated list of domains. Use * for wildcards. Leave empty to allow all domains.
-                    </p>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    onClick={handleUpdateEmbedKey}
-                    disabled={updatingEmbedKey || !embedKeyName.trim()}
-                  >
-                    {updatingEmbedKey ? "Saving..." : "Save Changes"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Success Dialog - Shows Full Key */}
-            <Dialog open={showEmbedKeySuccess} onOpenChange={setShowEmbedKeySuccess}>
-              <DialogContent showCloseButton={false}>
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <IconAlertTriangle className="h-5 w-5 text-primary" />
-                    Embed Key Created
-                  </DialogTitle>
-                  <DialogDescription>
-                    Copy your embed key now. You won&apos;t be able to see it again.
-                  </DialogDescription>
-                </DialogHeader>
-                {newEmbedKey && (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-muted">
-                      <p className="text-xs text-muted-foreground mb-1">Embed Key</p>
-                      <div className="flex gap-2">
-                        <Input
-                          value={newEmbedKey.key}
-                          readOnly
-                          className="font-mono text-xs"
-                        />
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => copyToClipboard(newEmbedKey.key)}
-                        >
-                          <IconCopy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button onClick={() => setShowEmbedKeySuccess(false)}>
-                    I&apos;ve Copied the Key
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            {/* Code Snippet Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Embed Code</CardTitle>
-                <CardDescription>
-                  Add this code snippet to your website to embed the LiveConnect widget
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CodeBlock
-                  code={`<script
-  src="${process.env.NEXT_PUBLIC_APP_URL || "https://app.notifykit.dev"}/sdk/liveconnect.js"
-  data-key="${newEmbedKey?.key || embedKeys[0]?.keyPrefix + "..." || "YOUR_EMBED_KEY"}"
-  async
-></script>`}
-                />
-                <div className="p-3 bg-muted">
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Note:</strong> Replace <code className="font-mono bg-background px-1">YOUR_EMBED_KEY</code> with your actual embed key. The widget will automatically appear in the bottom-right corner of your website.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
-
-        <TabsContent value="chats" className="space-y-4">
-          {project.telegramDestination ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Connected Telegram Chat</CardTitle>
-                <CardDescription>
-                  This project is linked to a Telegram chat
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-muted">
-                  <IconBrandTelegram className="h-10 w-10 text-primary" />
-                  <div>
-                    <p className="font-medium">
-                      {project.telegramDestination.username || "Telegram Chat"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Status: {project.telegramDestination.isEnabled ? (
-                        <span className="text-green-600">Active</span>
-                      ) : (
-                        <span className="text-destructive">
-                          Disabled {project.telegramDestination.disabledReason && `- ${project.telegramDestination.disabledReason}`}
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={handleGenerateConnectLink}
-                  disabled={generatingConnect}
-                >
-                  <IconRefresh className="h-4 w-4" />
-                  {generatingConnect ? "Generating..." : "Reconnect Different Chat"}
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Connect Telegram</CardTitle>
-                <CardDescription>
-                  Link a Telegram chat to receive notifications from this project
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {connectToken ? (
-                  <div className="space-y-4">
-                    <div className="p-4 bg-primary/10 border border-primary">
-                      <p className="text-sm font-medium mb-2">Connect Link Generated</p>
-                      <p className="text-xs text-muted-foreground mb-3">
-                        Click the button below to open Telegram and connect this project.
-                        The link expires in 24 hours.
-                      </p>
-                      <div className="flex gap-2">
-                        <a
-                          href={connectToken.deepLink}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
-                        >
-                          <IconBrandTelegram className="h-4 w-4" />
-                          Open in Telegram
-                        </a>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => copyToClipboard(connectToken.deepLink)}
-                        >
-                          <IconCopy className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <Button
-                      variant="outline"
-                      onClick={() => setConnectToken(null)}
-                    >
-                      Generate New Link
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center py-8">
-                    <IconBrandTelegram className="h-12 w-12 text-muted-foreground" />
-                    <p className="mt-4 text-sm text-muted-foreground text-center max-w-sm">
-                      Generate a connect link to link your Telegram chat to this project.
-                    </p>
-                    <Button
-                      className="mt-4 gap-2"
-                      onClick={handleGenerateConnectLink}
-                      disabled={generatingConnect}
-                    >
-                      <IconPlus className="h-4 w-4" />
-                      {generatingConnect ? "Generating..." : "Generate Connect Link"}
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="events" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Notifications sent through this project
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {events.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  No events yet. Send your first notification using the API.
-                </p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {events.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell className="font-mono">{event.eventType}</TableCell>
-                        <TableCell>
-                          <span
-                            className={
-                              event.status === "delivered"
-                                ? "text-green-600"
-                                : event.status === "failed"
-                                ? "text-destructive"
-                                : "text-muted-foreground"
-                            }
-                          >
-                            {event.status}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(event.createdAt).toLocaleString()}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Project Settings</CardTitle>
-              <CardDescription>Configure your project</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="projectName">Project Name</Label>
-                <Input
-                  id="projectName"
-                  value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
-                />
-              </div>
-              <Button onClick={handleSave} disabled={saving || !projectName.trim()}>
-                {saving ? "Saving..." : "Save Changes"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Danger Zone</CardTitle>
-              <CardDescription>
-                Irreversible actions for this project
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Delete Project</p>
-                  <p className="text-sm text-muted-foreground">
-                    Permanently delete this project and all its data
-                  </p>
-                </div>
-                <Button
-                  variant="destructive"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  className="gap-2"
-                >
-                  <IconTrash className="h-4 w-4" />
-                  {deleting ? "Deleting..." : "Delete"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          <div className="flex items-center justify-between border-t pt-4">
+            <p className="text-xs text-muted-foreground">
+              Need more examples?
+            </p>
+            <Link
+              href="/dashboard/docs"
+              className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+            >
+              View full documentation
+              <IconArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
