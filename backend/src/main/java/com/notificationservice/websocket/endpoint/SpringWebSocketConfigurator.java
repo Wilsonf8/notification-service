@@ -28,4 +28,15 @@ public class SpringWebSocketConfigurator extends ServerEndpointConfig.Configurat
         }
         return context.getBean(endpointClass);
     }
+
+    /**
+     * Allows all origins for WebSocket connections.
+     * Widget authentication is handled via embed key validation in the endpoint.
+     * @param originHeaderValue the Origin header value from the handshake request
+     * @return true to allow all origins
+     */
+    @Override
+    public boolean checkOrigin(String originHeaderValue) {
+        return true;
+    }
 }
