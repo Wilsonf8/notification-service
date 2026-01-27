@@ -97,11 +97,6 @@ function initializeWidget(): void {
   // Mark as initialized
   window[INIT_FLAG] = true;
 
-  console.log('[LiveConnect] Widget initialized', {
-    embedKey: config.embedKey.substring(0, 8) + '...',
-    position: config.position,
-  });
-
   // Render Preact app into shadow DOM
   render(
     h(Widget, { config, shadowRoot }),

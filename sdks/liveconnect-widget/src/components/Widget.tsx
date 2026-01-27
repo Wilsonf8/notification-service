@@ -214,7 +214,6 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
     // Handle connection state changes
     ws.on('connection_state_change', (state) => {
-      console.log('[LiveConnect Widget] WebSocket state:', state);
       if (state === 'disconnected') {
         // Could show reconnecting indicator
       }
@@ -269,7 +268,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
    * @param event - Call ended event data
    */
   const handleCallEnded = useCallback((event: CallEndedEvent): void => {
-    console.log('[LiveConnect Widget] Call ended, duration:', event.durationSeconds);
+    // Call ended, transition back to collapsed state
 
     // Disconnect from LiveKit
     disconnectFromRoom();

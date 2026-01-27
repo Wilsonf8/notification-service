@@ -316,19 +316,13 @@ export class WebSocketClient {
     if (!this.socket) return;
 
     this.socket.onopen = () => {
-      console.log('[LiveConnect WebSocket] Connected');
+      // Connected successfully
       this.reconnectAttempt = 0;
       this.setConnectionState('connected');
       this.startHeartbeat();
     };
 
-    this.socket.onclose = (event) => {
-      console.log('[LiveConnect WebSocket] Disconnected', {
-        code: event.code,
-        reason: event.reason,
-        wasClean: event.wasClean,
-      });
-
+    this.socket.onclose = () => {
       this.stopHeartbeat();
       this.setConnectionState('disconnected');
 
@@ -338,8 +332,8 @@ export class WebSocketClient {
       }
     };
 
-    this.socket.onerror = (event) => {
-      console.error('[LiveConnect WebSocket] Error:', event);
+    this.socket.onerror = () => {
+      // Error details come through the close event with reason
       this.emit('error', new Error('WebSocket error occurred'));
     };
 
@@ -438,7 +432,7 @@ export class WebSocketClient {
       MAX_RECONNECT_DELAY_MS
     );
 
-    console.log(`[LiveConnect WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempt + 1})`);
+    // Reconnecting with exponential backoff
 
     this.reconnectTimeoutId = setTimeout(() => {
       this.reconnectAttempt++;
