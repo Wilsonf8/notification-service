@@ -1,0 +1,1463 @@
+/**
+ * LiveConnect Widget Styles
+ * Base-lyra theme with Stone/Yellow palette
+ *
+ * This stylesheet is designed for shadow DOM isolation.
+ * All styles are scoped to the widget container.
+ */
+
+/* ============================================
+   Google Fonts Import - JetBrains Mono
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   CSS Variables - Theme Configuration
+   ============================================ */
+:host {
+  /* Primary colors - Stone palette */
+  --lc-bg: #0c0a09;             /* stone-950 */
+  --lc-bg-secondary: #1c1917;   /* stone-900 */
+  --lc-bg-tertiary: #292524;    /* stone-800 */
+  --lc-border: #292524;         /* stone-800 */
+  --lc-border-hover: #44403c;   /* stone-700 */
+
+  /* Text colors */
+  --lc-text: #fafaf9;           /* stone-50 */
+  --lc-text-secondary: #e7e5e4; /* stone-200 */
+  --lc-text-muted: #a8a29e;     /* stone-400 */
+  --lc-text-disabled: #78716c;  /* stone-500 */
+
+  /* Accent colors - Yellow palette */
+  --lc-accent: #eab308;         /* yellow-500 */
+  --lc-accent-hover: #ca8a04;   /* yellow-600 */
+  --lc-accent-active: #a16207;  /* yellow-700 */
+  --lc-accent-light: #fef08a;   /* yellow-200 */
+  --lc-accent-text: #0c0a09;    /* stone-950 - for text on accent */
+
+  /* Status colors */
+  --lc-success: #22c55e;        /* green-500 */
+  --lc-success-bg: #14532d;     /* green-900 */
+  --lc-error: #ef4444;          /* red-500 */
+  --lc-error-bg: #7f1d1d;       /* red-900 */
+  --lc-warning: #f59e0b;        /* amber-500 */
+  --lc-info: #3b82f6;           /* blue-500 */
+
+  /* Layout */
+  --lc-radius: 0;               /* sharp corners */
+  --lc-spacing-xs: 4px;
+  --lc-spacing-sm: 8px;
+  --lc-spacing-md: 12px;
+  --lc-spacing-lg: 16px;
+  --lc-spacing-xl: 24px;
+  --lc-spacing-2xl: 32px;
+
+  /* Typography */
+  --lc-font: 'JetBrains Mono', monospace;
+  --lc-font-size-xs: 10px;
+  --lc-font-size-sm: 12px;
+  --lc-font-size-base: 14px;
+  --lc-font-size-lg: 16px;
+  --lc-font-size-xl: 18px;
+  --lc-font-size-2xl: 24px;
+
+  /* Shadows */
+  --lc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --lc-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --lc-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --lc-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.6);
+
+  /* Transitions */
+  --lc-transition-fast: 150ms ease;
+  --lc-transition-normal: 200ms ease;
+  --lc-transition-slow: 300ms ease;
+
+  /* Z-index layers */
+  --lc-z-widget: 1;
+  --lc-z-panel: 10;
+  --lc-z-overlay: 100;
+  --lc-z-modal: 1000;
+}
+
+/* ============================================
+   CSS Reset for Shadow DOM Isolation
+   ============================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Base container styles */
+.lc-widget {
+  font-family: var(--lc-font);
+  font-size: var(--lc-font-size-base);
+  line-height: 1.5;
+  color: var(--lc-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  pointer-events: auto;
+}
+
+/* ============================================
+   Button Component (FAB - Floating Action Button)
+   ============================================ */
+.lc-fab {
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  background-color: var(--lc-accent);
+  border: none;
+  pointer-events: auto;
+  border-radius: var(--lc-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--lc-shadow-lg);
+  transition:
+    background-color var(--lc-transition-fast),
+    transform var(--lc-transition-fast),
+    box-shadow var(--lc-transition-fast);
+  z-index: var(--lc-z-widget);
+}
+
+.lc-fab:hover {
+  background-color: var(--lc-accent-hover);
+  transform: scale(1.05);
+  box-shadow: var(--lc-shadow-xl);
+}
+
+.lc-fab:active {
+  background-color: var(--lc-accent-active);
+  transform: scale(0.98);
+}
+
+.lc-fab:focus {
+  outline: 2px solid var(--lc-accent-light);
+  outline-offset: 2px;
+}
+
+.lc-fab:disabled {
+  background-color: var(--lc-bg-tertiary);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lc-fab__icon {
+  width: 28px;
+  height: 28px;
+  color: var(--lc-accent-text);
+}
+
+/* Availability indicator dot */
+.lc-fab__indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--lc-accent);
+}
+
+.lc-fab__indicator--online {
+  background-color: var(--lc-success);
+}
+
+.lc-fab__indicator--offline {
+  background-color: var(--lc-error);
+}
+
+.lc-fab__indicator--busy {
+  background-color: var(--lc-warning);
+}
+
+/* Pulsing animation for online indicator */
+.lc-fab__indicator--online::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--lc-success);
+  animation: lc-pulse 2s infinite;
+}
+
+@keyframes lc-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* Position variants */
+.lc-fab--bottom-right {
+  bottom: 24px;
+  right: 24px;
+}
+
+.lc-fab--bottom-left {
+  bottom: 24px;
+  left: 24px;
+}
+
+.lc-fab--top-right {
+  top: 24px;
+  right: 24px;
+}
+
+.lc-fab--top-left {
+  top: 24px;
+  left: 24px;
+}
+
+/* ============================================
+   Panel Component (Expanded Widget Panel)
+   ============================================ */
+.lc-panel {
+  position: fixed;
+  width: 380px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 100px);
+  background-color: var(--lc-bg);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  box-shadow: var(--lc-shadow-xl);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  overflow: hidden;
+  z-index: var(--lc-z-panel);
+  animation: lc-slide-up var(--lc-transition-slow) ease-out;
+}
+
+@keyframes lc-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Panel position variants */
+.lc-panel--bottom-right {
+  bottom: 96px;
+  right: 24px;
+}
+
+.lc-panel--bottom-left {
+  bottom: 96px;
+  left: 24px;
+}
+
+.lc-panel--top-right {
+  top: 96px;
+  right: 24px;
+}
+
+.lc-panel--top-left {
+  top: 96px;
+  left: 24px;
+}
+
+/* Panel header */
+.lc-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lc-spacing-md) var(--lc-spacing-lg);
+  background-color: var(--lc-bg-secondary);
+  border-bottom: 1px solid var(--lc-border);
+}
+
+.lc-panel__title {
+  font-size: var(--lc-font-size-lg);
+  font-weight: 600;
+  color: var(--lc-text);
+}
+
+.lc-panel__subtitle {
+  font-size: var(--lc-font-size-sm);
+  color: var(--lc-text-muted);
+  margin-top: var(--lc-spacing-xs);
+}
+
+.lc-panel__close {
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: var(--lc-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lc-text-muted);
+  transition:
+    background-color var(--lc-transition-fast),
+    color var(--lc-transition-fast);
+}
+
+.lc-panel__close:hover {
+  background-color: var(--lc-bg-tertiary);
+  color: var(--lc-text);
+}
+
+.lc-panel__close-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Panel content area */
+.lc-panel__content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--lc-spacing-lg);
+}
+
+/* Panel footer */
+.lc-panel__footer {
+  padding: var(--lc-spacing-md) var(--lc-spacing-lg);
+  background-color: var(--lc-bg-secondary);
+  border-top: 1px solid var(--lc-border);
+}
+
+/* ============================================
+   WaitingView Component (Connection Countdown)
+   ============================================ */
+.lc-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--lc-spacing-2xl);
+  text-align: center;
+  min-height: 300px;
+}
+
+.lc-waiting__icon {
+  width: 64px;
+  height: 64px;
+  color: var(--lc-accent);
+  margin-bottom: var(--lc-spacing-lg);
+  animation: lc-spin 2s linear infinite;
+}
+
+@keyframes lc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.lc-waiting__title {
+  font-size: var(--lc-font-size-xl);
+  font-weight: 600;
+  color: var(--lc-text);
+  margin-bottom: var(--lc-spacing-sm);
+}
+
+.lc-waiting__message {
+  font-size: var(--lc-font-size-base);
+  color: var(--lc-text-muted);
+  margin-bottom: var(--lc-spacing-xl);
+}
+
+.lc-waiting__timer {
+  font-size: var(--lc-font-size-2xl);
+  font-weight: 700;
+  color: var(--lc-accent);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: var(--lc-spacing-xl);
+}
+
+.lc-waiting__progress {
+  width: 100%;
+  max-width: 200px;
+  height: 4px;
+  background-color: var(--lc-bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--lc-spacing-xl);
+}
+
+.lc-waiting__progress-bar {
+  height: 100%;
+  background-color: var(--lc-accent);
+  transition: width var(--lc-transition-normal);
+}
+
+/* ============================================
+   IncomingPing Component (Rep Alert)
+   ============================================ */
+.lc-ping {
+  position: fixed;
+  background-color: var(--lc-bg);
+  border: 2px solid var(--lc-accent);
+  border-radius: var(--lc-radius);
+  box-shadow: var(--lc-shadow-xl);
+  pointer-events: auto;
+  padding: var(--lc-spacing-lg);
+  min-width: 320px;
+  max-width: calc(100vw - 48px);
+  z-index: var(--lc-z-modal);
+  animation: lc-bounce-in var(--lc-transition-slow) ease-out;
+}
+
+@keyframes lc-bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(-10px);
+  }
+  50% {
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Position variants for ping */
+.lc-ping--bottom-right {
+  bottom: 96px;
+  right: 24px;
+}
+
+.lc-ping--bottom-left {
+  bottom: 96px;
+  left: 24px;
+}
+
+.lc-ping--top-right {
+  top: 96px;
+  right: 24px;
+}
+
+.lc-ping--top-left {
+  top: 96px;
+  left: 24px;
+}
+
+.lc-ping__header {
+  display: flex;
+  align-items: center;
+  gap: var(--lc-spacing-md);
+  margin-bottom: var(--lc-spacing-md);
+}
+
+.lc-ping__avatar {
+  width: 48px;
+  height: 48px;
+  background-color: var(--lc-bg-secondary);
+  border-radius: var(--lc-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lc-accent);
+  font-weight: 600;
+  font-size: var(--lc-font-size-lg);
+}
+
+.lc-ping__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--lc-radius);
+}
+
+.lc-ping__info {
+  flex: 1;
+}
+
+.lc-ping__name {
+  font-size: var(--lc-font-size-lg);
+  font-weight: 600;
+  color: var(--lc-text);
+}
+
+.lc-ping__label {
+  font-size: var(--lc-font-size-sm);
+  color: var(--lc-text-muted);
+}
+
+.lc-ping__message {
+  font-size: var(--lc-font-size-base);
+  color: var(--lc-text-secondary);
+  margin-bottom: var(--lc-spacing-lg);
+}
+
+.lc-ping__actions {
+  display: flex;
+  gap: var(--lc-spacing-md);
+}
+
+.lc-ping__timer {
+  font-size: var(--lc-font-size-sm);
+  color: var(--lc-text-muted);
+  text-align: center;
+  margin-top: var(--lc-spacing-md);
+}
+
+/* ============================================
+   VideoCall Component (In-Call UI)
+   ============================================ */
+.lc-video {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  background-color: var(--lc-bg);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remote video (full container) */
+.lc-video__remote {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--lc-bg-secondary);
+  object-fit: cover;
+}
+
+.lc-video__remote-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--lc-spacing-md);
+  color: var(--lc-text-muted);
+}
+
+.lc-video__remote-placeholder-icon {
+  width: 64px;
+  height: 64px;
+  opacity: 0.5;
+}
+
+/* Local video (PIP - Picture in Picture) */
+.lc-video__local {
+  position: absolute;
+  bottom: 80px;
+  right: var(--lc-spacing-lg);
+  width: 120px;
+  height: 90px;
+  background-color: var(--lc-bg-tertiary);
+  border: 2px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  object-fit: cover;
+  z-index: 10;
+  cursor: move;
+  transition: border-color var(--lc-transition-fast);
+}
+
+.lc-video__local:hover {
+  border-color: var(--lc-border-hover);
+}
+
+.lc-video__local--hidden {
+  display: none;
+}
+
+/* Video overlay (for status messages) */
+.lc-video__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(12, 10, 9, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.lc-video__overlay-text {
+  font-size: var(--lc-font-size-lg);
+  color: var(--lc-text);
+  margin-top: var(--lc-spacing-md);
+}
+
+/* Video controls bar */
+.lc-video__controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lc-spacing-md);
+  padding: var(--lc-spacing-lg);
+  background: linear-gradient(transparent, rgba(12, 10, 9, 0.9));
+  z-index: 30;
+}
+
+.lc-video__control {
+  width: 48px;
+  height: 48px;
+  background-color: var(--lc-bg-secondary);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lc-text);
+  transition:
+    background-color var(--lc-transition-fast),
+    border-color var(--lc-transition-fast);
+}
+
+.lc-video__control:hover {
+  background-color: var(--lc-bg-tertiary);
+  border-color: var(--lc-border-hover);
+}
+
+.lc-video__control--active {
+  background-color: var(--lc-accent);
+  border-color: var(--lc-accent);
+  color: var(--lc-accent-text);
+}
+
+.lc-video__control--active:hover {
+  background-color: var(--lc-accent-hover);
+  border-color: var(--lc-accent-hover);
+}
+
+.lc-video__control--danger {
+  background-color: var(--lc-error);
+  border-color: var(--lc-error);
+}
+
+.lc-video__control--danger:hover {
+  background-color: #dc2626; /* red-600 */
+  border-color: #dc2626;
+}
+
+.lc-video__control--muted {
+  background-color: var(--lc-error-bg);
+  border-color: var(--lc-error);
+  color: var(--lc-error);
+}
+
+.lc-video__control-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* Video info bar */
+.lc-video__info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--lc-spacing-md) var(--lc-spacing-lg);
+  background: linear-gradient(rgba(12, 10, 9, 0.9), transparent);
+  z-index: 30;
+}
+
+.lc-video__participant {
+  display: flex;
+  align-items: center;
+  gap: var(--lc-spacing-sm);
+}
+
+.lc-video__participant-name {
+  font-size: var(--lc-font-size-sm);
+  font-weight: 500;
+  color: var(--lc-text);
+}
+
+.lc-video__duration {
+  font-size: var(--lc-font-size-sm);
+  color: var(--lc-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================
+   ChatPanel Component (In-Call Messaging)
+   ============================================ */
+.lc-chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 300px;
+  background-color: var(--lc-bg);
+}
+
+.lc-chat__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--lc-spacing-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-spacing-md);
+}
+
+/* Custom scrollbar for messages */
+.lc-chat__messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.lc-chat__messages::-webkit-scrollbar-track {
+  background: var(--lc-bg-secondary);
+}
+
+.lc-chat__messages::-webkit-scrollbar-thumb {
+  background: var(--lc-border);
+  border-radius: 3px;
+}
+
+.lc-chat__messages::-webkit-scrollbar-thumb:hover {
+  background: var(--lc-border-hover);
+}
+
+/* Message bubble */
+.lc-chat__message {
+  max-width: 85%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-spacing-xs);
+}
+
+.lc-chat__message--sent {
+  align-self: flex-end;
+}
+
+.lc-chat__message--received {
+  align-self: flex-start;
+}
+
+.lc-chat__message-bubble {
+  padding: var(--lc-spacing-sm) var(--lc-spacing-md);
+  border-radius: var(--lc-radius);
+  font-size: var(--lc-font-size-base);
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.lc-chat__message--sent .lc-chat__message-bubble {
+  background-color: var(--lc-accent);
+  color: var(--lc-accent-text);
+}
+
+.lc-chat__message--received .lc-chat__message-bubble {
+  background-color: var(--lc-bg-secondary);
+  color: var(--lc-text);
+  border: 1px solid var(--lc-border);
+}
+
+.lc-chat__message-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--lc-spacing-sm);
+  font-size: var(--lc-font-size-xs);
+  color: var(--lc-text-muted);
+}
+
+.lc-chat__message--sent .lc-chat__message-meta {
+  justify-content: flex-end;
+}
+
+.lc-chat__message-sender {
+  font-weight: 500;
+}
+
+.lc-chat__message-time {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Chat empty state */
+.lc-chat__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--lc-text-muted);
+  text-align: center;
+  padding: var(--lc-spacing-xl);
+}
+
+.lc-chat__empty-icon {
+  width: 48px;
+  height: 48px;
+  opacity: 0.5;
+  margin-bottom: var(--lc-spacing-md);
+}
+
+/* Chat input area */
+.lc-chat__input-area {
+  display: flex;
+  gap: var(--lc-spacing-sm);
+  padding: var(--lc-spacing-md);
+  background-color: var(--lc-bg-secondary);
+  border-top: 1px solid var(--lc-border);
+}
+
+.lc-chat__input {
+  flex: 1;
+  padding: var(--lc-spacing-sm) var(--lc-spacing-md);
+  background-color: var(--lc-bg);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  color: var(--lc-text);
+  font-family: var(--lc-font);
+  font-size: var(--lc-font-size-base);
+  resize: none;
+  outline: none;
+  transition: border-color var(--lc-transition-fast);
+}
+
+.lc-chat__input:focus {
+  border-color: var(--lc-accent);
+}
+
+.lc-chat__input::placeholder {
+  color: var(--lc-text-muted);
+}
+
+.lc-chat__send {
+  width: 40px;
+  height: 40px;
+  background-color: var(--lc-accent);
+  border: none;
+  border-radius: var(--lc-radius);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lc-accent-text);
+  transition: background-color var(--lc-transition-fast);
+}
+
+.lc-chat__send:hover {
+  background-color: var(--lc-accent-hover);
+}
+
+.lc-chat__send:disabled {
+  background-color: var(--lc-bg-tertiary);
+  cursor: not-allowed;
+}
+
+.lc-chat__send-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   ContactForm Component (Offline Form)
+   ============================================ */
+.lc-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-spacing-lg);
+}
+
+.lc-form__header {
+  text-align: center;
+  margin-bottom: var(--lc-spacing-md);
+}
+
+.lc-form__title {
+  font-size: var(--lc-font-size-xl);
+  font-weight: 600;
+  color: var(--lc-text);
+  margin-bottom: var(--lc-spacing-sm);
+}
+
+.lc-form__description {
+  font-size: var(--lc-font-size-base);
+  color: var(--lc-text-muted);
+}
+
+.lc-form__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--lc-spacing-xs);
+}
+
+.lc-form__label {
+  font-size: var(--lc-font-size-sm);
+  font-weight: 500;
+  color: var(--lc-text);
+}
+
+.lc-form__label--required::after {
+  content: ' *';
+  color: var(--lc-error);
+}
+
+.lc-form__input,
+.lc-form__textarea {
+  padding: var(--lc-spacing-sm) var(--lc-spacing-md);
+  background-color: var(--lc-bg-secondary);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  color: var(--lc-text);
+  font-family: var(--lc-font);
+  font-size: var(--lc-font-size-base);
+  outline: none;
+  transition:
+    border-color var(--lc-transition-fast),
+    background-color var(--lc-transition-fast);
+}
+
+.lc-form__input:hover,
+.lc-form__textarea:hover {
+  border-color: var(--lc-border-hover);
+}
+
+.lc-form__input:focus,
+.lc-form__textarea:focus {
+  border-color: var(--lc-accent);
+  background-color: var(--lc-bg);
+}
+
+.lc-form__input::placeholder,
+.lc-form__textarea::placeholder {
+  color: var(--lc-text-muted);
+}
+
+.lc-form__input--error,
+.lc-form__textarea--error {
+  border-color: var(--lc-error);
+}
+
+.lc-form__textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.lc-form__error {
+  font-size: var(--lc-font-size-sm);
+  color: var(--lc-error);
+  display: flex;
+  align-items: center;
+  gap: var(--lc-spacing-xs);
+}
+
+.lc-form__success {
+  text-align: center;
+  padding: var(--lc-spacing-xl);
+}
+
+.lc-form__success-icon {
+  width: 64px;
+  height: 64px;
+  color: var(--lc-success);
+  margin-bottom: var(--lc-spacing-lg);
+}
+
+.lc-form__success-title {
+  font-size: var(--lc-font-size-xl);
+  font-weight: 600;
+  color: var(--lc-text);
+  margin-bottom: var(--lc-spacing-sm);
+}
+
+.lc-form__success-message {
+  font-size: var(--lc-font-size-base);
+  color: var(--lc-text-muted);
+}
+
+/* ============================================
+   Common Button Styles
+   ============================================ */
+.lc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--lc-spacing-sm);
+  padding: var(--lc-spacing-sm) var(--lc-spacing-lg);
+  font-family: var(--lc-font);
+  font-size: var(--lc-font-size-base);
+  font-weight: 500;
+  border-radius: var(--lc-radius);
+  cursor: pointer;
+  transition:
+    background-color var(--lc-transition-fast),
+    border-color var(--lc-transition-fast),
+    color var(--lc-transition-fast);
+  outline: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.lc-btn:focus {
+  outline: 2px solid var(--lc-accent);
+  outline-offset: 2px;
+}
+
+.lc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary button (yellow accent) */
+.lc-btn--primary {
+  background-color: var(--lc-accent);
+  border: 1px solid var(--lc-accent);
+  color: var(--lc-accent-text);
+}
+
+.lc-btn--primary:hover:not(:disabled) {
+  background-color: var(--lc-accent-hover);
+  border-color: var(--lc-accent-hover);
+}
+
+.lc-btn--primary:active:not(:disabled) {
+  background-color: var(--lc-accent-active);
+  border-color: var(--lc-accent-active);
+}
+
+/* Secondary button (outlined) */
+.lc-btn--secondary {
+  background-color: transparent;
+  border: 1px solid var(--lc-border);
+  color: var(--lc-text);
+}
+
+.lc-btn--secondary:hover:not(:disabled) {
+  background-color: var(--lc-bg-secondary);
+  border-color: var(--lc-border-hover);
+}
+
+.lc-btn--secondary:active:not(:disabled) {
+  background-color: var(--lc-bg-tertiary);
+}
+
+/* Ghost button (no border) */
+.lc-btn--ghost {
+  background-color: transparent;
+  border: 1px solid transparent;
+  color: var(--lc-text-muted);
+}
+
+.lc-btn--ghost:hover:not(:disabled) {
+  background-color: var(--lc-bg-secondary);
+  color: var(--lc-text);
+}
+
+/* Danger button (red) */
+.lc-btn--danger {
+  background-color: var(--lc-error);
+  border: 1px solid var(--lc-error);
+  color: var(--lc-text);
+}
+
+.lc-btn--danger:hover:not(:disabled) {
+  background-color: #dc2626; /* red-600 */
+  border-color: #dc2626;
+}
+
+/* Success button (green) */
+.lc-btn--success {
+  background-color: var(--lc-success);
+  border: 1px solid var(--lc-success);
+  color: var(--lc-accent-text);
+}
+
+.lc-btn--success:hover:not(:disabled) {
+  background-color: #16a34a; /* green-600 */
+  border-color: #16a34a;
+}
+
+/* Button sizes */
+.lc-btn--sm {
+  padding: var(--lc-spacing-xs) var(--lc-spacing-md);
+  font-size: var(--lc-font-size-sm);
+}
+
+.lc-btn--lg {
+  padding: var(--lc-spacing-md) var(--lc-spacing-xl);
+  font-size: var(--lc-font-size-lg);
+}
+
+/* Full width button */
+.lc-btn--block {
+  width: 100%;
+}
+
+/* Button icon */
+.lc-btn__icon {
+  width: 18px;
+  height: 18px;
+}
+
+.lc-btn--sm .lc-btn__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.lc-btn--lg .lc-btn__icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* ============================================
+   Common Typography
+   ============================================ */
+.lc-heading {
+  font-family: var(--lc-font);
+  font-weight: 600;
+  color: var(--lc-text);
+  line-height: 1.2;
+}
+
+.lc-heading--xl {
+  font-size: var(--lc-font-size-2xl);
+}
+
+.lc-heading--lg {
+  font-size: var(--lc-font-size-xl);
+}
+
+.lc-heading--md {
+  font-size: var(--lc-font-size-lg);
+}
+
+.lc-heading--sm {
+  font-size: var(--lc-font-size-base);
+}
+
+.lc-text {
+  font-family: var(--lc-font);
+  color: var(--lc-text);
+  line-height: 1.5;
+}
+
+.lc-text--muted {
+  color: var(--lc-text-muted);
+}
+
+.lc-text--sm {
+  font-size: var(--lc-font-size-sm);
+}
+
+.lc-text--xs {
+  font-size: var(--lc-font-size-xs);
+}
+
+/* ============================================
+   Common Utility Classes
+   ============================================ */
+
+/* Flexbox utilities */
+.lc-flex {
+  display: flex;
+}
+
+.lc-flex--col {
+  flex-direction: column;
+}
+
+.lc-flex--center {
+  align-items: center;
+  justify-content: center;
+}
+
+.lc-flex--between {
+  justify-content: space-between;
+}
+
+.lc-flex--gap-sm {
+  gap: var(--lc-spacing-sm);
+}
+
+.lc-flex--gap-md {
+  gap: var(--lc-spacing-md);
+}
+
+.lc-flex--gap-lg {
+  gap: var(--lc-spacing-lg);
+}
+
+/* Spacing utilities */
+.lc-mt-sm { margin-top: var(--lc-spacing-sm); }
+.lc-mt-md { margin-top: var(--lc-spacing-md); }
+.lc-mt-lg { margin-top: var(--lc-spacing-lg); }
+.lc-mb-sm { margin-bottom: var(--lc-spacing-sm); }
+.lc-mb-md { margin-bottom: var(--lc-spacing-md); }
+.lc-mb-lg { margin-bottom: var(--lc-spacing-lg); }
+
+/* Text alignment */
+.lc-text-center { text-align: center; }
+.lc-text-left { text-align: left; }
+.lc-text-right { text-align: right; }
+
+/* Display utilities */
+.lc-hidden { display: none; }
+.lc-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ============================================
+   Loading Spinner
+   ============================================ */
+.lc-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--lc-border);
+  border-top-color: var(--lc-accent);
+  border-radius: 50%;
+  animation: lc-spin 0.8s linear infinite;
+}
+
+.lc-spinner--sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.lc-spinner--lg {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+/* ============================================
+   Badge Component
+   ============================================ */
+.lc-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--lc-spacing-xs) var(--lc-spacing-sm);
+  font-size: var(--lc-font-size-xs);
+  font-weight: 500;
+  border-radius: var(--lc-radius);
+}
+
+.lc-badge--default {
+  background-color: var(--lc-bg-secondary);
+  color: var(--lc-text-muted);
+}
+
+.lc-badge--success {
+  background-color: var(--lc-success-bg);
+  color: var(--lc-success);
+}
+
+.lc-badge--error {
+  background-color: var(--lc-error-bg);
+  color: var(--lc-error);
+}
+
+.lc-badge--accent {
+  background-color: var(--lc-accent);
+  color: var(--lc-accent-text);
+}
+
+/* ============================================
+   Tooltip Component
+   ============================================ */
+.lc-tooltip {
+  position: relative;
+}
+
+.lc-tooltip__content {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--lc-spacing-xs) var(--lc-spacing-sm);
+  background-color: var(--lc-bg-tertiary);
+  border: 1px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  font-size: var(--lc-font-size-xs);
+  color: var(--lc-text);
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--lc-transition-fast),
+    visibility var(--lc-transition-fast);
+  margin-bottom: var(--lc-spacing-xs);
+  z-index: var(--lc-z-overlay);
+}
+
+.lc-tooltip:hover .lc-tooltip__content {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+.lc-fade-in {
+  animation: lc-fade-in var(--lc-transition-normal) ease-out;
+}
+
+@keyframes lc-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.lc-slide-in-up {
+  animation: lc-slide-up var(--lc-transition-normal) ease-out;
+}
+
+.lc-slide-in-down {
+  animation: lc-slide-down var(--lc-transition-normal) ease-out;
+}
+
+@keyframes lc-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Mobile / Responsive Styles
+   ============================================ */
+@media (max-width: 480px) {
+  .lc-panel {
+    width: 100%;
+    max-width: 100%;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    max-height: 85vh;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+  }
+
+  .lc-fab {
+    width: 52px;
+    height: 52px;
+  }
+
+  .lc-fab--bottom-right,
+  .lc-fab--bottom-left {
+    bottom: 16px;
+  }
+
+  .lc-fab--bottom-right {
+    right: 16px;
+  }
+
+  .lc-fab--bottom-left {
+    left: 16px;
+  }
+
+  .lc-ping {
+    left: 16px !important;
+    right: 16px !important;
+    width: auto;
+    min-width: auto;
+  }
+
+  .lc-video__local {
+    width: 100px;
+    height: 75px;
+    bottom: 72px;
+    right: var(--lc-spacing-md);
+  }
+
+  .lc-video__control {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lc-chat__input-area {
+    padding: var(--lc-spacing-sm);
+  }
+}
+
+/* Landscape orientation adjustments */
+@media (max-height: 500px) and (orientation: landscape) {
+  .lc-panel {
+    max-height: 100vh;
+    height: 100vh;
+    bottom: 0 !important;
+    top: 0 !important;
+  }
+
+  .lc-waiting {
+    min-height: 200px;
+    padding: var(--lc-spacing-lg);
+  }
+
+  .lc-video {
+    min-height: 100%;
+  }
+}
+
+/* ============================================
+   Reduced Motion Preference
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   High Contrast Mode Support
+   ============================================ */
+@media (prefers-contrast: high) {
+  :host {
+    --lc-border: #57534e;
+    --lc-text-muted: #d6d3d1;
+  }
+
+  .lc-btn--secondary {
+    border-width: 2px;
+  }
+
+  .lc-form__input,
+  .lc-form__textarea {
+    border-width: 2px;
+  }
+}
