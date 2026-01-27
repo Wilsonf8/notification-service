@@ -1,7 +1,9 @@
 package com.notificationservice.websocket.config;
 
 import com.notificationservice.websocket.handler.RepWebSocketHandler;
+import com.notificationservice.websocket.handler.WidgetWebSocketHandler;
 import com.notificationservice.websocket.interceptor.RepHandshakeInterceptor;
+import com.notificationservice.websocket.interceptor.WidgetHandshakeInterceptor;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +16,7 @@ import org.springframework.web.socket.server.standard.ServletServerContainerFact
 
 /**
  * WebSocket configuration for LiveConnect.
- * Note: Widget WebSocket uses JSR 356 native endpoint (WidgetWebSocketEndpoint).
- * This config only registers the rep dashboard handler.
+ * Registers both rep dashboard and widget visitor handlers.
  */
 @Slf4j
 @Configuration
@@ -40,16 +41,23 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private final RepWebSocketHandler repWebSocketHandler;
     private final RepHandshakeInterceptor repHandshakeInterceptor;
+    private final WidgetWebSocketHandler widgetWebSocketHandler;
+    private final WidgetHandshakeInterceptor widgetHandshakeInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         log.info("[WebSocketConfig] Registering WebSocket handlers...");
 
         // Rep dashboard: JWT cookie auth (web browser) or Authorization header/query string (Swift app)
-        // Note: This will also need JSR 356 conversion for Railway compatibility
         registry.addHandler(repWebSocketHandler, "/api/projects/{projectId}/liveconnect/ws")
                 .addInterceptors(repHandshakeInterceptor)
                 .setAllowedOriginPatterns("*");
         log.info("[WebSocketConfig] Registered rep handler at /api/projects/{projectId}/liveconnect/ws");
+
+        // Widget: session token auth via query string
+        registry.addHandler(widgetWebSocketHandler, "/v1/liveconnect/ws")
+                .addInterceptors(widgetHandshakeInterceptor)
+                .setAllowedOriginPatterns("*");
+        log.info("[WebSocketConfig] Registered widget handler at /v1/liveconnect/ws");
     }
 }
