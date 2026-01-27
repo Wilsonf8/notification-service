@@ -86,9 +86,14 @@ public class LiveConnectSessionService {
         // Cache session in Redis for fast lookup
         cacheSession(session);
 
-        // Get widget settings
+        // Get or create widget settings
         LiveConnectSettings settings = settingsRepository.findByProjectId(project.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("LiveConnect settings not found"));
+                .orElseGet(() -> {
+                    LiveConnectSettings defaultSettings = LiveConnectSettings.builder()
+                            .project(project)
+                            .build();
+                    return settingsRepository.save(defaultSettings);
+                });
 
         return new WidgetInitResponse(
                 sessionToken,
