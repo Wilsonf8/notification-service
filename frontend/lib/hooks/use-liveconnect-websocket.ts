@@ -12,8 +12,17 @@ import type {
   LiveConnectMessage,
 } from "@/lib/types";
 
-/** WebSocket API base URL from environment variable */
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8081";
+/**
+ * Derives WebSocket URL from API URL.
+ * Converts https:// to wss:// and http:// to ws://
+ */
+function getWebSocketUrl(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
+  return apiUrl.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://");
+}
+
+/** WebSocket API base URL */
+const WS_URL = getWebSocketUrl();
 
 /** Heartbeat interval in milliseconds */
 const HEARTBEAT_INTERVAL = 15000;
