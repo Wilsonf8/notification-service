@@ -26,6 +26,7 @@ import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,7 @@ import java.util.UUID;
  * Public API controller for LiveConnect widget endpoints.
  * These endpoints are called directly by the embedded widget from customer websites.
  */
+@Slf4j
 @RestController
 @RequestMapping("/v1/liveconnect")
 @RequiredArgsConstructor
@@ -49,6 +51,15 @@ public class LiveConnectWidgetController {
     private final LiveConnectConversationService conversationService;
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveKitTokenService liveKitTokenService;
+
+    /**
+     * Simple health check for the widget API.
+     */
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        log.info("[LiveConnect] Health check called");
+        return ResponseEntity.ok("OK");
+    }
 
     /**
      * Initializes a widget session.
@@ -66,8 +77,14 @@ public class LiveConnectWidgetController {
             @Valid @RequestBody WidgetInitRequest request,
             HttpServletRequest httpRequest) {
 
+        log.info("[LiveConnect] Init request received - embedKey: {}..., origin: {}, visitorId: {}",
+                embedKeyHeader != null && embedKeyHeader.length() > 10 ? embedKeyHeader.substring(0, 10) : embedKeyHeader,
+                origin,
+                request.visitorId());
+
         // Extract client IP
         String clientIp = extractClientIp(httpRequest);
+        log.debug("[LiveConnect] Client IP: {}", clientIp);
 
         // Check rate limit (IP only for init)
         rateLimitService.checkWidgetInit(clientIp);
