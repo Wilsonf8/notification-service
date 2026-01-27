@@ -7,10 +7,12 @@ import com.notificationservice.websocket.interceptor.WidgetHandshakeInterceptor;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
+import org.springframework.web.socket.server.standard.ServletServerContainerFactoryBean;
 
 /**
  * WebSocket configuration for LiveConnect.
@@ -25,6 +27,16 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @PostConstruct
     public void init() {
         log.info("[WebSocketConfig] WebSocket configuration initialized");
+    }
+
+    @Bean
+    public ServletServerContainerFactoryBean createWebSocketContainer() {
+        log.info("[WebSocketConfig] Creating WebSocket container");
+        ServletServerContainerFactoryBean container = new ServletServerContainerFactoryBean();
+        container.setMaxTextMessageBufferSize(8192);
+        container.setMaxBinaryMessageBufferSize(8192);
+        container.setMaxSessionIdleTimeout(600000L); // 10 minutes
+        return container;
     }
 
     private final RepWebSocketHandler repWebSocketHandler;
