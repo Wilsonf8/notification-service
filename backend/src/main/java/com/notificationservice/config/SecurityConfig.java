@@ -80,9 +80,10 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/v1/notify", notifyConfig);
 
         // Allow all origins for /v1/liveconnect/** (widget endpoints, uses embed key auth)
+        // GET is required for WebSocket upgrade handshake
         CorsConfiguration liveconnectConfig = new CorsConfiguration();
         liveconnectConfig.setAllowedOrigins(List.of("*"));
-        liveconnectConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
+        liveconnectConfig.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
         liveconnectConfig.setAllowedHeaders(List.of("*"));
         liveconnectConfig.setAllowCredentials(false);
         source.registerCorsConfiguration("/v1/liveconnect/**", liveconnectConfig);
