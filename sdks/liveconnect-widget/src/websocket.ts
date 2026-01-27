@@ -65,9 +65,26 @@ export interface MessageReceivedEvent {
 }
 
 /**
+ * Connected acknowledgement - Server confirms WebSocket connection.
+ */
+export interface ConnectedAck {
+  type: 'connected';
+  sessionId?: string;
+}
+
+/**
+ * Pong acknowledgement - Server response to ping.
+ */
+export interface PongAck {
+  type: 'pong';
+}
+
+/**
  * Union type for all incoming WebSocket events.
  */
 export type IncomingEvent =
+  | ConnectedAck
+  | PongAck
   | IncomingPingEvent
   | CallStartingEvent
   | CallEndedEvent
