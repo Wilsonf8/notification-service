@@ -75,6 +75,7 @@ export interface Event {
 /** Request body for creating a project */
 export interface CreateProjectRequest {
   name: string;
+  type?: ProjectType;
 }
 
 /** Request body for updating a project */

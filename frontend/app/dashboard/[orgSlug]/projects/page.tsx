@@ -27,10 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconPlus, IconFolder } from "@tabler/icons-react";
+import { IconPlus, IconFolder, IconBell, IconVideo } from "@tabler/icons-react";
 import { getOrganizationProjects, createOrganizationProject } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
-import type { Project } from "@/lib/types";
+import type { Project, ProjectType } from "@/lib/types";
 
 /** Page params containing the org slug */
 interface ProjectsPageProps {
@@ -53,6 +53,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectType, setNewProjectType] = useState<ProjectType>("NOTIFYKIT");
   const [creating, setCreating] = useState(false);
 
   /**
@@ -83,9 +84,11 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
       // Use orgSlug from URL directly
       const project = await createOrganizationProject(orgSlug, {
         name: newProjectName.trim(),
+        type: newProjectType,
       });
       setProjects((prev) => [...prev, project]);
       setNewProjectName("");
+      setNewProjectType("NOTIFYKIT");
       setIsCreateOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create project");
@@ -143,6 +146,45 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
+                <Label>Project Type</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setNewProjectType("NOTIFYKIT")}
+                    className={`flex flex-col items-center gap-2 p-4 border text-left transition-colors ${
+                      newProjectType === "NOTIFYKIT"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <IconBell className="h-6 w-6" />
+                    <div className="text-center">
+                      <p className="font-medium text-sm">NotifyKit</p>
+                      <p className="text-xs text-muted-foreground">
+                        Telegram notifications
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewProjectType("LIVECONNECT")}
+                    className={`flex flex-col items-center gap-2 p-4 border text-left transition-colors ${
+                      newProjectType === "LIVECONNECT"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground"
+                    }`}
+                  >
+                    <IconVideo className="h-6 w-6" />
+                    <div className="text-center">
+                      <p className="font-medium text-sm">LiveConnect</p>
+                      <p className="text-xs text-muted-foreground">
+                        Video chat widget
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="name">Project Name</Label>
                 <Input
                   id="name"
@@ -198,9 +240,16 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             <Link key={project.id} href={`/dashboard/${orgSlug}/projects/${project.id}`}>
               <Card className="cursor-pointer transition-colors hover:bg-accent">
                 <CardHeader>
-                  <CardTitle className="text-lg">{project.name}</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">{project.name}</CardTitle>
+                    {project.type === "LIVECONNECT" ? (
+                      <IconVideo className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <IconBell className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                   <CardDescription>
-                    Created {new Date(project.createdAt).toLocaleDateString()}
+                    {project.type === "LIVECONNECT" ? "LiveConnect" : "NotifyKit"} · Created {new Date(project.createdAt).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
               </Card>
