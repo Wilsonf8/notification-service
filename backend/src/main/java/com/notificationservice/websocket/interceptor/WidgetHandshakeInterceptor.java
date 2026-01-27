@@ -32,9 +32,12 @@ public class WidgetHandshakeInterceptor implements HandshakeInterceptor {
             Map<String, Object> attributes) {
 
         try {
-            // Extract session token from query string
-            String sessionToken = UriComponentsBuilder.fromUri(request.getURI())
-                    .build().getQueryParams().getFirst("session");
+            // Extract session token from query string (supports both "token" and "session" params)
+            var queryParams = UriComponentsBuilder.fromUri(request.getURI()).build().getQueryParams();
+            String sessionToken = queryParams.getFirst("token");
+            if (sessionToken == null) {
+                sessionToken = queryParams.getFirst("session");
+            }
 
             if (sessionToken == null || sessionToken.isBlank()) {
                 log.warn("Widget handshake failed: No session token provided");
