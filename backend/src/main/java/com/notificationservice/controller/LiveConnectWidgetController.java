@@ -1,5 +1,10 @@
 package com.notificationservice.controller;
 
+import com.notificationservice.dto.AcceptPingResponse;
+import com.notificationservice.dto.ContactFormRequest;
+import com.notificationservice.dto.MessageResponse;
+import com.notificationservice.dto.RequestResponse;
+import com.notificationservice.dto.SendMessageRequest;
 import com.notificationservice.dto.TokenRequest;
 import com.notificationservice.dto.TokenResponse;
 import com.notificationservice.dto.WidgetInitRequest;
@@ -8,12 +13,15 @@ import com.notificationservice.entity.ConversationStatus;
 import com.notificationservice.entity.LiveConnectConversation;
 import com.notificationservice.entity.LiveConnectEmbedKey;
 import com.notificationservice.entity.LiveConnectSession;
-import com.notificationservice.service.LiveKitTokenService;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.service.AccessDeniedException;
+import com.notificationservice.service.LiveConnectContactService;
+import com.notificationservice.service.LiveConnectConversationService;
 import com.notificationservice.service.LiveConnectEmbedKeyService;
 import com.notificationservice.service.LiveConnectRateLimitService;
+import com.notificationservice.service.LiveConnectRequestService;
 import com.notificationservice.service.LiveConnectSessionService;
+import com.notificationservice.service.LiveKitTokenService;
 import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -22,6 +30,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.UUID;
 
 /**
  * Public API controller for LiveConnect widget endpoints.
@@ -35,6 +44,9 @@ public class LiveConnectWidgetController {
     private final LiveConnectRateLimitService rateLimitService;
     private final LiveConnectEmbedKeyService embedKeyService;
     private final LiveConnectSessionService sessionService;
+    private final LiveConnectRequestService requestService;
+    private final LiveConnectContactService contactService;
+    private final LiveConnectConversationService conversationService;
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveKitTokenService liveKitTokenService;
 
@@ -111,6 +123,145 @@ public class LiveConnectWidgetController {
                 conversation.getLiveKitRoomName(),
                 liveKitTokenService.getLiveKitUrl()
         ));
+    }
+
+    /**
+     * Requests a call with any available rep.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param httpRequest the HTTP request for IP extraction
+     * @return the request response with request ID and expiration time
+     */
+    @PostMapping("/request")
+    public ResponseEntity<RequestResponse> requestCall(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = extractClientIp(httpRequest);
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        rateLimitService.checkRequestCall(session.getVisitor().getVisitorId(), clientIp);
+
+        RequestResponse response = requestService.createVisitorRequest(
+                session.getProject().getId(),
+                session.getVisitor()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Cancels a pending request.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param requestId the request ID to cancel
+     * @return no content on success
+     */
+    @PostMapping("/request/{requestId}/cancel")
+    public ResponseEntity<Void> cancelRequest(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @PathVariable UUID requestId) {
+
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        requestService.cancelRequest(requestId, session.getVisitor().getId());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Accepts a rep's ping and starts the call.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param requestId the ping request ID to accept
+     * @return the accept response with conversation details and LiveKit tokens
+     */
+    @PostMapping("/ping/{requestId}/accept")
+    public ResponseEntity<AcceptPingResponse> acceptPing(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @PathVariable UUID requestId) {
+
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        AcceptPingResponse response = requestService.visitorAcceptsPing(
+                requestId,
+                session.getVisitor().getId()
+        );
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Declines a rep's ping.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param requestId the ping request ID to decline
+     * @return no content on success
+     */
+    @PostMapping("/ping/{requestId}/decline")
+    public ResponseEntity<Void> declinePing(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @PathVariable UUID requestId) {
+
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        requestService.visitorDeclinesPing(requestId, session.getVisitor().getId());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Submits a contact form when reps are offline.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param request the contact form data
+     * @param httpRequest the HTTP request for IP extraction
+     * @return ok on success
+     */
+    @PostMapping("/contact")
+    public ResponseEntity<Void> submitContact(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @Valid @RequestBody ContactFormRequest request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = extractClientIp(httpRequest);
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        rateLimitService.checkLeaveContact(session.getVisitor().getVisitorId(), clientIp);
+
+        contactService.submitContactForm(session, request);
+
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Sends a chat message during an active call.
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param conversationId the conversation ID
+     * @param request the message content
+     * @param httpRequest the HTTP request for IP extraction
+     * @return the message response with message ID and timestamp
+     */
+    @PostMapping("/conversations/{conversationId}/messages")
+    public ResponseEntity<MessageResponse> sendMessage(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @PathVariable UUID conversationId,
+            @Valid @RequestBody SendMessageRequest request,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = extractClientIp(httpRequest);
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+
+        rateLimitService.checkInCallMessage(session.getVisitor().getVisitorId(), clientIp);
+
+        MessageResponse response = conversationService.sendVisitorMessage(
+                conversationId,
+                session.getVisitor().getId(),
+                request.content()
+        );
+
+        return ResponseEntity.ok(response);
     }
 
     /**

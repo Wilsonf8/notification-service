@@ -6,6 +6,7 @@ import com.notificationservice.dto.LiveConnectMessageDto;
 import com.notificationservice.dto.LiveConnectRepDto;
 import com.notificationservice.dto.LiveConnectVisitorDto;
 import com.notificationservice.dto.MessageListResponse;
+import com.notificationservice.dto.MessageResponse;
 import com.notificationservice.dto.SendMessageRequest;
 import com.notificationservice.entity.ConversationStatus;
 import com.notificationservice.entity.ConversationType;
@@ -292,6 +293,62 @@ public class LiveConnectConversationService {
                 conversation.getCallDurationSeconds()
         );
         broadcaster.sendToVisitor(conversation.getVisitor().getId(), event);
+    }
+
+    /**
+     * Sends a message from a visitor in an active conversation.
+     *
+     * @param conversationId the conversation ID
+     * @param visitorId the visitor's internal ID
+     * @param content the message content
+     * @return the created message response
+     * @throws ResourceNotFoundException if conversation not found
+     * @throws AccessDeniedException if visitor doesn't own the conversation
+     * @throws IllegalArgumentException if conversation is not active
+     */
+    @Transactional
+    public MessageResponse sendVisitorMessage(UUID conversationId, UUID visitorId, String content) {
+        LiveConnectConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+
+        // Verify visitor owns this conversation
+        if (!conversation.getVisitor().getId().equals(visitorId)) {
+            throw new AccessDeniedException("You do not own this conversation");
+        }
+
+        // Verify conversation is active
+        if (conversation.getStatus() != ConversationStatus.ACTIVE) {
+            throw new IllegalArgumentException("Cannot send messages to an ended conversation");
+        }
+
+        LiveConnectMessage message = LiveConnectMessage.builder()
+                .conversation(conversation)
+                .senderType(MessageSenderType.USER)
+                .senderId(visitorId)
+                .content(content)
+                .build();
+
+        message = messageRepository.save(message);
+
+        conversation.setLastActivityAt(OffsetDateTime.now());
+        conversationRepository.save(conversation);
+
+        // Broadcast message to rep
+        LiveConnectVisitor visitor = conversation.getVisitor();
+        LiveConnectRep rep = conversation.getRep();
+        if (rep != null) {
+            MessageReceivedEvent event = new MessageReceivedEvent(
+                    conversationId,
+                    message.getId(),
+                    MessageSenderType.USER.name(),
+                    visitor.getName() != null ? visitor.getName() : "Visitor",
+                    content,
+                    message.getCreatedAt()
+            );
+            broadcaster.sendToRep(rep.getUser().getId(), event);
+        }
+
+        return new MessageResponse(message.getId(), message.getCreatedAt());
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {
