@@ -7,6 +7,7 @@ import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.Project;
 import com.notificationservice.entity.ProjectType;
 import com.notificationservice.entity.RepAvailability;
+import com.notificationservice.entity.RepPresence;
 import com.notificationservice.entity.User;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
@@ -140,6 +141,31 @@ public class LiveConnectRepService {
         RepAvailabilityChangedEvent event = new RepAvailabilityChangedEvent(hasAvailableReps);
         broadcaster.broadcastToProjectVisitors(projectId, event);
 
+        return toDto(savedRep);
+    }
+
+    /**
+     * Resets a rep's state, clearing any stuck conversation and setting presence to ONLINE.
+     * Useful for recovering from failed calls during testing.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @return the updated rep DTO
+     * @throws ResourceNotFoundException if project not found or user is not a rep
+     */
+    @Transactional
+    public LiveConnectRepDto resetRepState(UUID projectId, UUID userId) {
+        projectRepository.findByIdAndNotDeleted(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+        LiveConnectRep rep = verifyRepAccess(projectId, userId);
+
+        // Clear any stuck conversation
+        rep.setCurrentConversation(null);
+        rep.setPresence(RepPresence.ONLINE);
+        rep.setCallStartedAt(null);
+
+        LiveConnectRep savedRep = repRepository.save(rep);
         return toDto(savedRep);
     }
 

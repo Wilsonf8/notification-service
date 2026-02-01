@@ -116,6 +116,21 @@ public class LiveConnectDashboardController {
         return ResponseEntity.ok(repService.updateAvailability(projectId, request, userId));
     }
 
+    /**
+     * Resets the calling user's state (clears current conversation, sets to ONLINE).
+     * Useful for recovering from failed calls or stuck state during testing.
+     *
+     * @param projectId the project ID
+     * @param userId the authenticated user's ID (must be a rep)
+     * @return the updated rep
+     */
+    @PostMapping("/reset-state")
+    public ResponseEntity<LiveConnectRepDto> resetRepState(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(repService.resetRepState(projectId, userId));
+    }
+
     // Visitor Endpoints
 
     /**

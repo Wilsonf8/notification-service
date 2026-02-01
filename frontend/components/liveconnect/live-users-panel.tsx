@@ -13,10 +13,11 @@ import {
   IconWifi,
   IconWifiOff,
   IconRefresh,
+  IconRotate,
 } from "@tabler/icons-react";
 import { useLiveConnectWebSocket } from "@/lib/hooks/use-liveconnect-websocket";
 import { useRepPresence } from "@/lib/hooks/use-rep-presence";
-import { getVisitors, getReps } from "@/lib/api/liveconnect-dashboard";
+import { getVisitors, getReps, resetRepState } from "@/lib/api/liveconnect-dashboard";
 import type { LiveConnectRep, LiveConnectVisitor, LiveConnectRequest, VisitorsResponse } from "@/lib/types";
 import { AvailabilityToggle } from "./availability-toggle";
 import { RequestQueue } from "./request-queue";
@@ -37,6 +38,7 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [currentRep, setCurrentRep] = useState<LiveConnectRep | null>(null);
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   // Local state for visitors/requests
   const [visitors, setVisitors] = useState<LiveConnectVisitor[]>([]);
@@ -94,6 +96,23 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
     ? visitors.find((v) => v.id === selectedVisitorId) || null
     : null;
 
+  /**
+   * Resets the rep's state (clears stuck conversation).
+   * Useful for testing when calls fail to connect.
+   */
+  const handleResetState = async () => {
+    try {
+      setIsResetting(true);
+      setError(null);
+      const updatedRep = await resetRepState(projectId);
+      setCurrentRep(updatedRep);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset state");
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   if (initialLoading) {
     return (
       <div className="space-y-4">
@@ -134,12 +153,23 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
           )}
         </div>
 
-        <AvailabilityToggle
-          availability={availability}
-          presence={presence}
-          isUpdating={isAvailabilityUpdating}
-          onAvailabilityChange={setAvailability}
-        />
+        <div className="flex items-center gap-2">
+          <AvailabilityToggle
+            availability={availability}
+            presence={presence}
+            isUpdating={isAvailabilityUpdating}
+            onAvailabilityChange={setAvailability}
+          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetState}
+            disabled={isResetting}
+            title="Reset state (clear stuck call)"
+          >
+            <IconRotate className={`h-4 w-4 ${isResetting ? "animate-spin" : ""}`} />
+          </Button>
+        </div>
       </div>
 
       {error && (

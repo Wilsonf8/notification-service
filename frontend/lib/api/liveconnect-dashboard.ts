@@ -85,6 +85,21 @@ export async function updateAvailability(
   );
 }
 
+/**
+ * Resets the current rep's state (clears stuck conversation).
+ * Useful for recovering from failed calls during testing.
+ * @param projectId - The project ID
+ * @returns The updated rep
+ */
+export async function resetRepState(
+  projectId: string
+): Promise<LiveConnectRep> {
+  return apiFetch<LiveConnectRep>(
+    `/api/projects/${projectId}/liveconnect/reset-state`,
+    { method: "POST" }
+  );
+}
+
 // ============================================================================
 // Live Users (Visitors)
 // ============================================================================
