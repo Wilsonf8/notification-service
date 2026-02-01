@@ -80,6 +80,15 @@ export interface PongAck {
 }
 
 /**
+ * Request expired event - Visitor's request timed out with no rep accepting.
+ */
+export interface RequestExpiredEvent {
+  type: 'request_expired';
+  /** The request ID that expired */
+  requestId: string;
+}
+
+/**
  * Union type for all incoming WebSocket events.
  */
 export type IncomingEvent =
@@ -88,7 +97,8 @@ export type IncomingEvent =
   | IncomingPingEvent
   | CallStartingEvent
   | CallEndedEvent
-  | MessageReceivedEvent;
+  | MessageReceivedEvent
+  | RequestExpiredEvent;
 
 // ============================================================================
 // Outgoing Message Types (Client -> Server)
@@ -138,6 +148,7 @@ export interface WebSocketEventMap {
   call_starting: (event: CallStartingEvent) => void;
   call_ended: (event: CallEndedEvent) => void;
   message_received: (event: MessageReceivedEvent) => void;
+  request_expired: (event: RequestExpiredEvent) => void;
   connection_state_change: (state: ConnectionState) => void;
   error: (error: Error) => void;
 }
@@ -392,6 +403,9 @@ export class WebSocketClient {
           break;
         case 'message_received':
           this.emit('message_received', message as MessageReceivedEvent);
+          break;
+        case 'request_expired':
+          this.emit('request_expired', message as RequestExpiredEvent);
           break;
         default: {
           // Handle unknown message types gracefully

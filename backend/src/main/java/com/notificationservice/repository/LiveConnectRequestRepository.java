@@ -31,4 +31,10 @@ public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectR
     @Modifying
     @Query("UPDATE LiveConnectRequest r SET r.status = 'EXPIRED' WHERE r.status = 'PENDING' AND r.expiresAt < :now")
     int expirePendingRequests(OffsetDateTime now);
+
+    /**
+     * Finds pending requests that have expired (for scheduler to process individually).
+     */
+    @Query("SELECT r FROM LiveConnectRequest r WHERE r.status = :status AND r.expiresAt < :expiresAtBefore")
+    List<LiveConnectRequest> findByStatusAndExpiresAtBefore(RequestStatus status, OffsetDateTime expiresAtBefore);
 }

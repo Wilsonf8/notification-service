@@ -25,6 +25,7 @@ import {
   type CallStartingEvent,
   type CallEndedEvent,
   type MessageReceivedEvent,
+  type RequestExpiredEvent,
 } from '../websocket';
 import { connectToRoom, disconnectFromRoom } from '../livekit';
 import {
@@ -212,6 +213,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Handle message received
     ws.on('message_received', handleMessageReceived);
 
+    // Handle request expired (visitor's request timed out)
+    ws.on('request_expired', handleRequestExpired);
+
     // Handle connection state changes
     ws.on('connection_state_change', (state) => {
       if (state === 'disconnected') {
@@ -297,6 +301,20 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     };
 
     setChatMessages((prev) => [...prev, newMessage]);
+  }, []);
+
+  /**
+   * Handles request expired event.
+   * Visitor's call request timed out with no rep accepting.
+   * @param _event - Request expired event data
+   */
+  const handleRequestExpired = useCallback((_event: RequestExpiredEvent): void => {
+    // Only handle if we're in WAITING state (visitor requested a call)
+    const currentState = widgetState.value;
+    if (currentState.type === WidgetStateType.WAITING) {
+      // Return to collapsed state - visitor can try again
+      collapse();
+    }
   }, []);
 
   // ============================================================================
