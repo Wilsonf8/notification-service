@@ -104,8 +104,8 @@ function RequestItem({ request, projectId }: RequestItemProps) {
     try {
       setIsAccepting(true);
       const response = await acceptRequest(projectId, request.id);
-      // Navigate to the call page with rep auth params
-      const callUrl = `/call/${response.roomName}?token=${encodeURIComponent(response.token)}&conversation=${response.conversationId}&project=${projectId}`;
+      // Navigate to the call page with rep auth params including LiveKit URL
+      const callUrl = `/call/${response.roomName}?token=${encodeURIComponent(response.token)}&conversation=${response.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(response.liveKitUrl)}`;
       window.open(callUrl, "_blank", "width=900,height=600");
     } catch (err) {
       console.error("Failed to accept request:", err);

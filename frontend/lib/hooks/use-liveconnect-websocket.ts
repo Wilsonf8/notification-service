@@ -45,6 +45,7 @@ type WebSocketEventType =
   | "call_ended"
   | "queue_updated"
   | "rep_availability_changed"
+  | "conversation_started"
   | "pong";
 
 /**
@@ -141,6 +142,15 @@ interface RepAvailabilityChangedEvent extends BaseWebSocketEvent {
   hasAvailableReps: boolean;
 }
 
+/** Conversation started event from backend */
+interface ConversationStartedEvent extends BaseWebSocketEvent {
+  type: "conversation_started";
+  conversationId: string;
+  visitorId: string;
+  roomName: string;
+  token: string;
+}
+
 /** Union of all WebSocket event types */
 type WebSocketEvent =
   | VisitorJoinedEvent
@@ -153,7 +163,8 @@ type WebSocketEvent =
   | CallEndedWebSocketEvent
   | QueueUpdatedEvent
   | PongEvent
-  | RepAvailabilityChangedEvent;
+  | RepAvailabilityChangedEvent
+  | ConversationStartedEvent;
 
 /** Hook return type */
 export interface UseLiveConnectWebSocketReturn {
@@ -322,6 +333,11 @@ export function useLiveConnectWebSocket(
 
       case "pong":
         // Heartbeat acknowledged
+        break;
+
+      case "conversation_started":
+        // Conversation started - rep already opened call window via Accept button
+        // This event confirms the conversation was created successfully
         break;
 
       default:

@@ -142,6 +142,7 @@ function CallPageContent() {
   const repToken = searchParams.get('token');
   const conversationId = searchParams.get('conversation');
   const projectId = searchParams.get('project');
+  const liveKitUrl = searchParams.get('liveKitUrl');
 
   // Determine auth type - rep uses JWT token from localStorage, visitor uses session token
   const isRepCall = !!repToken;
@@ -297,11 +298,11 @@ function CallPageContent() {
       let config: LiveKitConfig;
       if (isRepCall && repToken) {
         // Rep auth - token was provided directly in URL (from acceptRequest response)
-        // The repToken IS the LiveKit token
+        // The repToken IS the LiveKit token, liveKitUrl comes from the same response
         config = {
           token: repToken,
           roomName: roomName,
-          url: process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://livekit.notifykit.dev',
+          url: liveKitUrl || process.env.NEXT_PUBLIC_LIVEKIT_URL || 'wss://livekit.notifykit.dev',
         };
       } else if (sessionToken) {
         // Visitor auth - fetch token from API
@@ -391,6 +392,7 @@ function CallPageContent() {
     repToken,
     conversationId,
     roomName,
+    liveKitUrl,
     isRepCall,
     attachTrack,
     handleTrackSubscribed,
