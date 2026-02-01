@@ -172,7 +172,12 @@ public class LiveConnectRequestService {
         );
         broadcaster.sendToVisitor(request.getVisitor().getId(), visitorEvent);
 
-        return new AcceptRequestResponse(conversation.getId(), roomName, repToken);
+        return new AcceptRequestResponse(
+                conversation.getId(),
+                roomName,
+                repToken,
+                liveKitTokenService.getLiveKitUrl()
+        );
     }
 
     /**
