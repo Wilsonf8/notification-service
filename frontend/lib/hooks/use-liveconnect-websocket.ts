@@ -47,62 +47,113 @@ type WebSocketEventType =
   | "rep_availability_changed"
   | "pong";
 
-/** WebSocket event payload */
-interface WebSocketEvent {
+/**
+ * Base WebSocket event with type field.
+ * Backend sends flat events without a nested 'data' wrapper.
+ */
+interface BaseWebSocketEvent {
   type: WebSocketEventType;
-  data: unknown;
 }
 
-/** Visitor joined event data */
-interface VisitorJoinedData {
-  visitor: LiveConnectVisitor;
-}
-
-/** Visitor left event data */
-interface VisitorLeftData {
+/** Visitor joined event from backend */
+interface VisitorJoinedEvent extends BaseWebSocketEvent {
+  type: "visitor_joined";
   visitorId: string;
+  name: string | null;
+  email: string | null;
+  currentPage: string | null;
+  joinedAt: string;
 }
 
-/** Visitor updated event data */
-interface VisitorUpdatedData {
-  visitor: LiveConnectVisitor;
+/** Visitor left event from backend */
+interface VisitorLeftEvent extends BaseWebSocketEvent {
+  type: "visitor_left";
+  visitorId: string;
+  leftAt: string;
 }
 
-/** Request received event data */
-interface RequestReceivedData {
-  request: LiveConnectRequest;
+/** Visitor updated event from backend */
+interface VisitorUpdatedEvent extends BaseWebSocketEvent {
+  type: "visitor_updated";
+  visitorId: string;
+  name: string | null;
+  email: string | null;
+  currentPage: string | null;
+  currentPageTitle: string | null;
 }
 
-/** Request expired event data */
-interface RequestExpiredData {
+/** Request received event from backend */
+interface RequestReceivedEvent extends BaseWebSocketEvent {
+  type: "request_received";
+  requestId: string;
+  visitorId: string;
+  visitorName: string | null;
+  direction: string;
+  expiresAt: string;
+}
+
+/** Request expired event from backend */
+interface RequestExpiredEvent extends BaseWebSocketEvent {
+  type: "request_expired";
   requestId: string;
 }
 
-/** Request accepted by other rep event data */
-interface RequestAcceptedByOtherData {
+/** Request accepted by other rep event from backend */
+interface RequestAcceptedByOtherEvent extends BaseWebSocketEvent {
+  type: "request_accepted_by_other";
   requestId: string;
   repId: string;
   repName: string;
 }
 
-/** Message received event data (unused but kept for future use) */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface MessageReceivedData {
-  message: LiveConnectMessage;
+/** Message received event from backend */
+interface MessageReceivedWebSocketEvent extends BaseWebSocketEvent {
+  type: "message_received";
+  messageId: string;
+  conversationId: string;
+  senderType: string;
+  senderId: string | null;
+  content: string;
+  createdAt: string;
+}
+
+/** Call ended event from backend */
+interface CallEndedWebSocketEvent extends BaseWebSocketEvent {
+  type: "call_ended";
   conversationId: string;
 }
 
-/** Call ended event data (unused but kept for future use) */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface CallEndedData {
-  conversationId: string;
-}
-
-/** Queue updated event data (full refresh) */
-interface QueueUpdatedData {
+/** Queue updated event from backend (full refresh) */
+interface QueueUpdatedEvent extends BaseWebSocketEvent {
+  type: "queue_updated";
   browsing: LiveConnectVisitor[];
   queue: LiveConnectRequest[];
 }
+
+/** Pong event from backend */
+interface PongEvent extends BaseWebSocketEvent {
+  type: "pong";
+}
+
+/** Rep availability changed event from backend */
+interface RepAvailabilityChangedEvent extends BaseWebSocketEvent {
+  type: "rep_availability_changed";
+  hasAvailableReps: boolean;
+}
+
+/** Union of all WebSocket event types */
+type WebSocketEvent =
+  | VisitorJoinedEvent
+  | VisitorLeftEvent
+  | VisitorUpdatedEvent
+  | RequestReceivedEvent
+  | RequestExpiredEvent
+  | RequestAcceptedByOtherEvent
+  | MessageReceivedWebSocketEvent
+  | CallEndedWebSocketEvent
+  | QueueUpdatedEvent
+  | PongEvent
+  | RepAvailabilityChangedEvent;
 
 /** Hook return type */
 export interface UseLiveConnectWebSocketReturn {
@@ -174,59 +225,88 @@ export function useLiveConnectWebSocket(
 
   /**
    * Handles incoming WebSocket events.
+   * Events are flat objects with fields directly on the event (no nested 'data' wrapper).
    */
   const handleEvent = useCallback((event: WebSocketEvent) => {
     switch (event.type) {
       case "visitor_joined": {
-        const { visitor } = event.data as VisitorJoinedData;
+        // Construct visitor from flat event fields
+        // Note: event.visitorId is the visitor record ID (not client-side visitorId)
+        const visitor: LiveConnectVisitor = {
+          id: event.visitorId,
+          visitorId: event.visitorId, // Same as id for WebSocket events
+          name: event.name,
+          email: event.email,
+          currentPage: event.currentPage,
+          currentPageTitle: null,
+          lastSeenAt: event.joinedAt,
+          isConnected: true,
+          isPingable: true,
+        };
         setVisitors?.((prev) => {
-          // Avoid duplicates
-          if (prev.some((v) => v.id === visitor.id)) return prev;
+          // Avoid duplicates by record ID
+          if (prev.some((v) => v.id === event.visitorId)) return prev;
           return [...prev, visitor];
         });
         break;
       }
 
       case "visitor_left": {
-        const { visitorId } = event.data as VisitorLeftData;
-        setVisitors?.((prev) => prev.filter((v) => v.visitorId !== visitorId));
+        // event.visitorId is the visitor record ID (not client-side visitorId)
+        setVisitors?.((prev) => prev.filter((v) => v.id !== event.visitorId));
         break;
       }
 
       case "visitor_updated": {
-        const { visitor } = event.data as VisitorUpdatedData;
+        // event.visitorId is the visitor record ID (not client-side visitorId)
         setVisitors?.((prev) =>
-          prev.map((v) => (v.id === visitor.id ? visitor : v))
+          prev.map((v) =>
+            v.id === event.visitorId
+              ? {
+                  ...v,
+                  name: event.name,
+                  email: event.email,
+                  currentPage: event.currentPage,
+                  currentPageTitle: event.currentPageTitle,
+                }
+              : v
+          )
         );
         break;
       }
 
       case "request_received": {
-        const { request } = event.data as RequestReceivedData;
+        // Construct request from flat event fields
+        const request: LiveConnectRequest = {
+          id: event.requestId,
+          visitorId: event.visitorId,
+          visitorName: event.visitorName,
+          direction: event.direction as LiveConnectRequest["direction"],
+          status: "PENDING",
+          expiresAt: event.expiresAt,
+          createdAt: event.expiresAt, // Use expiresAt as fallback
+        };
         setRequests?.((prev) => {
           // Avoid duplicates
-          if (prev.some((r) => r.id === request.id)) return prev;
+          if (prev.some((r) => r.id === event.requestId)) return prev;
           return [...prev, request];
         });
         break;
       }
 
       case "request_expired": {
-        const { requestId } = event.data as RequestExpiredData;
-        setRequests?.((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
         break;
       }
 
       case "request_accepted_by_other": {
-        const { requestId } = event.data as RequestAcceptedByOtherData;
-        setRequests?.((prev) => prev.filter((r) => r.id !== requestId));
+        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
         break;
       }
 
       case "queue_updated": {
-        const { browsing, queue } = event.data as QueueUpdatedData;
-        setVisitors?.(browsing);
-        setRequests?.(queue);
+        setVisitors?.(event.browsing);
+        setRequests?.(event.queue);
         break;
       }
 
@@ -245,7 +325,7 @@ export function useLiveConnectWebSocket(
         break;
 
       default:
-        console.warn("[WS] Unknown event type:", event.type);
+        console.warn("[WS] Unknown event type:", (event as BaseWebSocketEvent).type);
     }
   }, [setVisitors, setRequests]);
 
