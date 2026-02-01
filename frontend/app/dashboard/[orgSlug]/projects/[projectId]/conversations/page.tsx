@@ -67,7 +67,7 @@ export default function ConversationsPage() {
         page,
         size: PAGE_SIZE,
       });
-      setConversations(response.content);
+      setConversations(response.conversations);
       setTotalPages(response.totalPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load conversations");

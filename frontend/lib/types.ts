@@ -310,11 +310,11 @@ export interface SendMessageRequest {
 
 /** Paginated conversations response */
 export interface ConversationsResponse {
-  content: LiveConnectConversation[];
+  conversations: LiveConnectConversation[];
   totalElements: number;
   totalPages: number;
   size: number;
-  number: number;
+  page: number;
 }
 
 /** Conversation filter parameters */
