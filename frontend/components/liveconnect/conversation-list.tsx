@@ -137,13 +137,13 @@ export function ConversationList({
               <div className="flex items-center gap-2">
                 <IconUser className="h-4 w-4 text-muted-foreground" />
                 <span className="truncate max-w-[120px]">
-                  {conversation.visitorName || "Anonymous"}
+                  {conversation.visitor?.name || "Anonymous"}
                 </span>
               </div>
             </TableCell>
             <TableCell className="hidden sm:table-cell">
               <span className="truncate max-w-[100px]">
-                {conversation.repName || "-"}
+                {conversation.rep?.name || "-"}
               </span>
             </TableCell>
             <TableCell className="hidden md:table-cell">

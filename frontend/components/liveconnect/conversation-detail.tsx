@@ -177,13 +177,13 @@ export function ConversationDetail({
           <div className="flex items-center gap-2 text-sm">
             <IconUser className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">Visitor:</span>
-            <span className="font-medium">{conversation.visitorName || "Anonymous"}</span>
+            <span className="font-medium">{conversation.visitor?.name || "Anonymous"}</span>
           </div>
-          {conversation.repName && (
+          {conversation.rep && (
             <div className="flex items-center gap-2 text-sm">
               <IconUser className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Rep:</span>
-              <span className="font-medium">{conversation.repName}</span>
+              <span className="font-medium">{conversation.rep.name}</span>
             </div>
           )}
           <div className="flex items-center gap-2 text-sm">

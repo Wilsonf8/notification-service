@@ -248,18 +248,33 @@ export type ConversationType = "VIDEO_CALL" | "CONTACT_FORM";
 /** Conversation status enum */
 export type ConversationStatus = "ACTIVE" | "ENDED";
 
+/** Visitor info in conversation */
+export interface ConversationVisitor {
+  id: string;
+  visitorId: string;
+  name: string | null;
+  email: string | null;
+}
+
+/** Rep info in conversation */
+export interface ConversationRep {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+}
+
 /** LiveConnect conversation (video call or contact form submission) */
 export interface LiveConnectConversation {
   id: string;
-  visitorId: string;
-  visitorName: string | null;
-  repId: string | null;
-  repName: string | null;
+  visitor: ConversationVisitor;
+  rep: ConversationRep | null;
   type: ConversationType;
   status: ConversationStatus;
   callDurationSeconds: number | null;
   startedAt: string;
   endedAt: string | null;
+  messageCount: number;
 }
 
 /** LiveConnect message in a conversation */
