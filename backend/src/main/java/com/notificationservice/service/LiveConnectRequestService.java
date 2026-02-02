@@ -457,6 +457,16 @@ public class LiveConnectRequestService {
             }
         }
 
+        // Compute isConnected from activeConnections
+        boolean isConnected = visitor.getActiveConnections() != null
+                && visitor.getActiveConnections() > 0;
+
+        // Compute isPingable: connected AND not in cooldown
+        boolean isPingable = isConnected && (
+                visitor.getPingCooldownUntil() == null
+                || visitor.getPingCooldownUntil().isBefore(OffsetDateTime.now())
+        );
+
         return new LiveConnectVisitorDto(
                 visitor.getId(),
                 visitor.getVisitorId(),
@@ -464,7 +474,9 @@ public class LiveConnectRequestService {
                 visitor.getEmail(),
                 currentPage,
                 visitor.getLastSeenAt(),
-                true
+                true,
+                isConnected,
+                isPingable
         );
     }
 

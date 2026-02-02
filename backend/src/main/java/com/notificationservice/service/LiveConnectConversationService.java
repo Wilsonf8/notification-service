@@ -372,6 +372,16 @@ public class LiveConnectConversationService {
         LiveConnectVisitor visitor = conversation.getVisitor();
         LiveConnectRep rep = conversation.getRep();
 
+        // Compute isConnected from activeConnections
+        boolean isConnected = visitor.getActiveConnections() != null
+                && visitor.getActiveConnections() > 0;
+
+        // Compute isPingable: connected AND not in cooldown
+        boolean isPingable = isConnected && (
+                visitor.getPingCooldownUntil() == null
+                || visitor.getPingCooldownUntil().isBefore(OffsetDateTime.now())
+        );
+
         LiveConnectVisitorDto visitorDto = new LiveConnectVisitorDto(
                 visitor.getId(),
                 visitor.getVisitorId(),
@@ -379,7 +389,9 @@ public class LiveConnectConversationService {
                 visitor.getEmail(),
                 visitor.getMetadata() != null ? (String) visitor.getMetadata().get("currentPage") : null,
                 visitor.getLastSeenAt(),
-                false
+                false,
+                isConnected,
+                isPingable
         );
 
         LiveConnectRepDto repDto = null;

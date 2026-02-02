@@ -13,6 +13,8 @@ import java.util.UUID;
  * @param currentPage the page the visitor is currently on (from metadata)
  * @param lastSeenAt when the visitor was last active
  * @param hasActiveRequest true if the visitor has a pending request in the queue
+ * @param isConnected true if the visitor has an active WebSocket connection
+ * @param isPingable true if the visitor can be pinged (connected and not in cooldown)
  */
 public record LiveConnectVisitorDto(
         UUID id,
@@ -21,5 +23,7 @@ public record LiveConnectVisitorDto(
         String email,
         String currentPage,
         OffsetDateTime lastSeenAt,
-        boolean hasActiveRequest
+        boolean hasActiveRequest,
+        boolean isConnected,
+        boolean isPingable
 ) {}
