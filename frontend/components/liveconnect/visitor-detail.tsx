@@ -45,7 +45,7 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
       setIsPinging(true);
       setPingError(null);
       setPingSuccess(false);
-      await pingVisitor(projectId, visitor.visitorId);
+      await pingVisitor(projectId, visitor.id);
       setPingSuccess(true);
       // Reset success message after 3 seconds
       setTimeout(() => setPingSuccess(false), 3000);
