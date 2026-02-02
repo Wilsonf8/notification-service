@@ -9,7 +9,8 @@ public record ConversationStartedEvent(
         UUID conversationId,
         UUID visitorId,
         String roomName,
-        String token
+        String token,
+        String liveKitUrl
 ) {
     /**
      * Returns the event type identifier.

@@ -160,7 +160,8 @@ public class LiveConnectRequestService {
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
-                repToken
+                repToken,
+                liveKitTokenService.getLiveKitUrl()
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 
@@ -375,7 +376,8 @@ public class LiveConnectRequestService {
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
-                repToken
+                repToken,
+                liveKitTokenService.getLiveKitUrl()
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 

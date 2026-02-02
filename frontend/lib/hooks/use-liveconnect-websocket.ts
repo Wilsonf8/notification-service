@@ -149,6 +149,7 @@ interface ConversationStartedEvent extends BaseWebSocketEvent {
   visitorId: string;
   roomName: string;
   token: string;
+  liveKitUrl: string;
 }
 
 /** Union of all WebSocket event types */
@@ -335,10 +336,13 @@ export function useLiveConnectWebSocket(
         // Heartbeat acknowledged
         break;
 
-      case "conversation_started":
-        // Conversation started - rep already opened call window via Accept button
-        // This event confirms the conversation was created successfully
+      case "conversation_started": {
+        // Open call window when visitor accepts rep's ping
+        const startedEvent = event as ConversationStartedEvent;
+        const callUrl = `/call/${startedEvent.roomName}?token=${encodeURIComponent(startedEvent.token)}&conversation=${startedEvent.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(startedEvent.liveKitUrl)}`;
+        window.open(callUrl, "_blank", "width=900,height=600");
         break;
+      }
 
       default:
         console.warn("[WS] Unknown event type:", (event as BaseWebSocketEvent).type);
