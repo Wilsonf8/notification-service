@@ -29,6 +29,8 @@ interface VideoCallProps {
   appUrl: string;
   /** Session token for authentication */
   sessionToken: string;
+  /** LiveKit server URL */
+  liveKitUrl: string;
   /** Handler for ending the call */
   onEndCall: () => void;
   /** Handler for when call is popped out */
@@ -290,6 +292,7 @@ export function VideoCall({
   roomName,
   appUrl,
   sessionToken,
+  liveKitUrl,
   onEndCall,
   onPopOut,
   onToggleChat,
@@ -406,7 +409,7 @@ export function VideoCall({
     event.preventDefault();
 
     // Build popup URL with session parameters
-    const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}`;
+    const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}&liveKitUrl=${encodeURIComponent(liveKitUrl)}`;
 
     // Open popup window with specified dimensions
     const popup = window.open(
@@ -533,7 +536,7 @@ export function VideoCall({
           class="lc-video__control"
           onClick={handlePopOut}
           onKeyDown={(e) => handleKeyDown(e, () => {
-            const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}`;
+            const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}&liveKitUrl=${encodeURIComponent(liveKitUrl)}`;
             const popup = window.open(popupUrl, 'liveconnect-call', 'width=450,height=600,resizable=yes');
             if (popup) onPopOut();
           })}

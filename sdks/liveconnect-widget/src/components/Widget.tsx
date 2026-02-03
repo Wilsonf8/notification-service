@@ -638,6 +638,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
               roomName={state.roomName}
               appUrl={appUrl}
               sessionToken={getApiClient().getSessionToken() || ''}
+              liveKitUrl={state.liveKitUrl}
               onEndCall={handleEndCall}
               onPopOut={() => handlePopOut(state.conversationId)}
               onToggleChat={handleToggleChat}
