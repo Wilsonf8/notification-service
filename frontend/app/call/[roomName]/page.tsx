@@ -455,6 +455,13 @@ function CallPageContent() {
     };
   }, [connectToRoom, cleanup]);
 
+  // Attach local video track when video element becomes available
+  useEffect(() => {
+    if (callState.status === 'connected' && localVideoTrackRef.current && localVideoRef.current) {
+      attachTrack(localVideoTrackRef.current, localVideoRef.current);
+    }
+  }, [callState.status, attachTrack]);
+
   // Render loading state
   if (callState.status === 'loading' || callState.status === 'connecting') {
     return (

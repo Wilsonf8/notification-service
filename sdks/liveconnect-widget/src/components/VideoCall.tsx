@@ -14,6 +14,7 @@ import {
   attachRemoteVideo,
   detachLocalVideo,
   detachRemoteVideo,
+  localVideoTrack,
   remoteVideoTrack,
 } from '../livekit';
 
@@ -315,24 +316,31 @@ export function VideoCall({
   const [isCameraOn, setIsCameraOn] = useState<boolean>(cameraEnabled.value);
 
   /**
-   * Effect to attach video elements when component mounts.
+   * Effect to cleanup video elements when component unmounts.
    */
   useEffect(() => {
-    // Attach local video
-    if (localVideoRef.current) {
-      attachLocalVideo(localVideoRef.current);
-    }
-
-    // Attach remote video if available
-    if (remoteVideoRef.current) {
-      attachRemoteVideo(remoteVideoRef.current);
-    }
-
-    // Cleanup on unmount
     return () => {
       detachLocalVideo();
       detachRemoteVideo();
     };
+  }, []);
+
+  /**
+   * Effect to update local video attachment when track becomes available.
+   */
+  useEffect(() => {
+    const unsubscribe = localVideoTrack.subscribe((track) => {
+      if (track && localVideoRef.current) {
+        attachLocalVideo(localVideoRef.current);
+      }
+    });
+
+    // Initial check - attach if track already exists
+    if (localVideoTrack.value && localVideoRef.current) {
+      attachLocalVideo(localVideoRef.current);
+    }
+
+    return unsubscribe;
   }, []);
 
   /**
