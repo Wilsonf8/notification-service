@@ -16,6 +16,8 @@ export interface WidgetConfig {
   embedKey: string;
   /** API URL for backend communication */
   apiUrl: string;
+  /** Frontend app URL for pop-out functionality */
+  appUrl: string;
   /** Widget position on the page */
   position: WidgetPosition;
 }
@@ -38,6 +40,26 @@ const VALID_POSITIONS: WidgetPosition[] = ['bottom-right', 'bottom-left', 'top-r
  */
 function isValidPosition(value: string): value is WidgetPosition {
   return VALID_POSITIONS.includes(value as WidgetPosition);
+}
+
+/**
+ * Extracts the app URL from the script element's src attribute.
+ * The script is served from the app (e.g., https://app.notifykit.dev/sdk/liveconnect.js)
+ * so we can derive the app base URL from it.
+ * @param scriptElement - The script element
+ * @returns The app base URL or fallback to current origin
+ */
+function extractAppUrl(scriptElement: HTMLScriptElement): string {
+  const src = scriptElement.src;
+  if (src) {
+    try {
+      const url = new URL(src);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      // Fall back to current origin if parsing fails
+    }
+  }
+  return window.location.origin;
 }
 
 /**
@@ -66,6 +88,7 @@ export function parseConfigFromScript(scriptElement: HTMLScriptElement): WidgetC
   return {
     embedKey,
     apiUrl: API_URL,
+    appUrl: extractAppUrl(scriptElement),
     position,
   };
 }

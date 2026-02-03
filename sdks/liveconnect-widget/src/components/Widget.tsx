@@ -552,8 +552,8 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   // Determine availability status for button
   const availability: AvailabilityStatus = isOnline ? 'online' : 'offline';
 
-  // Get app URL for pop-out (use API URL as base)
-  const appUrl = config.apiUrl.replace('/api', '').replace(/\/$/, '');
+  // Get app URL for pop-out (extracted from script src)
+  const appUrl = config.appUrl;
 
   // Render based on current state
   switch (state.type) {
