@@ -462,6 +462,13 @@ function CallPageContent() {
     }
   }, [callState.status, attachTrack]);
 
+  // Attach remote video track when video element becomes available
+  useEffect(() => {
+    if (callState.status === 'connected' && remoteVideoTrackRef.current && remoteVideoRef.current) {
+      attachTrack(remoteVideoTrackRef.current, remoteVideoRef.current);
+    }
+  }, [callState.status, attachTrack]);
+
   // Render loading state
   if (callState.status === 'loading' || callState.status === 'connecting') {
     return (
