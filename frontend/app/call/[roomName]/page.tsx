@@ -41,6 +41,7 @@ import {
 import { cn } from '@/lib/utils';
 import { CallChat } from '@/components/liveconnect/call-chat';
 import { getToken } from '@/lib/auth';
+import { endConversation } from '@/lib/api/liveconnect-dashboard';
 
 // ============================================================================
 // Types
@@ -158,6 +159,7 @@ function CallPageContent() {
   const remoteVideoTrackRef = useRef<RemoteTrack | null>(null);
   const callStartTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasEndedConversationRef = useRef<boolean>(false);
 
   // State
   const [callState, setCallState] = useState<CallState>({
@@ -179,6 +181,39 @@ function CallPageContent() {
       element.muted = track instanceof LocalTrack; // Mute local to prevent feedback
     }
   }, []);
+
+  /**
+   * Ends the conversation on the backend to reset rep state.
+   * Only called for rep calls (visitors don't have dashboard API access).
+   * Prevents double-calls using hasEndedConversationRef.
+   */
+  const endConversationOnBackend = useCallback(async () => {
+    // Only reps need to call the backend API to reset their state
+    if (!isRepCall) {
+      return;
+    }
+
+    // Check if we have the required IDs
+    if (!projectId || !conversationId) {
+      console.warn('[CallPage] Missing projectId or conversationId for ending conversation');
+      return;
+    }
+
+    // Prevent double-calls (e.g., endCall triggers handleDisconnected)
+    if (hasEndedConversationRef.current) {
+      return;
+    }
+    hasEndedConversationRef.current = true;
+
+    try {
+      console.log('[CallPage] Ending conversation on backend:', conversationId);
+      await endConversation(projectId, conversationId);
+      console.log('[CallPage] Conversation ended successfully');
+    } catch (error) {
+      // Log but don't block - window should still close even if API fails
+      console.error('[CallPage] Failed to end conversation on backend:', error);
+    }
+  }, [isRepCall, projectId, conversationId]);
 
   /**
    * Handles track subscription events from remote participants.
@@ -224,6 +259,9 @@ function CallPageContent() {
     console.log('[CallPage] Disconnected from room');
     setCallState((prev) => ({ ...prev, status: 'disconnected' }));
 
+    // End conversation on backend to reset rep state
+    endConversationOnBackend();
+
     // Stop duration timer
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
@@ -234,7 +272,7 @@ function CallPageContent() {
     setTimeout(() => {
       window.close();
     }, 1500);
-  }, []);
+  }, [endConversationOnBackend]);
 
   /**
    * Handles participant disconnection.
@@ -437,6 +475,9 @@ function CallPageContent() {
    * Ends the call and closes the window.
    */
   const endCall = useCallback(() => {
+    // End conversation on backend to reset rep state
+    endConversationOnBackend();
+
     cleanup();
     setCallState((prev) => ({ ...prev, status: 'disconnected' }));
 
@@ -444,7 +485,7 @@ function CallPageContent() {
     setTimeout(() => {
       window.close();
     }, 500);
-  }, [cleanup]);
+  }, [cleanup, endConversationOnBackend]);
 
   // Connect on mount
   useEffect(() => {
