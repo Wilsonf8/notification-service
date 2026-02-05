@@ -55,9 +55,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         String token = tokenProvider.generateToken(identity.getUser().getId());
 
         // Check if this is a mobile client request
-        boolean isMobile = isMobileRequest(request);
-        log.info("OAuth success - isMobile: {}, sessionId: {}", isMobile,
-                request.getSession(false) != null ? request.getSession().getId() : "no session");
+        boolean isMobile = isMobileRequest(request, response);
+        log.info("OAuth success - isMobile: {}", isMobile);
 
         String targetUrl;
         if (isMobile) {
@@ -84,18 +83,25 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
     /**
      * Checks if the request originated from a mobile client.
-     * Looks for mobile=true in session attribute (set during OAuth initiation).
+     * Looks for mobile cookie (set during OAuth initiation).
      */
-    private boolean isMobileRequest(HttpServletRequest request) {
-        var session = request.getSession(false);
-        if (session != null) {
-            Object mobileAttr = session.getAttribute("oauth_mobile");
-            if (Boolean.TRUE.equals(mobileAttr)) {
-                session.removeAttribute("oauth_mobile");
-                return true;
-            }
+    private boolean isMobileRequest(HttpServletRequest request, HttpServletResponse response) {
+        if (request.getCookies() == null) return false;
+
+        boolean isMobile = Arrays.stream(request.getCookies())
+                .filter(c -> OAuth2RedirectFilter.MOBILE_COOKIE.equals(c.getName()))
+                .map(Cookie::getValue)
+                .anyMatch("true"::equalsIgnoreCase);
+
+        if (isMobile) {
+            // Clear the cookie after use
+            Cookie cookie = new Cookie(OAuth2RedirectFilter.MOBILE_COOKIE, "");
+            cookie.setPath("/");
+            cookie.setMaxAge(0);
+            response.addCookie(cookie);
         }
-        return false;
+
+        return isMobile;
     }
 
     /**

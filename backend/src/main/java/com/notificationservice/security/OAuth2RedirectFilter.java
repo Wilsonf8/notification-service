@@ -22,6 +22,9 @@ public class OAuth2RedirectFilter extends OncePerRequestFilter {
     /** Cookie name for storing the redirect origin */
     public static final String REDIRECT_ORIGIN_COOKIE = "oauth_redirect_origin";
 
+    /** Cookie name for storing mobile flag */
+    public static final String MOBILE_COOKIE = "oauth_mobile";
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
@@ -39,8 +42,13 @@ public class OAuth2RedirectFilter extends OncePerRequestFilter {
             // Capture mobile parameter for iOS app redirect
             String mobile = request.getParameter("mobile");
             if ("true".equalsIgnoreCase(mobile)) {
-                request.getSession(true).setAttribute("oauth_mobile", Boolean.TRUE);
-                log.info("OAuth mobile flag set in session: {}", request.getSession().getId());
+                Cookie mobileCookie = new Cookie(MOBILE_COOKIE, "true");
+                mobileCookie.setPath("/");
+                mobileCookie.setHttpOnly(true);
+                mobileCookie.setMaxAge(300); // 5 minutes
+                mobileCookie.setSecure(request.isSecure());
+                response.addCookie(mobileCookie);
+                log.info("OAuth mobile cookie set");
             }
         }
 
