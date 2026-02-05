@@ -414,7 +414,7 @@ export function useLiveConnectWebSocket(
       default:
         console.warn("[WS] Unknown event type:", (event as BaseWebSocketEvent).type);
     }
-  }, [setVisitors, setRequests, setActiveCalls]);
+  }, [projectId, setVisitors, setRequests, setActiveCalls]);
 
   /**
    * Connects to the WebSocket server.

@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconPhone, IconUser } from "@tabler/icons-react";
+import { IconPhone } from "@tabler/icons-react";
 import type { ActiveCall } from "@/lib/types";
 
 /** Props for the InCallSection component */
@@ -53,6 +53,20 @@ interface InCallItemProps {
 }
 
 /**
+ * Formats seconds as MM:SS or H:MM:SS for longer calls.
+ */
+function formatDuration(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  }
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+/**
  * Individual call item with live duration timer.
  */
 function InCallItem({ call }: InCallItemProps) {
@@ -72,20 +86,6 @@ function InCallItem({ call }: InCallItemProps) {
 
     return () => clearInterval(interval);
   }, [call.startedAt]);
-
-  /**
-   * Formats seconds as MM:SS or H:MM:SS for longer calls.
-   */
-  const formatDuration = (seconds: number): string => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   return (
     <div className="flex items-center justify-between gap-4 border p-3">
