@@ -25,6 +25,7 @@ import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
 import com.notificationservice.websocket.event.MessageReceivedEvent;
 import lombok.RequiredArgsConstructor;
@@ -293,6 +294,10 @@ public class LiveConnectConversationService {
                 conversation.getCallDurationSeconds()
         );
         broadcaster.sendToVisitor(conversation.getVisitor().getId(), event);
+
+        // Broadcast call ended to all reps in project
+        CallEndedBroadcastEvent broadcastEvent = new CallEndedBroadcastEvent(conversationId);
+        broadcaster.broadcastToProject(conversation.getProject().getId(), broadcastEvent);
     }
 
     /**

@@ -1,9 +1,11 @@
 package com.notificationservice.service;
 
+import com.notificationservice.dto.ActiveCallDto;
 import com.notificationservice.dto.LiveConnectRequestDto;
 import com.notificationservice.dto.LiveConnectVisitorDto;
 import com.notificationservice.dto.PingVisitorResponse;
 import com.notificationservice.dto.VisitorListResponse;
+import com.notificationservice.entity.LiveConnectConversation;
 import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.LiveConnectRequest;
 import com.notificationservice.entity.LiveConnectVisitor;
@@ -11,6 +13,7 @@ import com.notificationservice.entity.Project;
 import com.notificationservice.entity.ProjectType;
 import com.notificationservice.entity.RequestDirection;
 import com.notificationservice.entity.RequestStatus;
+import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
@@ -42,6 +45,7 @@ public class LiveConnectVisitorService {
     private final LiveConnectVisitorRepository visitorRepository;
     private final LiveConnectRequestRepository requestRepository;
     private final LiveConnectRepRepository repRepository;
+    private final LiveConnectConversationRepository conversationRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
@@ -69,9 +73,16 @@ public class LiveConnectVisitorService {
                 .map(r -> r.getVisitor().getId())
                 .collect(Collectors.toSet());
 
-        // Browsing: online visitors without active requests
+        // Get active calls
+        List<LiveConnectConversation> activeConversations = conversationRepository.findActiveByProjectId(projectId);
+        Set<UUID> visitorIdsInCall = activeConversations.stream()
+                .map(c -> c.getVisitor().getId())
+                .collect(Collectors.toSet());
+
+        // Browsing: online visitors without active requests and not in a call
         List<LiveConnectVisitorDto> browsing = onlineVisitors.stream()
                 .filter(v -> !visitorIdsWithRequests.contains(v.getId()))
+                .filter(v -> !visitorIdsInCall.contains(v.getId()))
                 .map(v -> toVisitorDto(v, false))
                 .toList();
 
@@ -80,7 +91,12 @@ public class LiveConnectVisitorService {
                 .map(this::toRequestDto)
                 .toList();
 
-        return new VisitorListResponse(browsing, queue);
+        // In call: active conversations
+        List<ActiveCallDto> inCall = activeConversations.stream()
+                .map(this::toActiveCallDto)
+                .toList();
+
+        return new VisitorListResponse(browsing, queue, inCall);
     }
 
     /**
@@ -208,6 +224,20 @@ public class LiveConnectVisitorService {
                 request.getStatus().name(),
                 request.getExpiresAt(),
                 request.getCreatedAt()
+        );
+    }
+
+    private ActiveCallDto toActiveCallDto(LiveConnectConversation conversation) {
+        LiveConnectVisitor visitor = conversation.getVisitor();
+        LiveConnectRep rep = conversation.getRep();
+        return new ActiveCallDto(
+                conversation.getId(),
+                visitor.getId(),
+                visitor.getName(),
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                conversation.getStartedAt()
         );
     }
 }

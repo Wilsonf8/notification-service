@@ -22,6 +22,7 @@ import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.CallStartedBroadcastEvent;
 import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
@@ -172,6 +173,18 @@ public class LiveConnectRequestService {
                 visitorToken
         );
         broadcaster.sendToVisitor(request.getVisitor().getId(), visitorEvent);
+
+        // Broadcast call started to all reps in project
+        CallStartedBroadcastEvent callStartedBroadcast = new CallStartedBroadcastEvent(
+                conversation.getId(),
+                request.getVisitor().getId(),
+                request.getVisitor().getName(),
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                conversation.getStartedAt()
+        );
+        broadcaster.broadcastToProject(projectId, callStartedBroadcast);
 
         return new AcceptRequestResponse(
                 conversation.getId(),
@@ -380,6 +393,18 @@ public class LiveConnectRequestService {
                 liveKitTokenService.getLiveKitUrl()
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
+
+        // Broadcast call started to all reps in project
+        CallStartedBroadcastEvent callStartedBroadcast = new CallStartedBroadcastEvent(
+                conversation.getId(),
+                request.getVisitor().getId(),
+                request.getVisitor().getName(),
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                conversation.getStartedAt()
+        );
+        broadcaster.broadcastToProject(request.getProject().getId(), callStartedBroadcast);
 
         return new AcceptPingResponse(
                 conversation.getId(),

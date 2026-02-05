@@ -10,6 +10,7 @@ import type {
   LiveConnectVisitor,
   LiveConnectRequest,
   LiveConnectMessage,
+  ActiveCall,
 } from "@/lib/types";
 
 /**
@@ -43,6 +44,8 @@ type WebSocketEventType =
   | "request_accepted_by_other"
   | "message_received"
   | "call_ended"
+  | "call_started_broadcast"
+  | "call_ended_broadcast"
   | "queue_updated"
   | "rep_availability_changed"
   | "conversation_started"
@@ -153,6 +156,24 @@ interface ConversationStartedEvent extends BaseWebSocketEvent {
   liveKitUrl: string;
 }
 
+/** Call started broadcast event from backend */
+interface CallStartedBroadcastEvent extends BaseWebSocketEvent {
+  type: "call_started_broadcast";
+  conversationId: string;
+  visitorId: string;
+  visitorName: string | null;
+  repId: string;
+  repUserId: string;
+  repName: string;
+  startedAt: string;
+}
+
+/** Call ended broadcast event from backend */
+interface CallEndedBroadcastEvent extends BaseWebSocketEvent {
+  type: "call_ended_broadcast";
+  conversationId: string;
+}
+
 /** Union of all WebSocket event types */
 type WebSocketEvent =
   | VisitorJoinedEvent
@@ -163,6 +184,8 @@ type WebSocketEvent =
   | RequestAcceptedByOtherEvent
   | MessageReceivedWebSocketEvent
   | CallEndedWebSocketEvent
+  | CallStartedBroadcastEvent
+  | CallEndedBroadcastEvent
   | QueueUpdatedEvent
   | PongEvent
   | RepAvailabilityChangedEvent
@@ -182,21 +205,26 @@ type SetVisitors = React.Dispatch<React.SetStateAction<LiveConnectVisitor[]>>;
 /** State setter type for requests */
 type SetRequests = React.Dispatch<React.SetStateAction<LiveConnectRequest[]>>;
 
+/** State setter type for active calls */
+type SetActiveCalls = React.Dispatch<React.SetStateAction<ActiveCall[]>>;
+
 /**
  * Custom hook for managing WebSocket connection to LiveConnect dashboard.
- * Updates visitors and requests state via provided setters for real-time updates.
+ * Updates visitors, requests, and active calls state via provided setters for real-time updates.
  *
  * @param projectId - The project ID to connect to
  * @param enabled - Whether to enable the WebSocket connection
  * @param setVisitors - State setter for visitors array
  * @param setRequests - State setter for requests array
+ * @param setActiveCalls - State setter for active calls array
  * @returns Object containing connection status and control functions
  */
 export function useLiveConnectWebSocket(
   projectId: string,
   enabled: boolean = true,
   setVisitors?: SetVisitors,
-  setRequests?: SetRequests
+  setRequests?: SetRequests,
+  setActiveCalls?: SetActiveCalls
 ): UseLiveConnectWebSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -335,6 +363,37 @@ export function useLiveConnectWebSocket(
         break;
       }
 
+      case "call_started_broadcast": {
+        // Add to active calls
+        const callStarted = event as CallStartedBroadcastEvent;
+        const newCall: ActiveCall = {
+          conversationId: callStarted.conversationId,
+          visitorId: callStarted.visitorId,
+          visitorName: callStarted.visitorName,
+          repId: callStarted.repId,
+          repUserId: callStarted.repUserId,
+          repName: callStarted.repName,
+          startedAt: callStarted.startedAt,
+        };
+        setActiveCalls?.((prev) => {
+          // Avoid duplicates
+          if (prev.some((c) => c.conversationId === callStarted.conversationId)) return prev;
+          return [...prev, newCall];
+        });
+        // Remove visitor from browsing list since they're now in a call
+        setVisitors?.((prev) => prev.filter((v) => v.id !== callStarted.visitorId));
+        // Remove any pending requests for this visitor
+        setRequests?.((prev) => prev.filter((r) => r.visitorId !== callStarted.visitorId));
+        break;
+      }
+
+      case "call_ended_broadcast": {
+        // Remove from active calls
+        const callEnded = event as CallEndedBroadcastEvent;
+        setActiveCalls?.((prev) => prev.filter((c) => c.conversationId !== callEnded.conversationId));
+        break;
+      }
+
       case "message_received": {
         // Could be handled by a separate message handler if needed
         break;
@@ -355,7 +414,7 @@ export function useLiveConnectWebSocket(
       default:
         console.warn("[WS] Unknown event type:", (event as BaseWebSocketEvent).type);
     }
-  }, [setVisitors, setRequests]);
+  }, [setVisitors, setRequests, setActiveCalls]);
 
   /**
    * Connects to the WebSocket server.

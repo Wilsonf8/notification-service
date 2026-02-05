@@ -227,10 +227,22 @@ export interface LiveConnectMessage {
   createdAt: string;
 }
 
+/** Active call displayed in "In Call" section */
+export interface ActiveCall {
+  conversationId: string;
+  visitorId: string;
+  visitorName: string | null;
+  repId: string;
+  repUserId: string;
+  repName: string;
+  startedAt: string;
+}
+
 /** Response from getVisitors API */
 export interface VisitorsResponse {
   browsing: LiveConnectVisitor[];
   queue: LiveConnectRequest[];
+  inCall: ActiveCall[];
 }
 
 /** Response from acceptRequest API */

@@ -18,8 +18,9 @@ import {
 import { useLiveConnectWebSocket } from "@/lib/hooks/use-liveconnect-websocket";
 import { useRepPresence } from "@/lib/hooks/use-rep-presence";
 import { getVisitors, getReps, resetRepState } from "@/lib/api/liveconnect-dashboard";
-import type { LiveConnectRep, LiveConnectVisitor, LiveConnectRequest, VisitorsResponse } from "@/lib/types";
+import type { ActiveCall, LiveConnectRep, LiveConnectVisitor, LiveConnectRequest, VisitorsResponse } from "@/lib/types";
 import { AvailabilityToggle } from "./availability-toggle";
+import { InCallSection } from "./in-call-section";
 import { RequestQueue } from "./request-queue";
 import { VisitorList } from "./visitor-list";
 import { VisitorDetail } from "./visitor-detail";
@@ -40,15 +41,16 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
   const [selectedVisitorId, setSelectedVisitorId] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
-  // Local state for visitors/requests
+  // Local state for visitors/requests/calls
   const [visitors, setVisitors] = useState<LiveConnectVisitor[]>([]);
   const [requests, setRequests] = useState<LiveConnectRequest[]>([]);
+  const [activeCalls, setActiveCalls] = useState<ActiveCall[]>([]);
 
   // WebSocket for real-time updates - connect immediately
   const {
     isConnected,
     reconnect,
-  } = useLiveConnectWebSocket(projectId, true, setVisitors, setRequests);
+  } = useLiveConnectWebSocket(projectId, true, setVisitors, setRequests, setActiveCalls);
 
   // Rep presence management
   const {
@@ -77,10 +79,11 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
           setCurrentRep(reps[0]);
         }
 
-        // Fetch initial visitors and queue
+        // Fetch initial visitors, queue, and active calls
         const visitorsData: VisitorsResponse = await getVisitors(projectId);
         setVisitors(visitorsData.browsing);
         setRequests(visitorsData.queue);
+        setActiveCalls(visitorsData.inCall);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load data");
       } finally {
@@ -182,13 +185,16 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
 
       {/* Main content grid */}
       <div className="grid gap-4 lg:grid-cols-3">
-        {/* Left column: Queue and Visitors */}
+        {/* Left column: Queue, In Call, and Visitors */}
         <div className="space-y-4 lg:col-span-2">
           {/* Request Queue */}
           <RequestQueue
             requests={requests}
             projectId={projectId}
           />
+
+          {/* In Call Section */}
+          <InCallSection activeCalls={activeCalls} />
 
           {/* Browsing Visitors */}
           <VisitorList

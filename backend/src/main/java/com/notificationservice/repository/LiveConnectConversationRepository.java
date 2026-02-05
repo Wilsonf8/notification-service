@@ -48,4 +48,13 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
      * @return the conversation if found
      */
     Optional<LiveConnectConversation> findByLiveKitRoomName(String liveKitRoomName);
+
+    /**
+     * Finds all active conversations for a project, ordered by start time.
+     *
+     * @param projectId the project ID
+     * @return list of active conversations
+     */
+    @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.status = 'ACTIVE' ORDER BY c.startedAt ASC")
+    List<LiveConnectConversation> findActiveByProjectId(UUID projectId);
 }
