@@ -14,6 +14,8 @@ import org.springframework.security.web.authentication.SimpleUrlAuthenticationSu
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +25,7 @@ import java.util.List;
  * Generates a JWT token and redirects back to the frontend with the token.
  * Supports dynamic redirect origins for multiple frontend environments.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -53,6 +56,8 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
 
         // Check if this is a mobile client request
         boolean isMobile = isMobileRequest(request);
+        log.info("OAuth success - isMobile: {}, sessionId: {}", isMobile,
+                request.getSession(false) != null ? request.getSession().getId() : "no session");
 
         String targetUrl;
         if (isMobile) {
@@ -73,6 +78,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
                     .build().toUriString();
         }
 
+        log.info("OAuth redirecting to: {}", targetUrl);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 

@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +15,7 @@ import java.io.IOException;
  * Filter that captures the redirect_origin parameter from OAuth requests.
  * Stores the origin in a cookie so the success handler knows where to redirect.
  */
+@Slf4j
 @Component
 public class OAuth2RedirectFilter extends OncePerRequestFilter {
 
@@ -38,6 +40,7 @@ public class OAuth2RedirectFilter extends OncePerRequestFilter {
             String mobile = request.getParameter("mobile");
             if ("true".equalsIgnoreCase(mobile)) {
                 request.getSession(true).setAttribute("oauth_mobile", Boolean.TRUE);
+                log.info("OAuth mobile flag set in session: {}", request.getSession().getId());
             }
         }
 
