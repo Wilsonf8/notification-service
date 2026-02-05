@@ -56,9 +56,12 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
 
         // Update visitor in database and broadcast to reps
         visitorRepository.findById(visitorId).ifPresent(visitor -> {
-            boolean isFirstConnection = visitor.getActiveConnections() == 0;
+            // Check actual session count - if this is the only session, it's a "first" connection
+            // This is more reliable than DB count which can get stale after server restarts
+            boolean isFirstConnection = sessionManager.getSessionCount(visitorId) == 1;
 
-            visitor.setActiveConnections(visitor.getActiveConnections() + 1);
+            // Sync DB with actual session count to fix any stale values
+            visitor.setActiveConnections(sessionManager.getSessionCount(visitorId));
             visitor.setDisconnectedAt(null);
             visitor.setLastSeenAt(OffsetDateTime.now());
             visitorRepository.save(visitor);

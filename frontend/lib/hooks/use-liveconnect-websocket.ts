@@ -217,7 +217,7 @@ export function useLiveConnectWebSocket(
    */
   const sendHeartbeat = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "ping" }));
+      wsRef.current.send(JSON.stringify({ type: "heartbeat" }));
     }
   }, []);
 
