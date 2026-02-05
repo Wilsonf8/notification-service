@@ -10,7 +10,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { IconFolder, IconSend, IconBrandTelegram, IconPlus } from "@tabler/icons-react";
+import { IconFolder, IconPlus } from "@tabler/icons-react";
 import { getOrganizationProjects } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import type { Project } from "@/lib/types";
@@ -18,8 +18,6 @@ import type { Project } from "@/lib/types";
 /** Dashboard statistics */
 interface Stats {
   totalProjects: number;
-  totalEvents: number;
-  connectedChats: number;
 }
 
 /** Page params containing the org slug */
@@ -39,8 +37,6 @@ export default function OverviewPage({ params }: OverviewPageProps) {
   const { currentOrg, isLoading: orgLoading } = useOrganization();
   const [stats, setStats] = useState<Stats>({
     totalProjects: 0,
-    totalEvents: 0,
-    connectedChats: 0,
   });
   const [recentProjects, setRecentProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,8 +49,6 @@ export default function OverviewPage({ params }: OverviewPageProps) {
       setRecentProjects(projects.slice(0, 5));
       setStats({
         totalProjects: projects.length,
-        totalEvents: 0, // TODO: Aggregate from project stats
-        connectedChats: 0, // TODO: Aggregate from project stats
       });
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
@@ -77,8 +71,8 @@ export default function OverviewPage({ params }: OverviewPageProps) {
           <Skeleton className="h-8 w-32" />
           <Skeleton className="mt-2 h-4 w-64" />
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((i) => (
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2].map((i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -91,11 +85,11 @@ export default function OverviewPage({ params }: OverviewPageProps) {
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome to NotifyKit. Manage your notification projects.
+          Welcome to LiveConnect. Manage your customer engagement projects.
         </p>
       </div>
 
-      <div className="grid gap-3 md:gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
@@ -113,27 +107,15 @@ export default function OverviewPage({ params }: OverviewPageProps) {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Events Sent</CardTitle>
-            <IconSend className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.totalEvents}</div>
-            <p className="text-xs text-muted-foreground">
-              Total notifications sent
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Connected Chats</CardTitle>
-            <IconBrandTelegram className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.connectedChats}</div>
-            <p className="text-xs text-muted-foreground">
-              Telegram chats receiving notifications
-            </p>
+            <Link href={`/dashboard/${orgSlug}/projects`}>
+              <Button className="gap-2" size="sm">
+                <IconPlus className="h-4 w-4" />
+                New Project
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

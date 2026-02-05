@@ -13,7 +13,6 @@ import {
   IconFolder,
   IconSettings,
   IconUsersGroup,
-  IconBook,
 } from "@tabler/icons-react";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 import { useOrganization } from "@/lib/contexts/organization-context";
@@ -46,11 +45,6 @@ export function getNavItems(orgSlug: string): NavItem[] {
       icon: IconFolder,
     },
     {
-      label: "Docs",
-      href: "/dashboard/docs",
-      icon: IconBook,
-    },
-    {
       label: "Team",
       href: `/dashboard/${orgSlug}/team`,
       icon: IconUsersGroup,
@@ -65,7 +59,7 @@ export function getNavItems(orgSlug: string): NavItem[] {
 
 /**
  * Checks if a nav item should be marked as active based on current pathname.
- * Handles both static routes (docs, settings) and dynamic org-scoped routes.
+ * Handles both static routes (settings) and dynamic org-scoped routes.
  * @param href - The nav item's href
  * @param pathname - The current pathname
  * @returns True if the item is active
@@ -78,8 +72,8 @@ export function isNavItemActive(href: string, pathname: string): boolean {
     return pathname === `/dashboard/${orgSlug}`;
   }
 
-  // For static routes (docs, settings), use startsWith
-  if (href === "/dashboard/docs" || href === "/dashboard/settings") {
+  // For static routes (settings), use startsWith
+  if (href === "/dashboard/settings") {
     return pathname.startsWith(href);
   }
 
@@ -104,7 +98,7 @@ export function DashboardSidebar() {
       <div className="flex h-14 items-center border-b border-border px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg font-semibold text-sidebar-foreground">
-            NotifyKit
+            LiveConnect
           </span>
         </Link>
       </div>

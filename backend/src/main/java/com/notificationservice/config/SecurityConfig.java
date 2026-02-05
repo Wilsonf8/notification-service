@@ -48,10 +48,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/oauth2/**", "/login/**").permitAll()
-                        .requestMatchers("/v1/notify").permitAll()  // API key auth handled separately
                         .requestMatchers("/v1/liveconnect/**").permitAll()  // Embed key auth handled separately
                         .requestMatchers("/api/projects/*/liveconnect/ws").permitAll()  // Rep WebSocket
-                        .requestMatchers("/internal/telegram/webhook").permitAll()
                         .requestMatchers("/webhooks/livekit").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
@@ -70,14 +68,6 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-
-        // Allow all origins for /v1/notify (SDK endpoint, uses API key auth)
-        CorsConfiguration notifyConfig = new CorsConfiguration();
-        notifyConfig.setAllowedOrigins(List.of("*"));
-        notifyConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
-        notifyConfig.setAllowedHeaders(List.of("*"));
-        notifyConfig.setAllowCredentials(false);
-        source.registerCorsConfiguration("/v1/notify", notifyConfig);
 
         // Allow all origins for /v1/liveconnect/** (widget endpoints, uses embed key auth)
         // GET is required for WebSocket upgrade handshake

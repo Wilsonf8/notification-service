@@ -27,10 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconPlus, IconFolder, IconBell, IconVideo } from "@tabler/icons-react";
+import { IconPlus, IconFolder, IconVideo } from "@tabler/icons-react";
 import { getOrganizationProjects, createOrganizationProject } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
-import type { Project, ProjectType } from "@/lib/types";
+import type { Project } from "@/lib/types";
 
 /** Page params containing the org slug */
 interface ProjectsPageProps {
@@ -53,7 +53,6 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
-  const [newProjectType, setNewProjectType] = useState<ProjectType>("NOTIFYKIT");
   const [creating, setCreating] = useState(false);
 
   /**
@@ -84,11 +83,10 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
       // Use orgSlug from URL directly
       const project = await createOrganizationProject(orgSlug, {
         name: newProjectName.trim(),
-        type: newProjectType,
+        type: "LIVECONNECT",
       });
       setProjects((prev) => [...prev, project]);
       setNewProjectName("");
-      setNewProjectType("NOTIFYKIT");
       setIsCreateOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create project");
@@ -129,7 +127,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
         <div>
           <h1 className="text-xl md:text-2xl font-semibold">Projects</h1>
           <p className="text-muted-foreground">
-            Manage your notification projects
+            Manage your LiveConnect projects
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -141,49 +139,10 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             <DialogHeader>
               <DialogTitle>Create Project</DialogTitle>
               <DialogDescription>
-                Create a new project to start sending notifications.
+                Create a new LiveConnect project for real-time customer engagement.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Project Type</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setNewProjectType("NOTIFYKIT")}
-                    className={`flex flex-col items-center gap-2 p-4 border text-left transition-colors ${
-                      newProjectType === "NOTIFYKIT"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground"
-                    }`}
-                  >
-                    <IconBell className="h-6 w-6" />
-                    <div className="text-center">
-                      <p className="font-medium text-sm">NotifyKit</p>
-                      <p className="text-xs text-muted-foreground">
-                        Telegram notifications
-                      </p>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewProjectType("LIVECONNECT")}
-                    className={`flex flex-col items-center gap-2 p-4 border text-left transition-colors ${
-                      newProjectType === "LIVECONNECT"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground"
-                    }`}
-                  >
-                    <IconVideo className="h-6 w-6" />
-                    <div className="text-center">
-                      <p className="font-medium text-sm">LiveConnect</p>
-                      <p className="text-xs text-muted-foreground">
-                        Video chat widget
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="name">Project Name</Label>
                 <Input
@@ -225,8 +184,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             <IconFolder className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-medium">No projects yet</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              Create your first project to start sending notifications to
-              Telegram.
+              Create your first LiveConnect project to start engaging with customers.
             </p>
             <Button className="mt-4 gap-2" onClick={() => setIsCreateOpen(true)}>
               <IconPlus className="h-4 w-4" />
@@ -242,14 +200,10 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <CardTitle className="text-lg">{project.name}</CardTitle>
-                    {project.type === "LIVECONNECT" ? (
-                      <IconVideo className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <IconBell className="h-4 w-4 text-muted-foreground" />
-                    )}
+                    <IconVideo className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <CardDescription>
-                    {project.type === "LIVECONNECT" ? "LiveConnect" : "NotifyKit"} · Created {new Date(project.createdAt).toLocaleDateString()}
+                    LiveConnect · Created {new Date(project.createdAt).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
               </Card>

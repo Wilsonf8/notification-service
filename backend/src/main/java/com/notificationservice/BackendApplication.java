@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
- * Main application entry point for the NotifyKit notification service.
+ * Main application entry point for the LiveConnect service.
  * Configures Spring Boot with JPA repositories and scheduling support.
  */
 @SpringBootApplication

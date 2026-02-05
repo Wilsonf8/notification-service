@@ -11,8 +11,7 @@ import java.util.UUID;
  * @param id the project ID
  * @param name the project name
  * @param description optional project description
- * @param type the project type (NOTIFYKIT or LIVECONNECT)
- * @param telegramDestination telegram destination configuration (for NOTIFYKIT projects)
+ * @param type the project type
  * @param createdAt when the project was created
  */
 public record ProjectDto(
@@ -20,6 +19,5 @@ public record ProjectDto(
         String name,
         String description,
         ProjectType type,
-        TelegramDestinationDto telegramDestination,
         OffsetDateTime createdAt
 ) {}

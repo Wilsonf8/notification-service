@@ -9,7 +9,7 @@ import jakarta.validation.constraints.Size;
  *
  * @param name the project name (required)
  * @param description optional project description
- * @param type the project type (defaults to NOTIFYKIT if not specified)
+ * @param type the project type (defaults to LIVECONNECT)
  */
 public record CreateProjectRequest(
         @NotBlank @Size(max = 255) String name,

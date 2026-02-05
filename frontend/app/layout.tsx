@@ -9,8 +9,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NotifyKit",
-  description: "Send notifications to Telegram via API",
+  title: "LiveConnect",
+  description: "Real-time customer engagement platform",
 };
 
 export default function RootLayout({

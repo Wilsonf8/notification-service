@@ -1,1 +1,0 @@
-typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"dev.notifykit","l":"NotifyOptions.Builder"},{"p":"dev.notifykit","l":"NotifyKit"},{"p":"dev.notifykit","l":"NotifyOptions"}];updateSearchResults();

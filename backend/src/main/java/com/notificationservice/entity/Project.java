@@ -6,8 +6,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -34,7 +32,7 @@ public class Project {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ProjectType type = ProjectType.NOTIFYKIT;
+    private ProjectType type = ProjectType.LIVECONNECT;
 
     @CreationTimestamp
     @Column(name = "created_at")
@@ -46,17 +44,6 @@ public class Project {
 
     @Column(name = "deleted_at")
     private OffsetDateTime deletedAt;
-
-    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private TelegramDestination telegramDestination;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<ApiKey> apiKeys = new ArrayList<>();
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL)
-    @Builder.Default
-    private List<Event> events = new ArrayList<>();
 
     public boolean isDeleted() {
         return deletedAt != null;

@@ -1,6 +1,6 @@
 /**
  * Project detail layout with route-based navigation tabs.
- * Provides project context and type-specific navigation.
+ * Provides project context and LiveConnect navigation.
  * @module app/dashboard/[orgSlug]/projects/[projectId]/layout
  */
 "use client";
@@ -16,9 +16,6 @@ import {
   IconUserCog,
   IconCode,
   IconSettings,
-  IconKey,
-  IconBrandTelegram,
-  IconHistory,
   IconChevronLeft,
 } from "@tabler/icons-react";
 import { getProject } from "@/lib/api";
@@ -66,14 +63,6 @@ const liveConnectTabs: NavTab[] = [
   { label: "Settings", href: "/settings", icon: IconSettings },
 ];
 
-/** NotifyKit navigation tabs */
-const notifyKitTabs: NavTab[] = [
-  { label: "Overview", href: "", icon: IconKey },
-  { label: "Telegram", href: "/telegram", icon: IconBrandTelegram },
-  { label: "Events", href: "/events", icon: IconHistory },
-  { label: "Settings", href: "/settings", icon: IconSettings },
-];
-
 /** Props for the project layout */
 interface ProjectLayoutProps {
   params: Promise<{ orgSlug: string; projectId: string }>;
@@ -81,7 +70,7 @@ interface ProjectLayoutProps {
 }
 
 /**
- * Project layout component with type-specific navigation tabs.
+ * Project layout component with LiveConnect navigation tabs.
  * Fetches project data and provides it to child pages via context.
  */
 export default function ProjectLayout({ params, children }: ProjectLayoutProps) {
@@ -131,11 +120,8 @@ export default function ProjectLayout({ params, children }: ProjectLayoutProps) 
     return pathname.startsWith(fullPath);
   };
 
-  // Get tabs based on project type
-  const tabs = project?.type === "LIVECONNECT" ? liveConnectTabs : notifyKitTabs;
-
   // Filter tabs based on admin status
-  const visibleTabs = tabs.filter((tab) => !tab.adminOnly || isAdmin);
+  const visibleTabs = liveConnectTabs.filter((tab) => !tab.adminOnly || isAdmin);
 
   if (loading) {
     return (
@@ -192,9 +178,7 @@ export default function ProjectLayout({ params, children }: ProjectLayoutProps) 
           <div>
             <h1 className="text-xl font-semibold md:text-2xl">{project.name}</h1>
             <p className="text-sm text-muted-foreground">
-              {project.type === "LIVECONNECT"
-                ? "LiveConnect - Real-time customer engagement"
-                : "NotifyKit - Notification management"}
+              LiveConnect - Real-time customer engagement
             </p>
           </div>
         </div>

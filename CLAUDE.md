@@ -19,7 +19,7 @@ Project-specific instructions for Claude Code.
 
 - `/backend` - Spring Boot 4.0.2, Java 21, PostgreSQL, Redis
 - `/frontend` - Next.js 16, React 19, TypeScript, shadcn (base-lyra style)
-- `/sdks` - Published SDKs (notifykitdev on npm/PyPI, io.github.wilsonf8:notifykitdev on Maven)
+- `/sdks/liveconnect-widget` - Embeddable LiveConnect widget for customer websites
 
 ## Running Locally
 
