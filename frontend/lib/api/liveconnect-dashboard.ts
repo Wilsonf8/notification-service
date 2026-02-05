@@ -232,9 +232,10 @@ export async function getMessages(
   projectId: string,
   conversationId: string
 ): Promise<LiveConnectMessage[]> {
-  return apiFetch<LiveConnectMessage[]>(
+  const response = await apiFetch<{ messages: LiveConnectMessage[] }>(
     `/api/projects/${projectId}/liveconnect/conversations/${conversationId}/messages`
   );
+  return response.messages;
 }
 
 /**
