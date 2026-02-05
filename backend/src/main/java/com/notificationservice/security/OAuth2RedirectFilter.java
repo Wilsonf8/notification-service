@@ -28,7 +28,11 @@ public class OAuth2RedirectFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        log.debug("Filter processing: {} with query: {}", request.getRequestURI(), request.getQueryString());
+
         if (request.getRequestURI().contains("/oauth2/authorization/")) {
+            log.info("OAuth request detected - URI: {}, mobile param: {}",
+                    request.getRequestURI(), request.getParameter("mobile"));
             String redirectOrigin = request.getParameter("redirect_origin");
             if (redirectOrigin != null && !redirectOrigin.isBlank()) {
                 Cookie cookie = new Cookie(REDIRECT_ORIGIN_COOKIE, redirectOrigin);
