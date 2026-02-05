@@ -81,6 +81,7 @@ interface VisitorUpdatedEvent extends BaseWebSocketEvent {
   email: string | null;
   currentPage: string | null;
   currentPageTitle: string | null;
+  isConnected: boolean | null;
 }
 
 /** Request received event from backend */
@@ -276,10 +277,11 @@ export function useLiveConnectWebSocket(
             v.id === event.visitorId
               ? {
                   ...v,
-                  name: event.name,
-                  email: event.email,
-                  currentPage: event.currentPage,
-                  currentPageTitle: event.currentPageTitle,
+                  name: event.name ?? v.name,
+                  email: event.email ?? v.email,
+                  currentPage: event.currentPage ?? v.currentPage,
+                  currentPageTitle: event.currentPageTitle ?? v.currentPageTitle,
+                  isConnected: event.isConnected ?? v.isConnected,
                 }
               : v
           )

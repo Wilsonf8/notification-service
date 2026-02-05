@@ -125,18 +125,34 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
         // Remove session from VisitorSessionManager
         sessionManager.removeSession(visitorId, session);
 
+        // Check actual session count after removal
+        int actualSessionCount = sessionManager.getSessionCount(visitorId);
+        boolean isLastConnection = actualSessionCount == 0;
+
         // Update visitor in database
         visitorRepository.findById(visitorId).ifPresent(visitor -> {
-            int newConnections = Math.max(0, visitor.getActiveConnections() - 1);
-            visitor.setActiveConnections(newConnections);
+            // Sync DB with actual session count
+            visitor.setActiveConnections(actualSessionCount);
 
-            if (newConnections == 0) {
+            if (isLastConnection) {
                 visitor.setDisconnectedAt(OffsetDateTime.now());
+
+                // Broadcast visitor_updated with isConnected=false immediately
+                // (visitor_left will be sent later by grace period scheduler)
+                VisitorUpdatedEvent event = new VisitorUpdatedEvent(
+                        visitor.getId(),
+                        visitor.getName(),
+                        visitor.getEmail(),
+                        extractCurrentPage(visitor),
+                        extractCurrentPageTitle(visitor),
+                        false  // isConnected = false
+                );
+                broadcaster.broadcastToProject(projectId, event);
             }
 
             visitorRepository.save(visitor);
             log.info("[WidgetWS] Visitor disconnected: visitorId={}, projectId={}, activeConnections={}, reason={}",
-                    visitorId, projectId, newConnections, status);
+                    visitorId, projectId, actualSessionCount, status);
         });
     }
 
@@ -184,7 +200,14 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitor.setLastSeenAt(OffsetDateTime.now());
             visitorRepository.save(visitor);
 
-            VisitorUpdatedEvent event = new VisitorUpdatedEvent(visitorId, url);
+            VisitorUpdatedEvent event = new VisitorUpdatedEvent(
+                    visitorId,
+                    visitor.getName(),
+                    visitor.getEmail(),
+                    url,
+                    title,
+                    true  // isConnected - they're sending page changes, so connected
+            );
             broadcaster.broadcastToProject(projectId, event);
 
             log.debug("[WidgetWS] Visitor page change: visitorId={}, url={}", visitorId, url);
@@ -202,6 +225,22 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             Object page = visitor.getMetadata().get("currentPage");
             if (page != null) {
                 return page.toString();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Extracts the current page title from visitor metadata.
+     *
+     * @param visitor the visitor entity
+     * @return the current page title, or null if not set
+     */
+    private String extractCurrentPageTitle(LiveConnectVisitor visitor) {
+        if (visitor.getMetadata() != null) {
+            Object title = visitor.getMetadata().get("currentPageTitle");
+            if (title != null) {
+                return title.toString();
             }
         }
         return null;
