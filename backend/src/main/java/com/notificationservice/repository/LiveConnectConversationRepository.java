@@ -57,4 +57,12 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.project.id = :projectId AND c.status = 'ACTIVE' ORDER BY c.startedAt ASC")
     List<LiveConnectConversation> findActiveByProjectId(UUID projectId);
+
+    /**
+     * Finds all active conversations across all projects.
+     *
+     * @return list of all active conversations
+     */
+    @Query("SELECT c FROM LiveConnectConversation c WHERE c.status = 'ACTIVE'")
+    List<LiveConnectConversation> findAllActive();
 }

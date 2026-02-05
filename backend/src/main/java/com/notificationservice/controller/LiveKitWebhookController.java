@@ -10,6 +10,7 @@ import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectProcessedWebhookRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
 import io.livekit.server.WebhookReceiver;
 import livekit.LivekitWebhook;
@@ -106,11 +107,27 @@ public class LiveKitWebhookController {
         });
     }
 
+    /**
+     * Handles participant left events.
+     * Ends the conversation immediately when the room becomes empty.
+     *
+     * @param event the webhook event
+     */
     private void handleParticipantLeft(LivekitWebhook.WebhookEvent event) {
         String participantIdentity = event.getParticipant().getIdentity();
         String roomName = event.getRoom().getName();
-        log.info("Participant left room {}: {}", roomName, participantIdentity);
-        // Could implement grace period logic here in the future
+        int remainingParticipants = event.getRoom().getNumParticipants();
+
+        log.info("Participant left room {}: {} (remaining: {})",
+                roomName, participantIdentity, remainingParticipants);
+
+        if (remainingParticipants == 0) {
+            conversationRepository.findByLiveKitRoomName(roomName).ifPresent(conversation -> {
+                if (conversation.getStatus() == ConversationStatus.ACTIVE) {
+                    endConversation(conversation);
+                }
+            });
+        }
     }
 
     private void endConversation(LiveConnectConversation conversation) {
@@ -150,5 +167,9 @@ public class LiveKitWebhookController {
                     new CallEndedEvent(conversation.getId(), conversation.getCallDurationSeconds())
             );
         }
+
+        // Broadcast call ended to all reps in project
+        CallEndedBroadcastEvent broadcastEvent = new CallEndedBroadcastEvent(conversation.getId());
+        broadcaster.broadcastToProject(conversation.getProject().getId(), broadcastEvent);
     }
 }
