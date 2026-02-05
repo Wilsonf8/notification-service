@@ -33,6 +33,12 @@ public class OAuth2RedirectFilter extends OncePerRequestFilter {
                 cookie.setSecure(request.isSecure());
                 response.addCookie(cookie);
             }
+
+            // Capture mobile parameter for iOS app redirect
+            String mobile = request.getParameter("mobile");
+            if ("true".equalsIgnoreCase(mobile)) {
+                request.getSession(true).setAttribute("oauth_mobile", Boolean.TRUE);
+            }
         }
 
         filterChain.doFilter(request, response);
