@@ -257,8 +257,14 @@ export function useLiveConnectWebSocket(
           isPingable: true,
         };
         setVisitors?.((prev) => {
-          // Avoid duplicates by record ID
-          if (prev.some((v) => v.id === event.visitorId)) return prev;
+          const existingIndex = prev.findIndex((v) => v.id === event.visitorId);
+          if (existingIndex !== -1) {
+            // Visitor exists (reconnecting) - update their isConnected status
+            return prev.map((v) =>
+              v.id === event.visitorId ? { ...v, ...visitor } : v
+            );
+          }
+          // New visitor - add to list
           return [...prev, visitor];
         });
         break;
