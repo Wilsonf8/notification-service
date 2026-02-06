@@ -114,6 +114,7 @@ const VALID_TRANSITIONS: Record<WidgetStateType, WidgetStateType[]> = {
   [WidgetStateType.COLLAPSED]: [
     WidgetStateType.EXPANDED,
     WidgetStateType.INCOMING_PING,
+    WidgetStateType.WAITING,
   ],
   [WidgetStateType.EXPANDED]: [
     WidgetStateType.COLLAPSED,

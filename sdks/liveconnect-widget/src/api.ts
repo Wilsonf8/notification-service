@@ -50,6 +50,19 @@ export interface SendMessageRequest {
 // ============================================================================
 
 /**
+ * Information about a pending call request.
+ * Used to restore WAITING state when visitor navigates between pages.
+ */
+export interface PendingRequestInfo {
+  /** The unique identifier of the pending request */
+  requestId: string;
+  /** ISO timestamp when the request expires */
+  expiresAt: string;
+  /** Direction of the request (USER_TO_REPS, REP_TO_USER, MUTUAL) */
+  direction: string;
+}
+
+/**
  * Response from the /init endpoint.
  */
 export interface InitResponse {
@@ -61,6 +74,8 @@ export interface InitResponse {
   widgetColor: string;
   /** Widget position on the page */
   widgetPosition: string;
+  /** Pending call request info if one exists, null otherwise */
+  pendingRequest: PendingRequestInfo | null;
 }
 
 /**

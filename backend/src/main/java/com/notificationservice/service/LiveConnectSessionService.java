@@ -1,11 +1,15 @@
 package com.notificationservice.service;
 
+import com.notificationservice.dto.PendingRequestInfo;
 import com.notificationservice.dto.WidgetInitRequest;
 import com.notificationservice.dto.WidgetInitResponse;
 import com.notificationservice.entity.LiveConnectEmbedKey;
+import com.notificationservice.entity.LiveConnectRequest;
 import com.notificationservice.entity.LiveConnectSession;
 import com.notificationservice.entity.LiveConnectSettings;
 import com.notificationservice.entity.LiveConnectVisitor;
+import com.notificationservice.entity.RequestDirection;
+import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectSessionRepository;
 import com.notificationservice.repository.LiveConnectSettingsRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
@@ -37,6 +41,7 @@ public class LiveConnectSessionService {
     private final LiveConnectSessionRepository sessionRepository;
     private final LiveConnectVisitorRepository visitorRepository;
     private final LiveConnectSettingsRepository settingsRepository;
+    private final LiveConnectRequestRepository requestRepository;
     private final StringRedisTemplate redisTemplate;
 
     @Value("${app.liveconnect.session.ttl-hours}")
@@ -95,11 +100,20 @@ public class LiveConnectSessionService {
                     return settingsRepository.save(defaultSettings);
                 });
 
+        // Check for pending request to restore WAITING state across page navigation
+        PendingRequestInfo pendingRequestInfo = requestRepository
+                .findPendingByVisitorId(visitor.getId())
+                .filter(r -> r.getExpiresAt().isAfter(OffsetDateTime.now()))
+                .filter(r -> r.getDirection() == RequestDirection.USER_TO_REPS)
+                .map(r -> new PendingRequestInfo(r.getId(), r.getExpiresAt(), r.getDirection().name()))
+                .orElse(null);
+
         return new WidgetInitResponse(
                 sessionToken,
                 settings.getWelcomeMessage(),
                 settings.getWidgetColor(),
-                settings.getWidgetPosition()
+                settings.getWidgetPosition(),
+                pendingRequestInfo
         );
     }
 

@@ -154,6 +154,15 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         setWelcomeMessage(initResponse.welcomeMessage || 'How can we help you today?');
         setIsOnline(true); // Assume online if init succeeds
 
+        // Check for pending request to restore WAITING state across page navigation
+        if (initResponse.pendingRequest) {
+          const expiresAt = new Date(initResponse.pendingRequest.expiresAt).getTime();
+          if (expiresAt > Date.now()) {
+            setCurrentRequestId(initResponse.pendingRequest.requestId);
+            startWaiting(initResponse.pendingRequest.requestId, expiresAt);
+          }
+        }
+
         // Initialize WebSocket
         ws = getWebSocketClient(config.apiUrl);
         ws.setSessionToken(initResponse.sessionToken);

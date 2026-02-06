@@ -7,10 +7,12 @@ package com.notificationservice.dto;
  * @param welcomeMessage the configured welcome message
  * @param widgetColor the configured widget color (hex)
  * @param widgetPosition the configured widget position (bottom-right or bottom-left)
+ * @param pendingRequest pending call request info if one exists, null otherwise
  */
 public record WidgetInitResponse(
         String sessionToken,
         String welcomeMessage,
         String widgetColor,
-        String widgetPosition
+        String widgetPosition,
+        PendingRequestInfo pendingRequest
 ) {}
