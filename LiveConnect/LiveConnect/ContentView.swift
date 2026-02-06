@@ -56,6 +56,7 @@ struct ContentView: View {
                 projectId: projectId,
                 sidebarViewModel: sidebarViewModel
             )
+            .id(projectId)
         } else {
             // Loading organizations and projects
             VStack(spacing: 24) {
