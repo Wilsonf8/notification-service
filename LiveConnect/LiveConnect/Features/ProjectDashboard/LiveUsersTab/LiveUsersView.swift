@@ -61,8 +61,9 @@ struct LiveUsersView: View {
                         InCallSection(calls: viewModel.activeCalls)
                     }
                 }
-                .padding()
+                .padding(.horizontal)
             }
+            .contentMargins(.top, -12, for: .scrollContent)
             .refreshable {
                 await viewModel.refresh()
             }
