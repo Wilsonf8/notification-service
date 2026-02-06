@@ -76,16 +76,24 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitorRepository.save(visitor);
 
             // Broadcast visitor_joined only on first connection
+            // Skip if visitor has a pending request (waiting) or active conversation (in call)
             if (isFirstConnection) {
-                String currentPage = extractCurrentPage(visitor);
-                VisitorJoinedEvent event = new VisitorJoinedEvent(
-                        visitor.getId(),
-                        visitor.getName(),
-                        visitor.getEmail(),
-                        currentPage,
-                        OffsetDateTime.now()
-                );
-                broadcaster.broadcastToProject(projectId, event);
+                boolean hasPendingRequest = requestRepository.findPendingByVisitorId(visitorId).isPresent();
+                boolean hasActiveConversation = conversationRepository.findActiveByVisitorId(visitorId).isPresent();
+
+                if (!hasPendingRequest && !hasActiveConversation) {
+                    String currentPage = extractCurrentPage(visitor);
+                    VisitorJoinedEvent event = new VisitorJoinedEvent(
+                            visitor.getId(),
+                            visitor.getName(),
+                            visitor.getEmail(),
+                            currentPage,
+                            OffsetDateTime.now()
+                    );
+                    broadcaster.broadcastToProject(projectId, event);
+                } else {
+                    log.debug("[WidgetWS] Skipping visitor_joined broadcast for visitor in waiting/call state: visitorId={}", visitorId);
+                }
             }
 
             log.info("[WidgetWS] Visitor connected: visitorId={}, projectId={}, activeConnections={}",
