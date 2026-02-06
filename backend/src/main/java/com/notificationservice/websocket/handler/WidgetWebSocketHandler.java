@@ -7,6 +7,7 @@ import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.event.VisitorUpdatedEvent;
+import com.notificationservice.websocket.session.VisitorConnectionGracePeriodManager;
 import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final LiveConnectVisitorRepository visitorRepository;
     private final WebSocketBroadcaster broadcaster;
     private final ObjectMapper objectMapper;
+    private final VisitorConnectionGracePeriodManager gracePeriodManager;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -50,6 +52,9 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             }
             return;
         }
+
+        // Cancel any pending disconnection broadcast (visitor reconnected within grace period)
+        gracePeriodManager.cancelPendingDisconnection(visitorId);
 
         // Register session with VisitorSessionManager
         sessionManager.addSession(visitorId, projectId, session);
@@ -137,8 +142,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             if (isLastConnection) {
                 visitor.setDisconnectedAt(OffsetDateTime.now());
 
-                // Broadcast visitor_updated with isConnected=false immediately
-                // (visitor_left will be sent later by grace period scheduler)
+                // Schedule disconnection broadcast with 3-second grace period
+                // (smooths page refreshes/navigation where visitor briefly disconnects)
                 VisitorUpdatedEvent event = new VisitorUpdatedEvent(
                         visitor.getId(),
                         visitor.getName(),
@@ -147,7 +152,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                         extractCurrentPageTitle(visitor),
                         false  // isConnected = false
                 );
-                broadcaster.broadcastToProject(projectId, event);
+                gracePeriodManager.scheduleDisconnectionBroadcast(visitorId, projectId, event);
             }
 
             visitorRepository.save(visitor);
