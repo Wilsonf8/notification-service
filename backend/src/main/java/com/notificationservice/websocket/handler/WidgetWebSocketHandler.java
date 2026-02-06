@@ -3,6 +3,8 @@ package com.notificationservice.websocket.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notificationservice.entity.LiveConnectVisitor;
+import com.notificationservice.repository.LiveConnectConversationRepository;
+import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
@@ -34,6 +36,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
 
     private final VisitorSessionManager sessionManager;
     private final LiveConnectVisitorRepository visitorRepository;
+    private final LiveConnectRequestRepository requestRepository;
+    private final LiveConnectConversationRepository conversationRepository;
     private final WebSocketBroadcaster broadcaster;
     private final ObjectMapper objectMapper;
     private final VisitorConnectionGracePeriodManager gracePeriodManager;
@@ -191,6 +195,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
         String title = json.has("title") ? json.get("title").asText() : null;
 
         visitorRepository.findById(visitorId).ifPresent(visitor -> {
+            // Update metadata regardless of state (keeps DB in sync)
             Map<String, Object> metadata = visitor.getMetadata();
             if (metadata == null) {
                 metadata = new HashMap<>();
@@ -204,6 +209,16 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitor.setMetadata(metadata);
             visitor.setLastSeenAt(OffsetDateTime.now());
             visitorRepository.save(visitor);
+
+            // Only broadcast page changes for "browsing" visitors
+            // Skip if visitor has a pending request (waiting) or active conversation (in call)
+            boolean hasPendingRequest = requestRepository.findPendingByVisitorId(visitorId).isPresent();
+            boolean hasActiveConversation = conversationRepository.findActiveByVisitorId(visitorId).isPresent();
+
+            if (hasPendingRequest || hasActiveConversation) {
+                log.debug("[WidgetWS] Skipping page change broadcast for visitor in waiting/call state: visitorId={}", visitorId);
+                return;
+            }
 
             VisitorUpdatedEvent event = new VisitorUpdatedEvent(
                     visitorId,
