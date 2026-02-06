@@ -101,12 +101,25 @@ public class LiveConnectSessionService {
                 });
 
         // Check for pending request to restore WAITING state across page navigation
-        PendingRequestInfo pendingRequestInfo = requestRepository
-                .findPendingByVisitorId(visitor.getId())
+        var pendingRequestOpt = requestRepository.findPendingByVisitorId(visitor.getId());
+        log.info("[LiveConnect] Checking pending request for visitor {} (internal ID: {}): found={}",
+                request.visitorId(), visitor.getId(), pendingRequestOpt.isPresent());
+
+        if (pendingRequestOpt.isPresent()) {
+            var req = pendingRequestOpt.get();
+            log.info("[LiveConnect] Pending request details: id={}, direction={}, expiresAt={}, now={}, notExpired={}, isUserToReps={}",
+                    req.getId(), req.getDirection(), req.getExpiresAt(), OffsetDateTime.now(),
+                    req.getExpiresAt().isAfter(OffsetDateTime.now()),
+                    req.getDirection() == RequestDirection.USER_TO_REPS);
+        }
+
+        PendingRequestInfo pendingRequestInfo = pendingRequestOpt
                 .filter(r -> r.getExpiresAt().isAfter(OffsetDateTime.now()))
                 .filter(r -> r.getDirection() == RequestDirection.USER_TO_REPS)
                 .map(r -> new PendingRequestInfo(r.getId(), r.getExpiresAt(), r.getDirection().name()))
                 .orElse(null);
+
+        log.info("[LiveConnect] Final pendingRequestInfo for response: {}", pendingRequestInfo);
 
         return new WidgetInitResponse(
                 sessionToken,

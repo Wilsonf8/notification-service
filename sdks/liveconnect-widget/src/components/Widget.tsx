@@ -155,12 +155,27 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         setIsOnline(true); // Assume online if init succeeds
 
         // Check for pending request to restore WAITING state across page navigation
+        console.log('[LiveConnect Widget] Init response pendingRequest:', initResponse.pendingRequest);
         if (initResponse.pendingRequest) {
           const expiresAt = new Date(initResponse.pendingRequest.expiresAt).getTime();
-          if (expiresAt > Date.now()) {
+          const now = Date.now();
+          console.log('[LiveConnect Widget] Pending request found:', {
+            requestId: initResponse.pendingRequest.requestId,
+            expiresAt,
+            now,
+            isNotExpired: expiresAt > now,
+            diff: expiresAt - now,
+          });
+          if (expiresAt > now) {
+            console.log('[LiveConnect Widget] Restoring WAITING state with requestId:', initResponse.pendingRequest.requestId);
             setCurrentRequestId(initResponse.pendingRequest.requestId);
-            startWaiting(initResponse.pendingRequest.requestId, expiresAt);
+            const transitionResult = startWaiting(initResponse.pendingRequest.requestId, expiresAt);
+            console.log('[LiveConnect Widget] startWaiting transition result:', transitionResult);
+          } else {
+            console.log('[LiveConnect Widget] Pending request expired, not restoring WAITING state');
           }
+        } else {
+          console.log('[LiveConnect Widget] No pending request in init response');
         }
 
         // Initialize WebSocket
