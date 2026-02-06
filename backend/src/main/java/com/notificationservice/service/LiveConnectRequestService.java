@@ -25,6 +25,7 @@ import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.CallStartedBroadcastEvent;
 import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
+import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -294,6 +295,10 @@ public class LiveConnectRequestService {
 
         request.setStatus(RequestStatus.CANCELLED);
         requestRepository.save(request);
+
+        // Broadcast to reps so iOS app moves visitor from "waiting" to "browsing"
+        RequestCancelledEvent event = new RequestCancelledEvent(requestId);
+        broadcaster.broadcastToProject(request.getProject().getId(), event);
     }
 
     /**
