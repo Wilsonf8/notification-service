@@ -58,66 +58,47 @@ private struct RequestCard: View {
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top) {
-                // Visitor info
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(request.visitor.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
+        HStack {
+            // Left: Visitor info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(request.visitor.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
 
-                    if let page = request.visitor.currentPage {
-                        Text(page)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.caption2)
-                        Text(timeWaiting)
-                            .font(.caption)
-                    }
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: "clock")
+                        .font(.caption2)
+                    Text(timeWaiting)
+                        .font(.caption)
                 }
-
-                Spacer()
-
-                // Direction indicator
-                Image(systemName: request.direction == .userToReps ? "arrow.right" : "arrow.left")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .foregroundStyle(.secondary)
             }
 
-            // Action buttons
+            Spacer()
+
+            // Right: Action buttons (icon-only)
             HStack(spacing: 12) {
                 Button(action: onDismiss) {
-                    Text("Dismiss")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                    Image(systemName: "xmark")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 36, height: 36)
                         .glassEffect(.regular.interactive())
                 }
 
                 Button(action: onAccept) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "video.fill")
-                        Text("Accept")
-                    }
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .glassEffect(.regular.tint(.yellow).interactive())
+                    Image(systemName: "video.fill")
+                        .font(.body)
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .glassEffect(.regular.tint(.yellow).interactive())
                 }
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .glassEffect()
         .onAppear {
             updateTimeWaiting()

@@ -83,7 +83,8 @@ private struct ActiveCallCard: View {
                     .monospacedDigit()
             }
         }
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .glassEffect()
         .onAppear {
             updateDuration()
