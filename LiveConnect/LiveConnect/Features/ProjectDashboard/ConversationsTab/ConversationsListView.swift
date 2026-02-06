@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+/// Response wrapper for paginated conversations.
+private struct ConversationsResponse: Codable {
+    let conversations: [Conversation]
+}
+
 /// List view showing past conversations.
 struct ConversationsListView: View {
     let projectId: UUID
@@ -74,6 +79,9 @@ struct ConversationsListView: View {
             }
             .padding(.vertical, 8)
         }
+        .refreshable {
+            await loadConversations()
+        }
     }
 
     private var emptyState: some View {
@@ -126,15 +134,15 @@ struct ConversationsListView: View {
         currentPage = 0
 
         do {
-            let response: [Conversation] = try await APIClient.shared.get(
+            let response: ConversationsResponse = try await APIClient.shared.get(
                 Endpoints.conversations(projectId: projectId),
                 queryItems: [
                     URLQueryItem(name: "page", value: "0"),
                     URLQueryItem(name: "size", value: String(pageSize))
                 ]
             )
-            conversations = response
-            hasMore = response.count == pageSize
+            conversations = response.conversations
+            hasMore = response.conversations.count == pageSize
         } catch {
             self.error = error
         }
@@ -149,15 +157,15 @@ struct ConversationsListView: View {
         currentPage += 1
 
         do {
-            let response: [Conversation] = try await APIClient.shared.get(
+            let response: ConversationsResponse = try await APIClient.shared.get(
                 Endpoints.conversations(projectId: projectId),
                 queryItems: [
                     URLQueryItem(name: "page", value: String(currentPage)),
                     URLQueryItem(name: "size", value: String(pageSize))
                 ]
             )
-            conversations.append(contentsOf: response)
-            hasMore = response.count == pageSize
+            conversations.append(contentsOf: response.conversations)
+            hasMore = response.conversations.count == pageSize
         } catch {
             currentPage -= 1 // Revert on failure
         }

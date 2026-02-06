@@ -103,7 +103,7 @@ struct AccountSheetView: View {
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
 
-                Text(user.email)
+                Text(user.email ?? "No email")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -112,7 +112,7 @@ struct AccountSheetView: View {
             VStack(spacing: 0) {
                 DetailRow(icon: "person", label: "Username", value: user.username)
                 Divider().background(Color.white.opacity(0.1))
-                DetailRow(icon: "envelope", label: "Email", value: user.email)
+                DetailRow(icon: "envelope", label: "Email", value: user.email ?? "Not set")
                 Divider().background(Color.white.opacity(0.1))
                 DetailRow(icon: "key", label: "User ID", value: String(user.id.uuidString.prefix(8)) + "...")
             }

@@ -61,8 +61,23 @@ struct GlassButton: View {
             .foregroundStyle(style.foregroundColor)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(style.backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 0))
+            .modifier(GlassButtonStyleModifier(style: style))
+        }
+    }
+}
+
+/// Applies the appropriate background style for GlassButton.
+private struct GlassButtonStyleModifier: ViewModifier {
+    let style: GlassButton.Style
+
+    func body(content: Content) -> some View {
+        switch style {
+        case .primary:
+            content.background(.yellow)
+        case .secondary:
+            content.glassEffect()
+        case .destructive:
+            content.background(.red.opacity(0.8)).glassEffect()
         }
     }
 }

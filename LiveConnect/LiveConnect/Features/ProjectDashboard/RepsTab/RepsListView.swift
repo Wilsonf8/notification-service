@@ -70,7 +70,7 @@ private struct RepRow: View {
                     .fontWeight(.medium)
                     .foregroundStyle(.white)
 
-                Text(rep.email)
+                Text(rep.email ?? "No email")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

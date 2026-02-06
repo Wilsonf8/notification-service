@@ -100,7 +100,7 @@ private struct RequestCard: View {
                         .fontWeight(.medium)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.1))
+                        .glassEffect()
                         .foregroundStyle(.white)
                 }
 
@@ -119,11 +119,7 @@ private struct RequestCard: View {
             }
         }
         .padding()
-        .background(Color.white.opacity(0.05))
-        .overlay(
-            Rectangle()
-                .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
-        )
+        .glassEffect()
         .onAppear {
             updateTimeWaiting()
         }

@@ -54,6 +54,10 @@ final class AuthManager {
             currentUser = try await APIClient.shared.get(Endpoints.authMe)
         } catch {
             // Token is invalid, clear it
+            print("RestoreSession error: \(error)")
+            if case APIError.decodingError(let underlyingError) = error {
+                print("Decoding error details: \(underlyingError)")
+            }
             KeychainService.shared.clearAll()
             self.error = error
         }
@@ -69,9 +73,15 @@ final class AuthManager {
 
         do {
             let token = try await performOAuthFlow(presentationAnchor: presentationAnchor)
+            print("Token received: \(token.prefix(50))...")
             KeychainService.shared.setToken(token)
             currentUser = try await APIClient.shared.get(Endpoints.authMe)
+            print("User loaded: \(currentUser?.username ?? "nil")")
         } catch {
+            print("SignIn error: \(error)")
+            if case APIError.decodingError(let underlyingError) = error {
+                print("Decoding error details: \(underlyingError)")
+            }
             self.error = error
         }
 

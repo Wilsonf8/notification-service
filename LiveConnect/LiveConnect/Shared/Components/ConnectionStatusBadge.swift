@@ -23,7 +23,7 @@ struct ConnectionStatusBadge: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .background((isConnected ? Color.green : Color.red).opacity(0.1))
+        .glassEffect()
     }
 }
 

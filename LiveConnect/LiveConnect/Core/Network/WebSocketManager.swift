@@ -74,16 +74,6 @@ struct ActiveCall: Codable, Identifiable, Sendable {
     let startedAt: Date
 
     var id: UUID { conversationId }
-
-    enum CodingKeys: String, CodingKey {
-        case conversationId = "conversation_id"
-        case visitorId = "visitor_id"
-        case visitorName = "visitor_name"
-        case repId = "rep_id"
-        case repUserId = "rep_user_id"
-        case repName = "rep_name"
-        case startedAt = "started_at"
-    }
 }
 
 /// Connection state for the WebSocket.
@@ -164,18 +154,32 @@ final class WebSocketManager: WebSocketDelegate {
     private func performConnect() {
         guard let projectId else { return }
 
-        let urlString = Endpoints.webSocket(projectId: projectId)
-        guard var request = URL(string: urlString).map({ URLRequest(url: $0) }) else {
+        // Build WebSocket URL with token as query parameter
+        // (more reliable than Authorization header for WebSocket upgrade)
+        let baseUrl = Endpoints.webSocket(projectId: projectId)
+        var urlString = baseUrl
+
+        let token = KeychainService.shared.getToken()
+        if let token {
+            // URL-encode the token to handle any special characters
+            if let encodedToken = token.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                urlString += "?token=\(encodedToken)"
+            } else {
+                urlString += "?token=\(token)"
+            }
+        }
+
+        guard let url = URL(string: urlString) else {
+            print("WebSocket: Invalid URL")
             return
         }
 
-        // Add auth token
-        if let token = KeychainService.shared.getToken() {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        var request = URLRequest(url: url)
 
         connectionState = reconnectAttempts > 0 ? .reconnecting : .connecting
 
+        print("WebSocket: Connecting to \(baseUrl)")
+        print("WebSocket: Token present: \(token != nil), Token length: \(token?.count ?? 0)")
         socket = WebSocket(request: request)
         socket?.delegate = self
         socket?.connect()
@@ -244,7 +248,7 @@ final class WebSocketManager: WebSocketDelegate {
                 onCallStarted?(call)
 
             case .callEndedBroadcast:
-                if let conversationId = (payloadDict as? [String: Any])?["conversation_id"] as? String,
+                if let conversationId = (payloadDict as? [String: Any])?["conversationId"] as? String,
                    let uuid = UUID(uuidString: conversationId) {
                     onCallEnded?(uuid)
                 }

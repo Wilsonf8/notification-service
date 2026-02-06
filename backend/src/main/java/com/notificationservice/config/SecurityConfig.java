@@ -79,6 +79,14 @@ public class SecurityConfig {
         liveconnectConfig.setAllowCredentials(false);
         source.registerCorsConfiguration("/v1/liveconnect/**", liveconnectConfig);
 
+        // Allow all origins for rep WebSocket (mobile app, JWT auth via query param)
+        CorsConfiguration repWsConfig = new CorsConfiguration();
+        repWsConfig.setAllowedOriginPatterns(List.of("*"));
+        repWsConfig.setAllowedMethods(List.of("GET", "POST", "OPTIONS"));
+        repWsConfig.setAllowedHeaders(List.of("*"));
+        repWsConfig.setAllowCredentials(true);
+        source.registerCorsConfiguration("/api/projects/*/liveconnect/ws", repWsConfig);
+
         // Restricted origins for other endpoints
         CorsConfiguration defaultConfig = new CorsConfiguration();
         List<String> origins = Arrays.asList(allowedOriginsConfig.split(","));

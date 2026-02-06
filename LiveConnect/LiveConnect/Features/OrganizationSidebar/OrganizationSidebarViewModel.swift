@@ -39,8 +39,12 @@ final class OrganizationSidebarViewModel {
         isLoading = true
         error = nil
 
+        print("OrganizationSidebarViewModel: Starting to load organizations...")
+
         do {
+            print("OrganizationSidebarViewModel: Fetching from \(Endpoints.organizations)")
             let orgs: [Organization] = try await APIClient.shared.get(Endpoints.organizations)
+            print("OrganizationSidebarViewModel: Loaded \(orgs.count) organizations")
 
             // Load projects for each organization in parallel
             var orgsWithProjects: [OrganizationWithProjects] = []
@@ -82,10 +86,15 @@ final class OrganizationSidebarViewModel {
                 selectedProjectId = loadLastVisitedProject() ?? organizations.first?.projects.first?.id
             }
         } catch {
+            print("OrganizationSidebarViewModel: Error loading organizations: \(error)")
+            if case APIError.decodingError(let underlyingError) = error {
+                print("OrganizationSidebarViewModel: Decoding error details: \(underlyingError)")
+            }
             self.error = error
         }
 
         isLoading = false
+        print("OrganizationSidebarViewModel: Finished loading, isLoading=\(isLoading)")
     }
 
     /// Selects a project.

@@ -12,12 +12,6 @@ struct VisitorListResponse: Codable, Sendable {
     let browsing: [Visitor]
     let queue: [Request]
     let inCall: [ActiveCall]
-
-    enum CodingKeys: String, CodingKey {
-        case browsing
-        case queue
-        case inCall = "in_call"
-    }
 }
 
 /// View model for the project dashboard.
@@ -102,6 +96,31 @@ final class ProjectDashboardViewModel {
         isLoading = false
     }
 
+    /// Refreshes the dashboard data without reconnecting WebSocket.
+    func refresh() async {
+        guard let projectId else { return }
+
+        do {
+            // Reload visitors and reps in parallel
+            async let visitorsTask: VisitorListResponse = APIClient.shared.get(Endpoints.visitors(projectId: projectId))
+            async let repsTask: [Rep] = APIClient.shared.get(Endpoints.reps(projectId: projectId))
+
+            let (visitors, reps) = try await (visitorsTask, repsTask)
+
+            self.browsingVisitors = visitors.browsing
+            self.queuedRequests = visitors.queue
+            self.activeCalls = visitors.inCall
+            self.reps = reps
+
+            // Update current rep
+            if let currentUser = AuthManager.shared.currentUser {
+                self.currentRep = reps.first { $0.userId == currentUser.id }
+            }
+        } catch {
+            self.error = error
+        }
+    }
+
     /// Toggles the rep's availability.
     func toggleAvailability() async {
         guard let projectId else { return }
@@ -115,7 +134,7 @@ final class ProjectDashboardViewModel {
             )
 
             // Update local state
-            if var rep = currentRep {
+            if let rep = currentRep {
                 currentRep = Rep(
                     id: rep.id,
                     userId: rep.userId,
@@ -241,12 +260,7 @@ final class ProjectDashboardViewModel {
 /// Response when accepting a call request.
 struct AcceptedCallResponse: Codable, Sendable {
     let conversationId: UUID
-    let livekitUrl: String
-    let livekitToken: String
-
-    enum CodingKeys: String, CodingKey {
-        case conversationId = "conversation_id"
-        case livekitUrl = "livekit_url"
-        case livekitToken = "livekit_token"
-    }
+    let roomName: String
+    let token: String
+    let liveKitUrl: String
 }

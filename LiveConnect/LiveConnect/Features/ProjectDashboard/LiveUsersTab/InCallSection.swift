@@ -84,11 +84,7 @@ private struct ActiveCallCard: View {
             }
         }
         .padding()
-        .background(Color.green.opacity(0.1))
-        .overlay(
-            Rectangle()
-                .stroke(Color.green.opacity(0.3), lineWidth: 1)
-        )
+        .glassEffect()
         .onAppear {
             updateDuration()
         }

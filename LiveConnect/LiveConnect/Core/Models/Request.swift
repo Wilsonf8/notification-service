@@ -14,14 +14,6 @@ struct Request: Codable, Identifiable, Sendable {
     let direction: RequestDirection
     let status: RequestStatus
     let expiresAt: Date
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case visitor
-        case direction
-        case status
-        case expiresAt = "expires_at"
-    }
 }
 
 /// The direction of a call request.

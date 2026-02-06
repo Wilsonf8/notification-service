@@ -19,18 +19,6 @@ struct Conversation: Codable, Identifiable, Sendable {
     let endedAt: Date?
     let messageCount: Int
 
-    enum CodingKeys: String, CodingKey {
-        case id
-        case visitor
-        case rep
-        case type
-        case status
-        case callDurationSeconds = "call_duration_seconds"
-        case startedAt = "started_at"
-        case endedAt = "ended_at"
-        case messageCount = "message_count"
-    }
-
     /// Formatted duration string (e.g., "5:32").
     var formattedDuration: String? {
         guard let seconds = callDurationSeconds else { return nil }

@@ -44,13 +44,16 @@ public class RepHandshakeInterceptor implements HandshakeInterceptor {
             WebSocketHandler wsHandler,
             Map<String, Object> attributes) {
 
+        log.info("Rep handshake attempt: URI={}", request.getURI());
+
         try {
             // Extract project ID from URL path
             UUID projectId = extractProjectId(request);
             if (projectId == null) {
-                log.warn("Rep handshake failed: Could not extract project ID from URL");
+                log.warn("Rep handshake failed: Could not extract project ID from URL: {}", request.getURI().getPath());
                 return false;
             }
+            log.info("Rep handshake: projectId={}", projectId);
 
             // Extract and validate JWT
             HttpServletRequest httpRequest = null;
@@ -60,14 +63,16 @@ public class RepHandshakeInterceptor implements HandshakeInterceptor {
 
             String jwt = extractJwt(request, httpRequest);
             if (jwt == null || jwt.isBlank()) {
-                log.warn("Rep handshake failed: No JWT found");
+                log.warn("Rep handshake failed: No JWT found. Query: {}", request.getURI().getQuery());
                 return false;
             }
+            log.info("Rep handshake: JWT found, length={}", jwt.length());
 
             if (!jwtTokenProvider.validateToken(jwt)) {
                 log.warn("Rep handshake failed: Invalid JWT");
                 return false;
             }
+            log.info("Rep handshake: JWT validated successfully");
 
             UUID userId = jwtTokenProvider.getUserIdFromToken(jwt);
 

@@ -12,18 +12,9 @@ struct Rep: Codable, Identifiable, Sendable {
     let id: UUID
     let userId: UUID
     let name: String
-    let email: String
+    let email: String?
     let availability: RepAvailability
     let presence: RepPresence
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case userId = "user_id"
-        case name
-        case email
-        case availability
-        case presence
-    }
 }
 
 /// The availability status of a rep.

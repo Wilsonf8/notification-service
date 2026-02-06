@@ -157,17 +157,23 @@ final class APIClient: Sendable {
     /// - Returns: Decoded response of type T.
     /// - Throws: APIError if request fails.
     private func perform<T: Decodable>(_ request: URLRequest) async throws -> T {
+        print("APIClient: \(request.httpMethod ?? "GET") \(request.url?.absoluteString ?? "nil")")
         let (data, response) = try await URLSession.shared.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw APIError.invalidResponse
         }
 
+        print("APIClient: Response status \(httpResponse.statusCode)")
         try validateResponse(httpResponse, data: data)
 
         do {
             return try decoder.decode(T.self, from: data)
         } catch {
+            print("APIClient: Decoding failed for \(T.self): \(error)")
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("APIClient: Raw JSON: \(jsonString.prefix(500))...")
+            }
             throw APIError.decodingError(error)
         }
     }

@@ -80,8 +80,8 @@ struct ProjectDashboardView: View {
         .fullScreenCover(item: $activeCall) { call in
             VideoCallView(
                 conversationId: call.conversationId,
-                livekitUrl: call.livekitUrl,
-                livekitToken: call.livekitToken,
+                livekitUrl: call.liveKitUrl,
+                livekitToken: call.token,
                 projectId: projectId
             ) {
                 activeCall = nil
@@ -188,7 +188,7 @@ struct ProjectDashboardView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(.ultraThinMaterial.opacity(0.8))
+        .glassEffect()
     }
 
     /// Returns the badge count for a tab.

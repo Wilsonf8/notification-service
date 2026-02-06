@@ -11,13 +11,6 @@ import Foundation
 struct User: Codable, Identifiable, Sendable {
     let id: UUID
     let username: String
-    let email: String
+    let email: String?
     let avatarUrl: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case username
-        case email
-        case avatarUrl = "avatar_url"
-    }
 }

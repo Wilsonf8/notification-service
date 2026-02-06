@@ -26,11 +26,7 @@ struct AvailabilityToggle: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
-            .background(isAvailable ? Color.green.opacity(0.2) : Color.red.opacity(0.2))
-            .overlay(
-                Rectangle()
-                    .stroke(isAvailable ? Color.green.opacity(0.5) : Color.red.opacity(0.5), lineWidth: 1)
-            )
+            .glassEffect()
         }
     }
 }

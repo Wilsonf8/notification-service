@@ -56,6 +56,9 @@ struct LiveUsersView: View {
             }
             .padding()
         }
+        .refreshable {
+            await viewModel.refresh()
+        }
         .sheet(item: $selectedVisitor) { visitor in
             VisitorDetailPanel(
                 visitor: visitor,

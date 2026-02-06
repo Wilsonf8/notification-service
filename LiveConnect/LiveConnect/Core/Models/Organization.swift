@@ -14,14 +14,6 @@ struct Organization: Codable, Identifiable, Sendable {
     let slug: String
     let isPersonal: Bool
     let userRole: OrganizationRole
-
-    enum CodingKeys: String, CodingKey {
-        case id
-        case name
-        case slug
-        case isPersonal = "is_personal"
-        case userRole = "user_role"
-    }
 }
 
 /// The role a user has within an organization.

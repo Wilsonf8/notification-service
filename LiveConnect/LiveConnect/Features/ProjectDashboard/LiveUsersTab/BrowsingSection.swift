@@ -99,7 +99,7 @@ private struct BrowsingVisitorCard: View {
                             .font(.title3)
                             .foregroundStyle(.yellow)
                             .padding(8)
-                            .background(Color.yellow.opacity(0.1))
+                            .glassEffect()
                     }
                     .buttonStyle(.plain)
                 }
@@ -109,7 +109,7 @@ private struct BrowsingVisitorCard: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color.white.opacity(0.05))
+            .glassEffect()
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
