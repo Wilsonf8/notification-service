@@ -131,7 +131,7 @@ final class AuthManager {
             }
 
             session.presentationContextProvider = contextProvider
-            session.prefersEphemeralWebBrowserSession = false
+            session.prefersEphemeralWebBrowserSession = true  // Force fresh session, no shared cookies
 
             // Store session to keep it alive
             self.authSession = session
