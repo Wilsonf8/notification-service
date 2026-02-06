@@ -8,6 +8,11 @@
 import SwiftUI
 
 /// A button with a liquid glass style background.
+///
+/// Uses iOS 26 Liquid Glass effects with proper tinting for semantic meaning:
+/// - Primary: Yellow-tinted glass for call-to-action buttons
+/// - Secondary: Regular glass for standard actions
+/// - Destructive: Red-tinted glass for dangerous actions
 struct GlassButton: View {
     let title: String
     let icon: String?
@@ -19,20 +24,9 @@ struct GlassButton: View {
         case secondary
         case destructive
 
-        var backgroundColor: Color {
-            switch self {
-            case .primary: return .yellow
-            case .secondary: return .white.opacity(0.1)
-            case .destructive: return .red.opacity(0.8)
-            }
-        }
-
+        /// All styles use white text for contrast on translucent glass.
         var foregroundColor: Color {
-            switch self {
-            case .primary: return .black
-            case .secondary: return .white
-            case .destructive: return .white
-            }
+            .white
         }
     }
 
@@ -66,18 +60,21 @@ struct GlassButton: View {
     }
 }
 
-/// Applies the appropriate background style for GlassButton.
+/// Applies the appropriate Liquid Glass effect for GlassButton.
+///
+/// Uses `.interactive()` for press animation and shimmer feedback.
+/// Uses `.tint()` for semantic meaning (yellow = CTA, red = danger).
 private struct GlassButtonStyleModifier: ViewModifier {
     let style: GlassButton.Style
 
     func body(content: Content) -> some View {
         switch style {
         case .primary:
-            content.background(.yellow)
+            content.glassEffect(.regular.tint(.yellow).interactive())
         case .secondary:
-            content.glassEffect()
+            content.glassEffect(.regular.interactive())
         case .destructive:
-            content.background(.red.opacity(0.8)).glassEffect()
+            content.glassEffect(.regular.tint(.red).interactive())
         }
     }
 }

@@ -208,11 +208,17 @@ final class ProjectDashboardViewModel {
     /// Sets up WebSocket event handlers.
     private func setupWebSocketHandlers() {
         webSocketManager.onVisitorJoined = { [weak self] visitor in
+            // Remove any existing entry to prevent duplicates (e.g., visitor leaves and rejoins)
+            self?.browsingVisitors.removeAll { $0.id == visitor.id }
             self?.browsingVisitors.append(visitor)
         }
 
         webSocketManager.onVisitorLeft = { [weak self] visitorId in
             self?.browsingVisitors.removeAll { $0.id == visitorId }
+            // Also remove any pending requests from this visitor
+            self?.queuedRequests.removeAll { $0.visitor.id == visitorId }
+            // Also remove from active calls if visitor disconnected
+            self?.activeCalls.removeAll { $0.visitorId == visitorId }
         }
 
         webSocketManager.onVisitorUpdated = { [weak self] visitor in

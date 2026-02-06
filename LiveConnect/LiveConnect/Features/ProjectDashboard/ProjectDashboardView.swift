@@ -16,10 +16,10 @@ enum DashboardTab: String, CaseIterable {
 
     var icon: String {
         switch self {
-        case .liveUsers: return "person.2"
-        case .conversations: return "bubble.left.and.bubble.right"
-        case .reps: return "person.badge.key"
-        case .settings: return "gear"
+        case .liveUsers: return "person.2.fill"
+        case .conversations: return "bubble.left.and.bubble.right.fill"
+        case .reps: return "person.badge.key.fill"
+        case .settings: return "gearshape.fill"
         }
     }
 }
@@ -36,38 +36,36 @@ struct ProjectDashboardView: View {
     @State private var activeCall: AcceptedCallResponse?
 
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                // Header
-                headerView
-
-                // Connection status bar
-                connectionStatusBar
-
-                // Tab content
-                TabView(selection: $selectedTab) {
+        TabView(selection: $selectedTab) {
+            Tab(DashboardTab.liveUsers.rawValue, systemImage: DashboardTab.liveUsers.icon, value: .liveUsers) {
+                tabContent {
                     LiveUsersView(viewModel: viewModel) { callResponse in
                         activeCall = callResponse
                     }
-                    .tag(DashboardTab.liveUsers)
-
-                    ConversationsListView(projectId: projectId)
-                        .tag(DashboardTab.conversations)
-
-                    RepsListView(reps: viewModel.reps)
-                        .tag(DashboardTab.reps)
-
-                    ProjectSettingsView(project: viewModel.project)
-                        .tag(DashboardTab.settings)
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
+            }
+            .badge(viewModel.queuedRequests.count)
 
-                // Bottom tab bar
-                tabBar
+            Tab(DashboardTab.conversations.rawValue, systemImage: DashboardTab.conversations.icon, value: .conversations) {
+                tabContent {
+                    ConversationsListView(projectId: projectId)
+                }
+            }
+
+            Tab(DashboardTab.reps.rawValue, systemImage: DashboardTab.reps.icon, value: .reps) {
+                tabContent {
+                    RepsListView(reps: viewModel.reps)
+                }
+            }
+
+            Tab(DashboardTab.settings.rawValue, systemImage: DashboardTab.settings.icon, value: .settings) {
+                tabContent {
+                    ProjectSettingsView(project: viewModel.project)
+                }
             }
         }
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .tint(.yellow)
         .sheet(isPresented: $showSidebar) {
             OrganizationSidebarView(
                 viewModel: sidebarViewModel,
@@ -100,6 +98,20 @@ struct ProjectDashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Tab Content Wrapper
+
+    /// Wraps tab content with the header and connection status bar.
+    @ViewBuilder
+    private func tabContent<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            headerView
+            connectionStatusBar
+            content()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .background(Color.black)
     }
 
     // MARK: - Header
@@ -170,74 +182,6 @@ struct ProjectDashboardView: View {
         .padding(.vertical, 8)
     }
 
-    // MARK: - Tab Bar
-
-    private var tabBar: some View {
-        HStack(spacing: 0) {
-            ForEach(DashboardTab.allCases, id: \.self) { tab in
-                TabBarButton(
-                    tab: tab,
-                    isSelected: selectedTab == tab,
-                    badgeCount: badgeCount(for: tab)
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedTab = tab
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-        .glassEffect()
-    }
-
-    /// Returns the badge count for a tab.
-    private func badgeCount(for tab: DashboardTab) -> Int {
-        switch tab {
-        case .liveUsers:
-            return viewModel.queuedRequests.count
-        default:
-            return 0
-        }
-    }
-}
-
-// MARK: - TabBarButton
-
-private struct TabBarButton: View {
-    let tab: DashboardTab
-    let isSelected: Bool
-    let badgeCount: Int
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 4) {
-                ZStack(alignment: .topTrailing) {
-                    Image(systemName: tab.icon)
-                        .font(.title2)
-
-                    if badgeCount > 0 {
-                        Text("\(badgeCount)")
-                            .font(.caption2)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.black)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(.yellow)
-                            .clipShape(Capsule())
-                            .offset(x: 8, y: -4)
-                    }
-                }
-
-                Text(tab.rawValue)
-                    .font(.caption2)
-            }
-            .foregroundStyle(isSelected ? .yellow : .secondary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-        }
-    }
 }
 
 // MARK: - AcceptedCallResponse Extension

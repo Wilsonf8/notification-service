@@ -29,11 +29,10 @@ struct WaitingToTalkSection: View {
                 Text("\(requests.count)")
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundStyle(.black)
+                    .foregroundStyle(.white)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(.yellow)
-                    .clipShape(Capsule())
+                    .glassEffect(.regular.tint(.yellow))
             }
 
             // Request cards
@@ -98,23 +97,23 @@ private struct RequestCard: View {
                     Text("Dismiss")
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .glassEffect()
                         .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .glassEffect(.regular.interactive())
                 }
 
                 Button(action: onAccept) {
-                    HStack {
+                    HStack(spacing: 6) {
                         Image(systemName: "video.fill")
                         Text("Accept")
                     }
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .frame(maxWidth: .infinity)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(.yellow)
-                    .foregroundStyle(.black)
+                    .glassEffect(.regular.tint(.yellow).interactive())
                 }
             }
         }

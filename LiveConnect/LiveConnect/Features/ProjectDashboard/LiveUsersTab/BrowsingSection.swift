@@ -92,17 +92,17 @@ private struct BrowsingVisitorCard: View {
 
                 Spacer()
 
-                // Ping button
-                if visitor.isPingable {
-                    Button(action: onPing) {
-                        Image(systemName: "bell.badge")
-                            .font(.title3)
-                            .foregroundStyle(.yellow)
-                            .padding(8)
-                            .glassEffect()
-                    }
-                    .buttonStyle(.plain)
+                // Ping button (always reserve space to keep consistent height)
+                Button(action: onPing) {
+                    Image(systemName: "bell.badge")
+                        .font(.title3)
+                        .foregroundStyle(.yellow)
+                        .padding(8)
+                        .glassEffect()
                 }
+                .buttonStyle(.plain)
+                .opacity(visitor.isPingable ? 1 : 0)
+                .disabled(!visitor.isPingable)
 
                 Image(systemName: "chevron.right")
                     .font(.caption)

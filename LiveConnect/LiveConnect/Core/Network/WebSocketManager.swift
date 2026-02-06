@@ -22,45 +22,50 @@ enum WebSocketEvent: String, Sendable {
     case repPresenceChanged = "rep_presence_changed"
 }
 
-/// Payload wrapper for WebSocket messages.
-struct WebSocketMessage: Codable, Sendable {
-    let type: String
-    let payload: WebSocketPayload
+// MARK: - WebSocket Event DTOs (match backend flat event structure)
+
+/// DTO for visitor_joined event from backend.
+private struct VisitorJoinedDTO: Codable {
+    let visitorId: UUID
+    let name: String?
+    let email: String?
+    let currentPage: String?
+    let joinedAt: Date
 }
 
-/// Union type for different WebSocket payloads.
-enum WebSocketPayload: Codable, Sendable {
-    case visitor(Visitor)
-    case request(Request)
-    case activeCall(ActiveCall)
-    case message(Message)
-    case rep(Rep)
-    case raw(Data)
+/// DTO for visitor_left event from backend.
+private struct VisitorLeftDTO: Codable {
+    let visitorId: UUID
+    let leftAt: Date
+}
 
-    init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        // Default to raw data - actual parsing happens in handleMessage
-        let data = try container.decode(Data.self)
-        self = .raw(data)
-    }
+/// DTO for visitor_updated event from backend.
+private struct VisitorUpdatedDTO: Codable {
+    let visitorId: UUID
+    let name: String?
+    let email: String?
+    let currentPage: String?
+    let currentPageTitle: String?
+    let isConnected: Bool?
+}
 
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case .visitor(let visitor):
-            try container.encode(visitor)
-        case .request(let request):
-            try container.encode(request)
-        case .activeCall(let call):
-            try container.encode(call)
-        case .message(let message):
-            try container.encode(message)
-        case .rep(let rep):
-            try container.encode(rep)
-        case .raw(let data):
-            try container.encode(data)
-        }
-    }
+/// DTO for request_received event from backend.
+private struct RequestReceivedDTO: Codable {
+    let requestId: UUID
+    let visitorId: UUID
+    let visitorName: String?
+    let direction: String
+    let expiresAt: Date
+}
+
+/// DTO for request_expired event from backend.
+private struct RequestExpiredDTO: Codable {
+    let requestId: UUID
+}
+
+/// DTO for call_ended_broadcast event from backend.
+private struct CallEndedBroadcastDTO: Codable {
+    let conversationId: UUID
 }
 
 /// Represents an active call from WebSocket events.
@@ -209,63 +214,96 @@ final class WebSocketManager: WebSocketDelegate {
         guard let data = text.data(using: .utf8) else { return }
 
         do {
-            // Parse the wrapper to get event type
+            // Parse the event type from flat JSON structure (no payload wrapper)
             let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-            guard let typeString = json?["type"] as? String,
-                  let payloadDict = json?["payload"] else {
+            guard let typeString = json?["type"] as? String else {
+                print("WebSocket: Missing type field in message")
                 return
             }
 
-            let payloadData = try JSONSerialization.data(withJSONObject: payloadDict)
-
+            // Parse the full event data based on type
             switch WebSocketEvent(rawValue: typeString) {
             case .visitorJoined:
-                let visitor = try decoder.decode(Visitor.self, from: payloadData)
+                let dto = try decoder.decode(VisitorJoinedDTO.self, from: data)
+                let visitor = Visitor(
+                    id: dto.visitorId,
+                    visitorId: dto.visitorId.uuidString,
+                    name: dto.name,
+                    email: dto.email,
+                    currentPage: dto.currentPage,
+                    isConnected: true,
+                    isPingable: true,
+                    hasActiveRequest: false
+                )
                 onVisitorJoined?(visitor)
 
             case .visitorLeft:
-                if let visitorId = (payloadDict as? [String: Any])?["id"] as? String,
-                   let uuid = UUID(uuidString: visitorId) {
-                    onVisitorLeft?(uuid)
-                }
+                let dto = try decoder.decode(VisitorLeftDTO.self, from: data)
+                onVisitorLeft?(dto.visitorId)
 
             case .visitorUpdated:
-                let visitor = try decoder.decode(Visitor.self, from: payloadData)
+                let dto = try decoder.decode(VisitorUpdatedDTO.self, from: data)
+                let isConnected = dto.isConnected ?? true
+                let visitor = Visitor(
+                    id: dto.visitorId,
+                    visitorId: dto.visitorId.uuidString,
+                    name: dto.name,
+                    email: dto.email,
+                    currentPage: dto.currentPage,
+                    isConnected: isConnected,
+                    isPingable: isConnected,  // Pingable only when connected
+                    hasActiveRequest: false
+                )
                 onVisitorUpdated?(visitor)
 
             case .requestReceived:
-                let request = try decoder.decode(Request.self, from: payloadData)
+                let dto = try decoder.decode(RequestReceivedDTO.self, from: data)
+                // Create minimal visitor for the request
+                let visitor = Visitor(
+                    id: dto.visitorId,
+                    visitorId: dto.visitorId.uuidString,
+                    name: dto.visitorName,
+                    email: nil,
+                    currentPage: nil,
+                    isConnected: true,
+                    isPingable: false,
+                    hasActiveRequest: true
+                )
+                let request = Request(
+                    id: dto.requestId,
+                    visitor: visitor,
+                    direction: RequestDirection(rawValue: dto.direction) ?? .userToReps,
+                    status: .pending,
+                    expiresAt: dto.expiresAt
+                )
                 onRequestReceived?(request)
 
             case .requestExpired:
-                if let requestId = (payloadDict as? [String: Any])?["id"] as? String,
-                   let uuid = UUID(uuidString: requestId) {
-                    onRequestExpired?(uuid)
-                }
+                let dto = try decoder.decode(RequestExpiredDTO.self, from: data)
+                onRequestExpired?(dto.requestId)
 
             case .callStartedBroadcast:
-                let call = try decoder.decode(ActiveCall.self, from: payloadData)
+                let call = try decoder.decode(ActiveCall.self, from: data)
                 onCallStarted?(call)
 
             case .callEndedBroadcast:
-                if let conversationId = (payloadDict as? [String: Any])?["conversationId"] as? String,
-                   let uuid = UUID(uuidString: conversationId) {
-                    onCallEnded?(uuid)
-                }
+                let dto = try decoder.decode(CallEndedBroadcastDTO.self, from: data)
+                onCallEnded?(dto.conversationId)
 
             case .messageReceived:
-                let message = try decoder.decode(Message.self, from: payloadData)
+                let message = try decoder.decode(Message.self, from: data)
                 onMessageReceived?(message)
 
             case .repAvailabilityChanged, .repPresenceChanged:
-                let rep = try decoder.decode(Rep.self, from: payloadData)
+                let rep = try decoder.decode(Rep.self, from: data)
                 onRepUpdated?(rep)
 
             case .none:
-                print("Unknown WebSocket event: \(typeString)")
+                print("WebSocket: Unknown event type: \(typeString)")
             }
         } catch {
-            print("Failed to parse WebSocket message: \(error)")
+            print("WebSocket: Failed to parse message: \(error)")
+            print("WebSocket: Raw message: \(text)")
         }
     }
 
