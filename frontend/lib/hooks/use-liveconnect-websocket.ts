@@ -41,6 +41,7 @@ type WebSocketEventType =
   | "visitor_updated"
   | "request_received"
   | "request_expired"
+  | "request_cancelled"
   | "request_accepted_by_other"
   | "message_received"
   | "call_ended"
@@ -100,6 +101,12 @@ interface RequestReceivedEvent extends BaseWebSocketEvent {
 /** Request expired event from backend */
 interface RequestExpiredEvent extends BaseWebSocketEvent {
   type: "request_expired";
+  requestId: string;
+}
+
+/** Request cancelled event from backend */
+interface RequestCancelledEvent extends BaseWebSocketEvent {
+  type: "request_cancelled";
   requestId: string;
 }
 
@@ -181,6 +188,7 @@ type WebSocketEvent =
   | VisitorUpdatedEvent
   | RequestReceivedEvent
   | RequestExpiredEvent
+  | RequestCancelledEvent
   | RequestAcceptedByOtherEvent
   | MessageReceivedWebSocketEvent
   | CallEndedWebSocketEvent
@@ -343,6 +351,11 @@ export function useLiveConnectWebSocket(
       }
 
       case "request_expired": {
+        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
+        break;
+      }
+
+      case "request_cancelled": {
         setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
         break;
       }

@@ -237,6 +237,10 @@ final class ProjectDashboardViewModel {
             self?.queuedRequests.removeAll { $0.id == requestId }
         }
 
+        webSocketManager.onRequestCancelled = { [weak self] requestId in
+            self?.queuedRequests.removeAll { $0.id == requestId }
+        }
+
         webSocketManager.onCallStarted = { [weak self] call in
             // Remove from queue if present
             self?.queuedRequests.removeAll { $0.visitor.id == call.visitorId }
