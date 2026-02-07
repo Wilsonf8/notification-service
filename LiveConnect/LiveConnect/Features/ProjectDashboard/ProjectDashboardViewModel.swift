@@ -238,7 +238,12 @@ final class ProjectDashboardViewModel {
         }
 
         webSocketManager.onRequestCancelled = { [weak self] requestId in
-            self?.queuedRequests.removeAll { $0.id == requestId }
+            guard let self else { return }
+            // Find the request and move visitor back to browsing
+            if let request = self.queuedRequests.first(where: { $0.id == requestId }) {
+                self.browsingVisitors.append(request.visitor)
+            }
+            self.queuedRequests.removeAll { $0.id == requestId }
         }
 
         webSocketManager.onCallStarted = { [weak self] call in

@@ -309,6 +309,8 @@ export function useLiveConnectWebSocket(
       case "visitor_left": {
         // event.visitorId is the visitor record ID (not client-side visitorId)
         setVisitors?.((prev) => prev.filter((v) => v.id !== event.visitorId));
+        // Also remove any pending requests from this visitor (match iOS behavior)
+        setRequests?.((prev) => prev.filter((r) => r.visitorId !== event.visitorId));
         break;
       }
 
@@ -356,7 +358,25 @@ export function useLiveConnectWebSocket(
       }
 
       case "request_cancelled": {
-        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
+        // Find the request and move visitor back to browsing
+        setRequests?.((prev) => {
+          const cancelledRequest = prev.find((r) => r.id === event.requestId);
+          if (cancelledRequest) {
+            const visitor: LiveConnectVisitor = {
+              id: cancelledRequest.visitorId,
+              visitorId: cancelledRequest.visitorId,
+              name: cancelledRequest.visitorName,
+              email: null,
+              currentPage: null,
+              currentPageTitle: null,
+              lastSeenAt: new Date().toISOString(),
+              isConnected: true,
+              isPingable: true,
+            };
+            setVisitors?.((prevVisitors) => [...prevVisitors, visitor]);
+          }
+          return prev.filter((r) => r.id !== event.requestId);
+        });
         break;
       }
 
