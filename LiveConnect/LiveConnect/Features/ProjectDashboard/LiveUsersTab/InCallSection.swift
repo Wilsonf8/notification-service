@@ -95,7 +95,11 @@ private struct ActiveCallCard: View {
     }
 
     private func updateDuration() {
-        let interval = Date().timeIntervalSince(call.startedAt)
+        guard let startedAt = call.startedAt else {
+            duration = "0:00"
+            return
+        }
+        let interval = Date().timeIntervalSince(startedAt)
         let minutes = Int(interval) / 60
         let seconds = Int(interval) % 60
         duration = String(format: "%d:%02d", minutes, seconds)

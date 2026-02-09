@@ -7,6 +7,11 @@
 
 import SwiftUI
 
+/// Response wrapper for paginated messages.
+private struct MessageListResponse: Codable {
+    let messages: [Message]
+}
+
 /// Detail view showing a conversation's messages.
 struct ConversationDetailView: View {
     let projectId: UUID
@@ -142,9 +147,10 @@ struct ConversationDetailView: View {
         error = nil
 
         do {
-            messages = try await APIClient.shared.get(
+            let response: MessageListResponse = try await APIClient.shared.get(
                 Endpoints.messages(projectId: projectId, conversationId: conversation.id)
             )
+            messages = response.messages
         } catch {
             self.error = error
         }

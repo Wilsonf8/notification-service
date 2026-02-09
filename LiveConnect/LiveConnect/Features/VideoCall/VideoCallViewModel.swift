@@ -8,10 +8,15 @@
 import Foundation
 import LiveKit
 
+/// Response wrapper for paginated messages.
+private struct MessageListResponse: Codable {
+    let messages: [Message]
+}
+
 /// View model for the video call screen.
 @MainActor
 @Observable
-final class VideoCallViewModel {
+final class VideoCallViewModel: RoomDelegate {
     /// The LiveKit room.
     private(set) var room: Room?
 
@@ -20,15 +25,16 @@ final class VideoCallViewModel {
         room?.localParticipant
     }
 
-    /// Remote participants.
-    var remoteParticipants: [RemoteParticipant] {
-        room?.remoteParticipants.values.map { $0 } ?? []
-    }
+    /// Cached remote participants (updated via delegate).
+    private(set) var remoteParticipants: [RemoteParticipant] = []
 
     /// The first remote participant (visitor).
     var visitorParticipant: RemoteParticipant? {
         remoteParticipants.first
     }
+
+    /// Counter that increments when tracks update (forces view refresh).
+    private(set) var trackUpdateCount = 0
 
     /// Whether the microphone is muted.
     private(set) var isMicrophoneMuted = false
@@ -56,6 +62,37 @@ final class VideoCallViewModel {
         self.projectId = projectId
     }
 
+    // MARK: - RoomDelegate
+
+    nonisolated func room(_ room: Room, participantDidConnect participant: RemoteParticipant) {
+        Task { @MainActor in
+            updateRemoteParticipants()
+        }
+    }
+
+    nonisolated func room(_ room: Room, participantDidDisconnect participant: RemoteParticipant) {
+        Task { @MainActor in
+            updateRemoteParticipants()
+        }
+    }
+
+    nonisolated func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
+        Task { @MainActor in
+            trackUpdateCount += 1
+        }
+    }
+
+    nonisolated func room(_ room: Room, participant: RemoteParticipant, didUnsubscribeTrack publication: RemoteTrackPublication) {
+        Task { @MainActor in
+            trackUpdateCount += 1
+        }
+    }
+
+    /// Updates the cached remote participants from the room.
+    private func updateRemoteParticipants() {
+        remoteParticipants = room?.remoteParticipants.values.map { $0 } ?? []
+    }
+
     // MARK: - Public Methods
 
     /// Connects to the LiveKit room.
@@ -68,10 +105,14 @@ final class VideoCallViewModel {
 
         do {
             let room = Room()
+            room.add(delegate: self)
             self.room = room
 
             // Connect to the room
             try await room.connect(url: url, token: token)
+
+            // Sync any participants already in the room
+            updateRemoteParticipants()
 
             // Enable camera and microphone
             try await room.localParticipant.setCamera(enabled: true)
@@ -86,8 +127,10 @@ final class VideoCallViewModel {
 
     /// Disconnects from the room.
     func disconnect() async {
+        room?.remove(delegate: self)
         await room?.disconnect()
         room = nil
+        remoteParticipants = []
     }
 
     /// Toggles the microphone mute state.
@@ -150,9 +193,10 @@ final class VideoCallViewModel {
     /// Loads existing messages for the conversation.
     func loadMessages() async {
         do {
-            messages = try await APIClient.shared.get(
+            let response: MessageListResponse = try await APIClient.shared.get(
                 Endpoints.messages(projectId: projectId, conversationId: conversationId)
             )
+            messages = response.messages
         } catch {
             self.error = error
         }

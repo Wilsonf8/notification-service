@@ -107,7 +107,7 @@ struct VideoCallView: View {
             ZStack {
                 // Remote video (full screen)
                 if let visitorParticipant = viewModel.visitorParticipant {
-                    ParticipantVideoView(participant: visitorParticipant)
+                    ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
                         .ignoresSafeArea()
                 } else {
                     // Waiting for visitor
@@ -146,6 +146,7 @@ struct VideoCallView: View {
                     controlsBar
                         .padding(.bottom, 32)
                 }
+                .frame(maxWidth: .infinity)
 
                 // Chat panel
                 if showChat {
@@ -244,6 +245,7 @@ private struct ControlButton: View {
 
 private struct ParticipantVideoView: View {
     let participant: RemoteParticipant
+    let trackUpdateCount: Int
 
     private var videoTrack: VideoTrack? {
         participant.trackPublications.values
@@ -254,8 +256,7 @@ private struct ParticipantVideoView: View {
 
     var body: some View {
         if let track = videoTrack {
-            SwiftUIVideoView(track)
-                .aspectRatio(contentMode: .fill)
+            SwiftUIVideoView(track, layoutMode: .fill)
         } else {
             // No video track, show placeholder
             ZStack {
@@ -287,8 +288,7 @@ private struct LocalVideoView: View {
 
     var body: some View {
         if let track = videoTrack {
-            SwiftUIVideoView(track)
-                .aspectRatio(contentMode: .fill)
+            SwiftUIVideoView(track, layoutMode: .fill)
         } else {
             ZStack {
                 Color(white: 0.2)

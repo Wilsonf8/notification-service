@@ -82,7 +82,7 @@ struct ActiveCall: Codable, Identifiable, Sendable {
     let repId: UUID
     let repUserId: UUID
     let repName: String
-    let startedAt: Date
+    let startedAt: Date?
 
     var id: UUID { conversationId }
 }
@@ -186,7 +186,7 @@ final class WebSocketManager: WebSocketDelegate {
             return
         }
 
-        var request = URLRequest(url: url)
+        let request = URLRequest(url: url)
 
         connectionState = reconnectAttempts > 0 ? .reconnecting : .connecting
 
