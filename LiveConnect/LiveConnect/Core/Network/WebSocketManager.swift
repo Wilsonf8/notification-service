@@ -21,6 +21,7 @@ enum WebSocketEvent: String, Sendable {
     case messageReceived = "message_received"
     case repAvailabilityChanged = "rep_availability_changed"
     case repPresenceChanged = "rep_presence_changed"
+    case conversationStarted = "conversation_started"
 }
 
 // MARK: - WebSocket Event DTOs (match backend flat event structure)
@@ -72,6 +73,15 @@ private struct RequestCancelledDTO: Codable {
 /// DTO for call_ended_broadcast event from backend.
 private struct CallEndedBroadcastDTO: Codable {
     let conversationId: UUID
+}
+
+/// DTO for conversation_started event from backend.
+private struct ConversationStartedDTO: Codable {
+    let conversationId: UUID
+    let visitorId: UUID
+    let roomName: String
+    let token: String
+    let liveKitUrl: String
 }
 
 /// Represents an active call from WebSocket events.
@@ -140,6 +150,7 @@ final class WebSocketManager: WebSocketDelegate {
     var onCallEnded: ((UUID) -> Void)?
     var onMessageReceived: ((Message) -> Void)?
     var onRepUpdated: ((Rep) -> Void)?
+    var onConversationStarted: ((AcceptedCallResponse) -> Void)?
 
     // MARK: - Public Methods
 
@@ -300,6 +311,16 @@ final class WebSocketManager: WebSocketDelegate {
             case .callEndedBroadcast:
                 let dto = try decoder.decode(CallEndedBroadcastDTO.self, from: data)
                 onCallEnded?(dto.conversationId)
+
+            case .conversationStarted:
+                let dto = try decoder.decode(ConversationStartedDTO.self, from: data)
+                let response = AcceptedCallResponse(
+                    conversationId: dto.conversationId,
+                    roomName: dto.roomName,
+                    token: dto.token,
+                    liveKitUrl: dto.liveKitUrl
+                )
+                onConversationStarted?(response)
 
             case .messageReceived:
                 let message = try decoder.decode(Message.self, from: data)

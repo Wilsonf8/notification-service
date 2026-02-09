@@ -36,6 +36,52 @@ struct ProjectDashboardView: View {
     @State private var activeCall: AcceptedCallResponse?
 
     var body: some View {
+        dashboardTabView
+            .tabBarMinimizeBehavior(.onScrollDown)
+            .tint(.yellow)
+            .sheet(isPresented: $showSidebar) {
+                OrganizationSidebarView(
+                    viewModel: sidebarViewModel,
+                    isPresented: $showSidebar
+                )
+            }
+            .sheet(isPresented: $showAccountSheet) {
+                AccountSheetView()
+            }
+            .fullScreenCover(item: $activeCall) { call in
+                VideoCallView(
+                    conversationId: call.conversationId,
+                    livekitUrl: call.liveKitUrl,
+                    livekitToken: call.token,
+                    projectId: projectId
+                ) {
+                    activeCall = nil
+                }
+            }
+            .task {
+                await viewModel.loadDashboard(projectId: projectId)
+            }
+            .onDisappear {
+                viewModel.disconnect()
+            }
+            .onChange(of: sidebarViewModel.selectedProjectId) { _, newProjectId in
+                if let newProjectId, newProjectId != projectId {
+                    Task {
+                        await viewModel.loadDashboard(projectId: newProjectId)
+                    }
+                }
+            }
+            .onChange(of: viewModel.incomingCall) { _, newCall in
+                if let call = newCall {
+                    activeCall = call
+                    viewModel.clearIncomingCall()
+                }
+            }
+    }
+
+    // MARK: - Dashboard Tab View
+
+    private var dashboardTabView: some View {
         TabView(selection: $selectedTab) {
             Tab(DashboardTab.liveUsers.rawValue, systemImage: DashboardTab.liveUsers.icon, value: .liveUsers) {
                 tabContent {
@@ -61,40 +107,6 @@ struct ProjectDashboardView: View {
             Tab(DashboardTab.settings.rawValue, systemImage: DashboardTab.settings.icon, value: .settings) {
                 tabContent {
                     ProjectSettingsView(project: viewModel.project)
-                }
-            }
-        }
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .tint(.yellow)
-        .sheet(isPresented: $showSidebar) {
-            OrganizationSidebarView(
-                viewModel: sidebarViewModel,
-                isPresented: $showSidebar
-            )
-        }
-        .sheet(isPresented: $showAccountSheet) {
-            AccountSheetView()
-        }
-        .fullScreenCover(item: $activeCall) { call in
-            VideoCallView(
-                conversationId: call.conversationId,
-                livekitUrl: call.liveKitUrl,
-                livekitToken: call.token,
-                projectId: projectId
-            ) {
-                activeCall = nil
-            }
-        }
-        .task {
-            await viewModel.loadDashboard(projectId: projectId)
-        }
-        .onDisappear {
-            viewModel.disconnect()
-        }
-        .onChange(of: sidebarViewModel.selectedProjectId) { _, newProjectId in
-            if let newProjectId, newProjectId != projectId {
-                Task {
-                    await viewModel.loadDashboard(projectId: newProjectId)
                 }
             }
         }

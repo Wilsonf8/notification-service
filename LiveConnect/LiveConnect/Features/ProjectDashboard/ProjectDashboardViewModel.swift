@@ -42,6 +42,9 @@ final class ProjectDashboardViewModel {
     /// The last error that occurred.
     private(set) var error: Error?
 
+    /// Incoming call from WebSocket (when visitor accepts rep's ping).
+    private(set) var incomingCall: AcceptedCallResponse?
+
     /// Current project ID.
     private var projectId: UUID?
 
@@ -203,6 +206,11 @@ final class ProjectDashboardViewModel {
         webSocketManager.disconnect()
     }
 
+    /// Clears the incoming call after it's been handled.
+    func clearIncomingCall() {
+        incomingCall = nil
+    }
+
     // MARK: - Private Methods
 
     /// Sets up WebSocket event handlers.
@@ -267,13 +275,17 @@ final class ProjectDashboardViewModel {
                 self?.currentRep = rep
             }
         }
+
+        webSocketManager.onConversationStarted = { [weak self] response in
+            self?.incomingCall = response
+        }
     }
 }
 
 // MARK: - AcceptedCallResponse
 
 /// Response when accepting a call request.
-struct AcceptedCallResponse: Codable, Sendable {
+struct AcceptedCallResponse: Codable, Sendable, Equatable {
     let conversationId: UUID
     let roomName: String
     let token: String
