@@ -31,6 +31,20 @@ cd backend && ./mvnw spring-boot:run
 cd frontend && npm run dev
 ```
 
+## LiveConnect Widget SDK
+
+After modifying files in `/sdks/liveconnect-widget`:
+
+```bash
+# 1. Build the widget
+cd sdks/liveconnect-widget && npm run build
+
+# 2. Copy to frontend public folder
+cp dist/liveconnect.js ../frontend/public/sdk/liveconnect.js
+```
+
+Test pages are available at `/sdk/test1.html`, `/sdk/test2.html`, `/sdk/test3.html`.
+
 ## Style Guide
 
 - Frontend uses base-lyra style with Stone/Yellow theme, Tabler icons, JetBrains Mono font

@@ -539,7 +539,7 @@
   width: 100%;
   height: 100%;
   background-color: var(--lc-bg-secondary);
-  object-fit: cover;
+  object-fit: contain; /* Shows full video without cropping; letterboxes if aspect ratio differs */
 }
 
 .lc-video__remote-placeholder {
