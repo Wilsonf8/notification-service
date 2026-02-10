@@ -137,7 +137,7 @@ public class LiveConnectRepService {
         LiveConnectRep savedRep = repRepository.save(rep);
 
         // Broadcast availability change to all visitors in the project
-        boolean hasAvailableReps = !repRepository.findAvailableByProjectId(projectId).isEmpty();
+        boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectId);
         RepAvailabilityChangedEvent event = new RepAvailabilityChangedEvent(hasAvailableReps);
         broadcaster.broadcastToProjectVisitors(projectId, event);
 

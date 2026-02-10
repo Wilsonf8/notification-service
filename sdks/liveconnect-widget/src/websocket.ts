@@ -89,6 +89,15 @@ export interface RequestExpiredEvent {
 }
 
 /**
+ * Rep availability changed event - Rep availability status changed for the project.
+ */
+export interface RepAvailabilityChangedEvent {
+  type: 'rep_availability_changed';
+  /** Whether any reps are available to take calls */
+  repsAvailable: boolean;
+}
+
+/**
  * Union type for all incoming WebSocket events.
  */
 export type IncomingEvent =
@@ -98,7 +107,8 @@ export type IncomingEvent =
   | CallStartingEvent
   | CallEndedEvent
   | MessageReceivedEvent
-  | RequestExpiredEvent;
+  | RequestExpiredEvent
+  | RepAvailabilityChangedEvent;
 
 // ============================================================================
 // Outgoing Message Types (Client -> Server)
@@ -149,6 +159,7 @@ export interface WebSocketEventMap {
   call_ended: (event: CallEndedEvent) => void;
   message_received: (event: MessageReceivedEvent) => void;
   request_expired: (event: RequestExpiredEvent) => void;
+  rep_availability_changed: (event: RepAvailabilityChangedEvent) => void;
   connection_state_change: (state: ConnectionState) => void;
   error: (error: Error) => void;
 }
@@ -406,6 +417,9 @@ export class WebSocketClient {
           break;
         case 'request_expired':
           this.emit('request_expired', message as RequestExpiredEvent);
+          break;
+        case 'rep_availability_changed':
+          this.emit('rep_availability_changed', message as RepAvailabilityChangedEvent);
           break;
         default: {
           // Handle unknown message types gracefully

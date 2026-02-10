@@ -25,6 +25,7 @@ import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.CallStartedBroadcastEvent;
 import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
+import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
 import lombok.RequiredArgsConstructor;
@@ -139,6 +140,11 @@ public class LiveConnectRequestService {
         rep.setPresence(RepPresence.IN_CALL);
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
+
+        // Broadcast rep availability change to visitors
+        boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectId);
+        RepAvailabilityChangedEvent availabilityEvent = new RepAvailabilityChangedEvent(hasAvailableReps);
+        broadcaster.broadcastToProjectVisitors(projectId, availabilityEvent);
 
         // Generate LiveKit room name and tokens
         String roomName = liveKitTokenService.generateRoomName(conversation.getId());
@@ -372,6 +378,12 @@ public class LiveConnectRequestService {
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
 
+        // Broadcast rep availability change to visitors
+        UUID projectId = request.getProject().getId();
+        boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectId);
+        RepAvailabilityChangedEvent availabilityEvent = new RepAvailabilityChangedEvent(hasAvailableReps);
+        broadcaster.broadcastToProjectVisitors(projectId, availabilityEvent);
+
         // Generate LiveKit room name and tokens
         String roomName = liveKitTokenService.generateRoomName(conversation.getId());
         conversation.setLiveKitRoomName(roomName);
@@ -409,7 +421,7 @@ public class LiveConnectRequestService {
                 rep.getUser().getUsername(),
                 conversation.getStartedAt()
         );
-        broadcaster.broadcastToProject(request.getProject().getId(), callStartedBroadcast);
+        broadcaster.broadcastToProject(projectId, callStartedBroadcast);
 
         return new AcceptPingResponse(
                 conversation.getId(),

@@ -173,13 +173,19 @@ export function Panel({
     >
       {/* Header */}
       <div class="lc-panel__header">
-        <div>
+        <div class="lc-panel__header-left">
           <h2 class="lc-panel__title" id="lc-panel-title">
             LiveConnect
           </h2>
-          <p class="lc-panel__subtitle">
-            {isOnline ? 'We\'re here to help' : 'Currently offline'}
-          </p>
+          <div class="lc-panel__status">
+            <span
+              class={`lc-panel__status-dot lc-panel__status-dot--${isOnline ? 'online' : 'offline'}`}
+              aria-hidden="true"
+            />
+            <span class="lc-panel__subtitle">
+              {isOnline ? "We're here to help" : 'Currently offline'}
+            </span>
+          </div>
         </div>
         <button
           type="button"

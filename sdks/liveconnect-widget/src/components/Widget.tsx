@@ -27,6 +27,7 @@ import {
   type CallEndedEvent,
   type MessageReceivedEvent,
   type RequestExpiredEvent,
+  type RepAvailabilityChangedEvent,
 } from '../websocket';
 import { connectToRoom, disconnectFromRoom } from '../livekit';
 import {
@@ -153,7 +154,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
         // Update local state from init response
         setWelcomeMessage(initResponse.welcomeMessage || 'How can we help you today?');
-        setIsOnline(true); // Assume online if init succeeds
+        setIsOnline(initResponse.repsAvailable);
 
         // Check for pending request to restore WAITING state across page navigation
         console.log('[LiveConnect Widget] Init response pendingRequest:', initResponse.pendingRequest);
@@ -240,6 +241,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
     // Handle request expired (visitor's request timed out)
     ws.on('request_expired', handleRequestExpired);
+
+    // Handle rep availability changes
+    ws.on('rep_availability_changed', handleRepAvailabilityChanged);
 
     // Handle connection state changes
     ws.on('connection_state_change', (state) => {
@@ -340,6 +344,15 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       // Return to collapsed state - visitor can try again
       collapse();
     }
+  }, []);
+
+  /**
+   * Handles rep availability changed event.
+   * Updates the online status based on rep availability.
+   * @param event - Rep availability changed event data
+   */
+  const handleRepAvailabilityChanged = useCallback((event: RepAvailabilityChangedEvent): void => {
+    setIsOnline(event.repsAvailable);
   }, []);
 
   // ============================================================================

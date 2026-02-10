@@ -9,6 +9,7 @@ import com.notificationservice.entity.LiveConnectSession;
 import com.notificationservice.entity.LiveConnectSettings;
 import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.entity.RequestDirection;
+import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectSessionRepository;
 import com.notificationservice.repository.LiveConnectSettingsRepository;
@@ -42,6 +43,7 @@ public class LiveConnectSessionService {
     private final LiveConnectVisitorRepository visitorRepository;
     private final LiveConnectSettingsRepository settingsRepository;
     private final LiveConnectRequestRepository requestRepository;
+    private final LiveConnectRepRepository repRepository;
     private final StringRedisTemplate redisTemplate;
 
     @Value("${app.liveconnect.session.ttl-hours}")
@@ -121,12 +123,16 @@ public class LiveConnectSessionService {
 
         log.info("[LiveConnect] Final pendingRequestInfo for response: {}", pendingRequestInfo);
 
+        // Check if any reps are available for calls
+        boolean repsAvailable = repRepository.hasAnyAvailableReps(project.getId());
+
         return new WidgetInitResponse(
                 sessionToken,
                 settings.getWelcomeMessage(),
                 settings.getWidgetColor(),
                 settings.getWidgetPosition(),
-                pendingRequestInfo
+                pendingRequestInfo,
+                repsAvailable
         );
     }
 

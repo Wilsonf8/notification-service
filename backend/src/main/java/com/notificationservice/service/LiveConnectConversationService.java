@@ -28,6 +28,7 @@ import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
 import com.notificationservice.websocket.event.MessageReceivedEvent;
+import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -287,6 +288,12 @@ public class LiveConnectConversationService {
         rep.setCurrentConversation(null);
         rep.setPresence(RepPresence.ONLINE);
         repRepository.save(rep);
+
+        // Broadcast rep availability change to visitors
+        UUID projectIdForAvailability = conversation.getProject().getId();
+        boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectIdForAvailability);
+        RepAvailabilityChangedEvent availabilityEvent = new RepAvailabilityChangedEvent(hasAvailableReps);
+        broadcaster.broadcastToProjectVisitors(projectIdForAvailability, availabilityEvent);
 
         // Broadcast call ended to visitor
         CallEndedEvent event = new CallEndedEvent(

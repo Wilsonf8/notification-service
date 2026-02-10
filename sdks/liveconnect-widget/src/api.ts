@@ -76,6 +76,8 @@ export interface InitResponse {
   widgetPosition: string;
   /** Pending call request info if one exists, null otherwise */
   pendingRequest: PendingRequestInfo | null;
+  /** Whether any reps are available to take calls */
+  repsAvailable: boolean;
 }
 
 /**
