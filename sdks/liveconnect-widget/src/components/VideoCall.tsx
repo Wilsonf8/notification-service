@@ -457,14 +457,16 @@ export function VideoCall({
 
   return (
     <div class="lc-video" role="region" aria-label="Video call">
-      {/* Remote video (full container) */}
-      <video
-        ref={remoteVideoRef}
-        class="lc-video__remote"
-        autoPlay
-        playsInline
-        aria-label={`${participantName}'s video`}
-      />
+      {/* Remote video (square container, centered) */}
+      <div class="lc-video__remote-wrapper">
+        <video
+          ref={remoteVideoRef}
+          class="lc-video__remote"
+          autoPlay
+          playsInline
+          aria-label={`${participantName}'s video`}
+        />
+      </div>
 
       {/* Remote video placeholder (shown when no remote video) */}
       {!hasRemoteVideo && (

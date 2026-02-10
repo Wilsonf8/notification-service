@@ -561,14 +561,16 @@ function CallPageContent() {
         'relative flex-1 overflow-hidden',
         isChatOpen && 'hidden sm:block'
       )}>
-        {/* Remote video (full screen) */}
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square max-h-full max-w-full bg-muted object-cover"
-          aria-label="Remote participant video"
-        />
+        {/* Remote video wrapper (square, centered) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square h-full max-h-full max-w-full overflow-hidden bg-muted">
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            className="size-full object-cover"
+            aria-label="Remote participant video"
+          />
+        </div>
 
         {/* Remote video placeholder */}
         {!callState.hasRemoteVideo && (
