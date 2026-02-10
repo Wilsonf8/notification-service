@@ -17,8 +17,8 @@ export const STORAGE_KEY_SESSION_TOKEN = 'lc_session_token';
 /** Storage key for active call state (for reconnection on page navigation) */
 export const STORAGE_KEY_ACTIVE_CALL = 'lc_active_call';
 
-/** Default max age for active call state (30 seconds) */
-const DEFAULT_CALL_MAX_AGE_MS = 30_000;
+/** Default max age for active call state (60 seconds) */
+const DEFAULT_CALL_MAX_AGE_MS = 60_000;
 
 // ============================================================================
 // Interfaces

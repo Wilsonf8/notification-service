@@ -262,6 +262,29 @@ export function enterCall(
 }
 
 /**
+ * Force-enters the call state, bypassing transition validation.
+ * Used for reconnection after page navigation when state is lost but call is active.
+ * @param conversationId - The conversation ID
+ * @param roomName - LiveKit room name
+ * @param liveKitToken - Token for joining the room
+ * @param liveKitUrl - LiveKit server URL
+ */
+export function forceEnterCall(
+  conversationId: string,
+  roomName: string,
+  liveKitToken: string,
+  liveKitUrl: string
+): void {
+  widgetState.value = {
+    type: WidgetStateType.IN_CALL,
+    conversationId,
+    roomName,
+    liveKitToken,
+    liveKitUrl,
+  };
+}
+
+/**
  * Pops out the call to a separate window.
  * Valid from: IN_CALL
  * @param conversationId - The conversation ID to track

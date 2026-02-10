@@ -13,6 +13,7 @@ import {
   startWaiting,
   showIncomingPing,
   enterCall,
+  forceEnterCall,
   popOutCall,
   showContactForm,
   resetState,
@@ -550,8 +551,8 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       const api = getApiClient();
       const tokenResponse = await api.getToken(conversationId);
 
-      // Enter call state
-      enterCall(
+      // Use forceEnterCall for reconnection (bypasses state validation)
+      forceEnterCall(
         conversationId,
         roomName,
         tokenResponse.token,
