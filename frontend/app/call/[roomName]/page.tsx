@@ -566,7 +566,7 @@ function CallPageContent() {
           ref={remoteVideoRef}
           autoPlay
           playsInline
-          className="absolute inset-0 size-full bg-muted object-contain"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square max-h-full max-w-full bg-muted object-cover"
           aria-label="Remote participant video"
         />
 
