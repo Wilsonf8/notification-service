@@ -29,6 +29,7 @@ import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -54,6 +55,7 @@ public class LiveConnectRequestService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
     private final LiveKitTokenService liveKitTokenService;
+    private final PushNotificationService pushNotificationService;
 
     /**
      * Gets pending requests for a project.
@@ -271,6 +273,9 @@ public class LiveConnectRequestService {
                 request.getExpiresAt()
         );
         broadcaster.broadcastToProject(projectId, event);
+
+        // Send push notification to reps who are offline
+        pushNotificationService.sendVisitorRequestNotification(projectId, request);
 
         return new RequestResponse(request.getId(), request.getExpiresAt());
     }

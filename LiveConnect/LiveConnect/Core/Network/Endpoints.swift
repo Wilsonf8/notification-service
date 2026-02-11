@@ -146,4 +146,18 @@ enum Endpoints {
             .replacingOccurrences(of: "http://", with: "ws://")
         return "\(wsBase)/api/projects/\(projectId)/liveconnect/ws"
     }
+
+    // MARK: - Device Tokens
+
+    /// Register or unregister device tokens for push notifications.
+    static let deviceTokens = "/api/device-tokens"
+
+    // MARK: - Notification Preferences
+
+    /// Get or update notification preferences for a project.
+    /// - Parameter projectId: The project UUID.
+    /// - Returns: Endpoint path.
+    static func notificationPreferences(projectId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/notification-preferences"
+    }
 }

@@ -113,6 +113,19 @@ final class APIClient: Sendable {
         _ = try await performRaw(request)
     }
 
+    /// Performs a DELETE request with a body.
+    /// - Parameters:
+    ///   - endpoint: The API endpoint path.
+    ///   - body: The request body.
+    /// - Throws: APIError if request fails.
+    func delete<B: Encodable>(_ endpoint: String, body: B?) async throws {
+        var request = try buildRequest(endpoint: endpoint, method: "DELETE")
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
+        _ = try await performRaw(request)
+    }
+
     // MARK: - Private Methods
 
     /// Builds a URLRequest with authentication.

@@ -6,6 +6,7 @@ import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
+import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.event.VisitorUpdatedEvent;
@@ -41,6 +42,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final WebSocketBroadcaster broadcaster;
     private final ObjectMapper objectMapper;
     private final VisitorConnectionGracePeriodManager gracePeriodManager;
+    private final PushNotificationService pushNotificationService;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -91,6 +93,9 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                             OffsetDateTime.now()
                     );
                     broadcaster.broadcastToProject(projectId, event);
+
+                    // Send push notification to reps who are offline
+                    pushNotificationService.sendVisitorPresenceNotification(projectId, visitor);
                 } else {
                     log.debug("[WidgetWS] Skipping visitor_joined broadcast for visitor in waiting/call state: visitorId={}", visitorId);
                 }

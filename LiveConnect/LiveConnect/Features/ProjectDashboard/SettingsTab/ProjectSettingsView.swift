@@ -12,51 +12,74 @@ struct ProjectSettingsView: View {
     let project: Project?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 24) {
-                if let project {
-                    // Project Info Section
-                    SettingsSection(title: "Project Information") {
-                        SettingsRow(label: "Name", value: project.name)
-                        SettingsRow(label: "ID", value: project.id.uuidString.prefix(8).description + "...")
-                        if let description = project.description {
-                            SettingsRow(label: "Description", value: description)
-                        }
-                        SettingsRow(label: "Type", value: project.type.rawValue)
-                    }
-
-                    // App Info Section
-                    SettingsSection(title: "App Information") {
-                        SettingsRow(label: "Version", value: appVersion)
-                        SettingsRow(label: "Build", value: buildNumber)
-                    }
-
-                    // Support Section
-                    SettingsSection(title: "Support") {
-                        Button {
-                            // Open help URL
-                            if let url = URL(string: "https://liveconnect.dev/docs") {
-                                UIApplication.shared.open(url)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    if let project {
+                        // Notifications Section
+                        SettingsSection(title: "Preferences") {
+                            NavigationLink {
+                                NotificationSettingsView(projectId: project.id)
+                            } label: {
+                                HStack {
+                                    Image(systemName: "bell.fill")
+                                        .foregroundStyle(.yellow)
+                                    Text("Notifications")
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding()
+                                .background(Color.white.opacity(0.05))
                             }
-                        } label: {
-                            HStack {
-                                Text("Documentation")
-                                    .foregroundStyle(.white)
-                                Spacer()
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .padding()
-                            .background(Color.white.opacity(0.05))
                         }
+
+                        // Project Info Section
+                        SettingsSection(title: "Project Information") {
+                            SettingsRow(label: "Name", value: project.name)
+                            SettingsRow(label: "ID", value: project.id.uuidString.prefix(8).description + "...")
+                            if let description = project.description {
+                                SettingsRow(label: "Description", value: description)
+                            }
+                            SettingsRow(label: "Type", value: project.type.rawValue)
+                        }
+
+                        // App Info Section
+                        SettingsSection(title: "App Information") {
+                            SettingsRow(label: "Version", value: appVersion)
+                            SettingsRow(label: "Build", value: buildNumber)
+                        }
+
+                        // Support Section
+                        SettingsSection(title: "Support") {
+                            Button {
+                                // Open help URL
+                                if let url = URL(string: "https://liveconnect.dev/docs") {
+                                    UIApplication.shared.open(url)
+                                }
+                            } label: {
+                                HStack {
+                                    Text("Documentation")
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding()
+                                .background(Color.white.opacity(0.05))
+                            }
+                        }
+                    } else {
+                        ProgressView()
+                            .tint(.white)
                     }
-                } else {
-                    ProgressView()
-                        .tint(.white)
                 }
+                .padding()
             }
-            .padding()
+            .background(Color.black)
         }
     }
 

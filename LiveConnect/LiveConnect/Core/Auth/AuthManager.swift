@@ -90,6 +90,11 @@ final class AuthManager {
 
     /// Signs out the current user.
     func signOut() {
+        // Unregister push token in background
+        Task {
+            await PushNotificationManager.shared.unregisterToken()
+        }
+
         KeychainService.shared.clearAll()
         currentUser = nil
         error = nil

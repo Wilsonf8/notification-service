@@ -12,6 +12,12 @@ struct ContentView: View {
     @State private var isCheckingAuth = true
     @State private var sidebarViewModel = OrganizationSidebarViewModel()
 
+    /// Sheet for accepting call requests from notifications.
+    @State private var requestAcceptSheet: RequestAcceptSheetData?
+
+    /// Active call response when a request is accepted from notification.
+    @State private var activeCallFromNotification: AcceptedCallResponse?
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -29,6 +35,29 @@ struct ContentView: View {
         }
         .task {
             await checkAuthentication()
+        }
+        .onChange(of: NotificationRouter.shared.pendingNavigation) { _, navigation in
+            handlePendingNavigation(navigation)
+        }
+        .sheet(item: $requestAcceptSheet) { data in
+            RequestAcceptSheet(
+                projectId: data.projectId,
+                requestId: data.requestId
+            ) { response in
+                activeCallFromNotification = response
+            }
+        }
+        .fullScreenCover(item: $activeCallFromNotification) { call in
+            if let projectId = requestAcceptSheet?.projectId ?? sidebarViewModel.selectedProjectId {
+                VideoCallView(
+                    conversationId: call.conversationId,
+                    livekitUrl: call.liveKitUrl,
+                    livekitToken: call.token,
+                    projectId: projectId
+                ) {
+                    activeCallFromNotification = nil
+                }
+            }
         }
     }
 
@@ -78,6 +107,9 @@ struct ContentView: View {
     private func checkAuthentication() async {
         await AuthManager.shared.restoreSession()
 
+        // Re-register push token after session restore
+        await PushNotificationManager.shared.registerCurrentTokenIfNeeded()
+
         // Small delay for smoother transition
         try? await Task.sleep(for: .milliseconds(500))
 
@@ -85,6 +117,39 @@ struct ContentView: View {
             isCheckingAuth = false
         }
     }
+
+    // MARK: - Notification Handling
+
+    private func handlePendingNavigation(_ navigation: NotificationNavigation?) {
+        guard let navigation else { return }
+
+        switch navigation {
+        case .visitorDetail(let projectId, _):
+            // Navigate to project dashboard and show visitor
+            sidebarViewModel.selectedProjectId = projectId
+            // Visitor detail handled in dashboard
+
+        case .acceptRequest(let projectId, let requestId):
+            // Navigate to project and show accept sheet
+            sidebarViewModel.selectedProjectId = projectId
+            requestAcceptSheet = RequestAcceptSheetData(
+                projectId: projectId,
+                requestId: requestId
+            )
+        }
+
+        NotificationRouter.shared.clearPendingNavigation()
+    }
+}
+
+// MARK: - Request Accept Sheet Data
+
+/// Data for presenting the request accept sheet.
+struct RequestAcceptSheetData: Identifiable {
+    let projectId: UUID
+    let requestId: UUID
+
+    var id: String { "\(projectId)-\(requestId)" }
 }
 
 #Preview {
