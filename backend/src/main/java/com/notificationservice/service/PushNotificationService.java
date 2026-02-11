@@ -213,8 +213,8 @@ public class PushNotificationService {
                     topic,
                     payload,
                     Instant.now().plusSeconds(3600), // 1 hour expiry
-                    null, // delivery priority
-                    null  // collapse ID
+                    com.eatthepath.pushy.apns.DeliveryPriority.IMMEDIATE,
+                    com.eatthepath.pushy.apns.PushType.ALERT
             );
 
             apnsClient.sendNotification(notification).whenComplete((response, error) -> {
