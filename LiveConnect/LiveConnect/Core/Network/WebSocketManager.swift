@@ -345,6 +345,7 @@ final class WebSocketManager: WebSocketDelegate {
         Task { @MainActor in
             switch event {
             case .connected:
+                print("WebSocket: Connected successfully")
                 connectionState = .connected
                 reconnectAttempts = 0
 

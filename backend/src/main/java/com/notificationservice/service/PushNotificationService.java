@@ -92,13 +92,14 @@ public class PushNotificationService {
         // Set throttle
         redisTemplate.opsForValue().set(throttleKey, "1", presenceThrottleMinutes, TimeUnit.MINUTES);
 
-        // Get available reps for project (AVAILABLE status, not in call)
-        List<LiveConnectRep> reps = repRepository.findAvailableByProjectId(projectId);
+        // Get available reps for project (AVAILABLE status, regardless of online/offline)
+        List<LiveConnectRep> reps = repRepository.findAvailableForPushByProjectId(projectId);
+        log.info("Found {} available reps for push notification in project {}", reps.size(), projectId);
 
         for (LiveConnectRep rep : reps) {
             // Skip if rep has active WebSocket sessions (they'll get real-time event)
             if (repSessionManager.hasActiveSessions(rep.getUser().getId())) {
-                log.debug("Skipping push for rep {} - has active sessions", rep.getId());
+                log.info("Skipping push for rep {} - has active WebSocket sessions", rep.getId());
                 continue;
             }
 
@@ -106,11 +107,12 @@ public class PushNotificationService {
             RepNotificationPreference pref = preferenceRepository.findByRepId(rep.getId())
                     .orElse(null);
             if (pref != null && !pref.getNotifyVisitorPresence()) {
-                log.debug("Skipping push for rep {} - presence notifications disabled", rep.getId());
+                log.info("Skipping push for rep {} - presence notifications disabled", rep.getId());
                 continue;
             }
 
             // Send push to all of rep's devices
+            log.info("Sending presence push to rep {} (user {})", rep.getId(), rep.getUser().getId());
             sendVisitorPresenceToUser(rep.getUser().getId(), visitor, projectId);
         }
     }
@@ -130,8 +132,9 @@ public class PushNotificationService {
 
         LiveConnectVisitor visitor = request.getVisitor();
 
-        // Get available reps for project
-        List<LiveConnectRep> reps = repRepository.findAvailableByProjectId(projectId);
+        // Get available reps for project (AVAILABLE status, regardless of online/offline)
+        List<LiveConnectRep> reps = repRepository.findAvailableForPushByProjectId(projectId);
+        log.info("Found {} available reps for push notification in project {}", reps.size(), projectId);
 
         for (LiveConnectRep rep : reps) {
             // Skip if rep has active WebSocket sessions
@@ -156,9 +159,10 @@ public class PushNotificationService {
     private void sendVisitorPresenceToUser(UUID userId, LiveConnectVisitor visitor, UUID projectId) {
         List<DeviceToken> tokens = deviceTokenService.getValidTokensForUser(userId);
         if (tokens.isEmpty()) {
-            log.debug("No device tokens for user {}", userId);
+            log.info("No device tokens for user {}", userId);
             return;
         }
+        log.info("Found {} device tokens for user {}", tokens.size(), userId);
 
         String visitorName = visitor.getName() != null ? visitor.getName() : "A visitor";
         String currentPage = extractCurrentPage(visitor);
@@ -231,7 +235,7 @@ public class PushNotificationService {
                         deviceTokenService.invalidateToken(deviceToken);
                     }
                 } else {
-                    log.debug("Push notification sent successfully");
+                    log.info("Push notification sent successfully to {}", deviceToken.substring(0, Math.min(8, deviceToken.length())));
                 }
             });
         } catch (Exception e) {

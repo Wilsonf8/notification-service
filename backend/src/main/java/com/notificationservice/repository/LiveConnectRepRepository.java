@@ -25,6 +25,13 @@ public interface LiveConnectRepRepository extends JpaRepository<LiveConnectRep, 
     @Query("SELECT r FROM LiveConnectRep r WHERE r.project.id = :projectId AND r.availability = 'AVAILABLE' AND r.presence = 'ONLINE'")
     List<LiveConnectRep> findAvailableByProjectId(UUID projectId);
 
+    /**
+     * Finds all reps who are AVAILABLE for a project (regardless of online/offline presence).
+     * Used for push notifications - presence check is handled by hasActiveSessions().
+     */
+    @Query("SELECT r FROM LiveConnectRep r WHERE r.project.id = :projectId AND r.availability = 'AVAILABLE'")
+    List<LiveConnectRep> findAvailableForPushByProjectId(UUID projectId);
+
     @Query("SELECT r FROM LiveConnectRep r WHERE r.project.id = :projectId")
     List<LiveConnectRep> findByProjectId(UUID projectId);
 
