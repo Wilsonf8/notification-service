@@ -32,8 +32,13 @@ public class LiveKitRoomService {
      */
     public Set<String> getActiveRoomNames() {
         try {
+            // Convert wss:// to https:// for REST API (WebSocket URL is for clients)
+            String httpUrl = properties.url()
+                    .replace("wss://", "https://")
+                    .replace("ws://", "http://");
+
             RoomServiceClient client = RoomServiceClient.createClient(
-                    properties.url(),
+                    httpUrl,
                     properties.apiKey(),
                     properties.apiSecret()
             );

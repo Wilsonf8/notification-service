@@ -65,8 +65,10 @@ public class ApnsConfig {
 
             if (!keyContent.isEmpty()) {
                 // Load key from content (environment variable)
+                // Convert literal \n to actual newlines (env vars often store them as literals)
+                String normalizedKey = keyContent.replace("\\n", "\n");
                 InputStream keyInputStream = new ByteArrayInputStream(
-                        keyContent.getBytes(StandardCharsets.UTF_8)
+                        normalizedKey.getBytes(StandardCharsets.UTF_8)
                 );
                 signingKey = ApnsSigningKey.loadFromInputStream(keyInputStream, teamId, keyId);
                 log.info("Loaded APNs signing key from content");

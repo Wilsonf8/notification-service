@@ -144,6 +144,7 @@ struct ConversationsListView: View {
             conversations = response.conversations
             hasMore = response.conversations.count == pageSize
         } catch {
+            print("ConversationsListView ERROR: \(error)")
             self.error = error
         }
 

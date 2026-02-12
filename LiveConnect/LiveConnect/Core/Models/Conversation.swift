@@ -31,6 +31,7 @@ struct Conversation: Codable, Identifiable, Sendable {
 /// The type of conversation.
 enum ConversationType: String, Codable, Sendable {
     case videoCall = "VIDEO_CALL"
+    case contactForm = "CONTACT_FORM"
 }
 
 /// The status of a conversation.
