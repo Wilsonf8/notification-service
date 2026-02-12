@@ -25,6 +25,11 @@ import java.security.NoSuchAlgorithmException;
 @Slf4j
 public class ApnsConfig {
 
+    static {
+        // Force IPv4 for APNs connections (Railway doesn't support IPv6 to Apple servers)
+        System.setProperty("java.net.preferIPv4Stack", "true");
+    }
+
     @Value("${app.apns.key-id:}")
     private String keyId;
 
