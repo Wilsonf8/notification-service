@@ -1,5 +1,20 @@
-import { ComponentExample } from "@/components/component-example";
+import { HeroSection } from "@/components/landing/hero-section";
+import { FeaturesSection } from "@/components/landing/features-section";
+import { EmbedDemoSection } from "@/components/landing/embed-demo-section";
+import { WidgetMockupSection } from "@/components/landing/widget-mockup-section";
+import { Footer } from "@/components/landing/footer";
 
+/**
+ * LiveConnect landing page.
+ */
 export default function Page() {
-return <ComponentExample />;
+  return (
+    <main className="min-h-screen bg-background">
+      <HeroSection />
+      <FeaturesSection />
+      <EmbedDemoSection />
+      <WidgetMockupSection />
+      <Footer />
+    </main>
+  );
 }
