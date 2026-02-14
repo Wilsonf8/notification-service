@@ -10,8 +10,10 @@ import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectProcessedWebhookRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
+import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import io.livekit.server.WebhookReceiver;
 import livekit.LivekitWebhook;
 import lombok.RequiredArgsConstructor;
@@ -171,5 +173,24 @@ public class LiveKitWebhookController {
         // Broadcast call ended to all reps in project
         CallEndedBroadcastEvent broadcastEvent = new CallEndedBroadcastEvent(conversation.getId());
         broadcaster.broadcastToProject(conversation.getProject().getId(), broadcastEvent);
+
+        // Re-broadcast visitor presence if still connected
+        LiveConnectVisitor visitor = conversation.getVisitor();
+        if (visitor.getActiveConnections() != null && visitor.getActiveConnections() > 0) {
+            String currentPage = visitor.getMetadata() != null
+                    ? (String) visitor.getMetadata().get("currentPage")
+                    : null;
+            VisitorJoinedEvent visitorJoinedEvent = new VisitorJoinedEvent(
+                    visitor.getId(),
+                    visitor.getName(),
+                    visitor.getEmail(),
+                    currentPage,
+                    OffsetDateTime.now()
+            );
+            broadcaster.broadcastToProject(
+                    conversation.getProject().getId(),
+                    visitorJoinedEvent
+            );
+        }
     }
 }

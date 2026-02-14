@@ -29,6 +29,7 @@ import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
 import com.notificationservice.websocket.event.MessageReceivedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
+import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -305,6 +306,25 @@ public class LiveConnectConversationService {
         // Broadcast call ended to all reps in project
         CallEndedBroadcastEvent broadcastEvent = new CallEndedBroadcastEvent(conversationId);
         broadcaster.broadcastToProject(conversation.getProject().getId(), broadcastEvent);
+
+        // Re-broadcast visitor presence if still connected
+        LiveConnectVisitor visitor = conversation.getVisitor();
+        if (visitor.getActiveConnections() != null && visitor.getActiveConnections() > 0) {
+            String currentPage = visitor.getMetadata() != null
+                    ? (String) visitor.getMetadata().get("currentPage")
+                    : null;
+            VisitorJoinedEvent visitorJoinedEvent = new VisitorJoinedEvent(
+                    visitor.getId(),
+                    visitor.getName(),
+                    visitor.getEmail(),
+                    currentPage,
+                    OffsetDateTime.now()
+            );
+            broadcaster.broadcastToProject(
+                    conversation.getProject().getId(),
+                    visitorJoinedEvent
+            );
+        }
     }
 
     /**
