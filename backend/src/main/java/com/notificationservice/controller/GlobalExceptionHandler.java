@@ -3,6 +3,8 @@ package com.notificationservice.controller;
 import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.RateLimitExceededException;
 import com.notificationservice.service.ResourceNotFoundException;
+import com.notificationservice.service.SubscriptionRequiredException;
+import com.stripe.exception.StripeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +34,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleRateLimit(RateLimitExceededException e) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(SubscriptionRequiredException.class)
+    public ResponseEntity<Map<String, String>> handleSubscriptionRequired(SubscriptionRequiredException e) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(StripeException.class)
+    public ResponseEntity<Map<String, String>> handleStripeException(StripeException e) {
+        log.error("Stripe API error: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(Map.of("error", "Payment service error. Please try again later."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

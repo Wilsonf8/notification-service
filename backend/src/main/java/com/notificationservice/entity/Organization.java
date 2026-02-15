@@ -36,6 +36,9 @@ public class Organization {
     @Builder.Default
     private Boolean isPersonal = false;
 
+    @Column(name = "stripe_customer_id")
+    private String stripeCustomerId;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

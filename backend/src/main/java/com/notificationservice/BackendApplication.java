@@ -1,6 +1,7 @@
 package com.notificationservice;
 
 import com.notificationservice.config.LiveKitProperties;
+import com.notificationservice.config.StripeProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -16,7 +17,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableAsync
 @EnableJpaRepositories(basePackages = "com.notificationservice.repository")
-@EnableConfigurationProperties(LiveKitProperties.class)
+@EnableConfigurationProperties({LiveKitProperties.class, StripeProperties.class})
 public class BackendApplication {
 
     public static void main(String[] args) {

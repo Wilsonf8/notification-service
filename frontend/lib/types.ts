@@ -293,3 +293,35 @@ export interface ConversationFilters {
   page?: number;
   size?: number;
 }
+
+// ============================================================================
+// Billing & Subscription Types
+// ============================================================================
+
+/** Subscription status enum */
+export type SubscriptionStatus =
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELED"
+  | "INCOMPLETE"
+  | "INACTIVE";
+
+/** Subscription status returned from the billing API */
+export interface Subscription {
+  status: SubscriptionStatus;
+  stripePriceId: string | null;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  canceledAt: string | null;
+}
+
+/** Response from creating a checkout session (PaymentIntent client secret) */
+export interface CheckoutSessionResponse {
+  clientSecret: string;
+}
+
+/** Response from creating a SetupIntent for updating payment method */
+export interface SetupIntentResponse {
+  clientSecret: string;
+}

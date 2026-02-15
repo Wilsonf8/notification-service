@@ -13,6 +13,7 @@ import {
   IconFolder,
   IconSettings,
   IconUsersGroup,
+  IconCreditCard,
 } from "@tabler/icons-react";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 import { useOrganization } from "@/lib/contexts/organization-context";
@@ -30,10 +31,11 @@ interface NavItem {
 /**
  * Generates navigation items with org-scoped URLs.
  * @param orgSlug - The current organization slug
- * @returns Array of navigation items
+ * @param userRole - The current user's role in the organization
+ * @returns Array of navigation items (Billing only shown for OWNER)
  */
-export function getNavItems(orgSlug: string): NavItem[] {
-  return [
+export function getNavItems(orgSlug: string, userRole?: string): NavItem[] {
+  const items: NavItem[] = [
     {
       label: "Overview",
       href: `/dashboard/${orgSlug}`,
@@ -49,12 +51,23 @@ export function getNavItems(orgSlug: string): NavItem[] {
       href: `/dashboard/${orgSlug}/team`,
       icon: IconUsersGroup,
     },
-    {
-      label: "Settings",
-      href: "/dashboard/settings",
-      icon: IconSettings,
-    },
   ];
+
+  if (userRole === "OWNER") {
+    items.push({
+      label: "Billing",
+      href: `/dashboard/${orgSlug}/billing`,
+      icon: IconCreditCard,
+    });
+  }
+
+  items.push({
+    label: "Settings",
+    href: "/dashboard/settings",
+    icon: IconSettings,
+  });
+
+  return items;
 }
 
 /**
@@ -91,7 +104,7 @@ export function DashboardSidebar() {
   const { currentOrg } = useOrganization();
 
   // Get nav items based on current org (fallback to empty slug if no org)
-  const navItems = getNavItems(currentOrg?.slug || "");
+  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole);
 
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar">

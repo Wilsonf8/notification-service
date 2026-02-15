@@ -33,6 +33,7 @@ public class LiveConnectEmbedKeyService {
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SubscriptionService subscriptionService;
 
     /**
      * Gets all embed keys for a project.
@@ -174,6 +175,12 @@ public class LiveConnectEmbedKeyService {
             if (!domainAllowed) {
                 throw new AccessDeniedException("Domain not authorized for this embed key");
             }
+        }
+
+        // Check organization subscription
+        UUID orgId = embedKey.getProject().getOrganization().getId();
+        if (!subscriptionService.isOrganizationSubscriptionActive(orgId)) {
+            throw new SubscriptionRequiredException("Active subscription required");
         }
 
         embedKey.setLastUsedAt(OffsetDateTime.now());

@@ -9,3 +9,4 @@ export * from "./user";
 export * from "./organizations";
 export * from "./liveconnect";
 export * from "./liveconnect-dashboard";
+export * from "./billing";

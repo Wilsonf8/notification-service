@@ -18,7 +18,7 @@ import {
   showContactForm,
   resetState,
 } from '../state';
-import { getApiClient, type ApiClient } from '../api';
+import { getApiClient, ApiError, type ApiClient } from '../api';
 import {
   getWebSocketClient,
   type WebSocketClient,
@@ -96,6 +96,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
   /** Error message for display */
   const [error, setError] = useState<string | null>(null);
+
+  /** Whether the organization's subscription is inactive (402 from backend) */
+  const [subscriptionInactive, setSubscriptionInactive] = useState<boolean>(false);
 
   // ============================================================================
   // CSS Injection
@@ -198,6 +201,10 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       } catch (err) {
         console.error('[LiveConnect Widget] Initialization error:', err);
         if (isMounted) {
+          if (err instanceof ApiError && err.status === 402) {
+            setSubscriptionInactive(true);
+            return;
+          }
           setError('Failed to initialize widget');
           setIsOnline(false);
         }
@@ -583,6 +590,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   // ============================================================================
   // Render
   // ============================================================================
+
+  // If subscription is inactive, render nothing (widget invisible to end visitors)
+  if (subscriptionInactive) {
+    return <div />;
+  }
 
   // Get current widget state
   const state = widgetState.value;

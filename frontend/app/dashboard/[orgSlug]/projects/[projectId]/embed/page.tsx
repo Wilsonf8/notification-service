@@ -50,7 +50,9 @@ import {
   IconCopy,
   IconCode,
   IconAlertTriangle,
+  IconCreditCard,
 } from "@tabler/icons-react";
+import Link from "next/link";
 import { CodeBlock } from "@/components/dashboard/docs/code-block";
 import { useProject } from "../layout";
 import {
@@ -58,10 +60,13 @@ import {
   createLiveConnectEmbedKey,
   updateLiveConnectEmbedKey,
   deleteLiveConnectEmbedKey,
+  getSubscriptionStatus,
 } from "@/lib/api";
+import { useOrganization } from "@/lib/contexts/organization-context";
 import type {
   LiveConnectEmbedKey,
   LiveConnectEmbedKeyCreated,
+  Subscription,
 } from "@/lib/types";
 
 /**
@@ -69,6 +74,10 @@ import type {
  */
 export default function EmbedPage() {
   const { projectId } = useProject();
+  const { currentOrg } = useOrganization();
+
+  // Subscription state
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
 
   // Embed keys state
   const [embedKeys, setEmbedKeys] = useState<LiveConnectEmbedKey[]>([]);
@@ -111,7 +120,12 @@ export default function EmbedPage() {
 
   useEffect(() => {
     fetchEmbedKeys();
-  }, [projectId]);
+    if (currentOrg?.slug) {
+      getSubscriptionStatus(currentOrg.slug)
+        .then(setSubscription)
+        .catch(() => {}); // Non-critical, don't block page
+    }
+  }, [projectId, currentOrg?.slug]);
 
   /**
    * Copies text to clipboard.
@@ -207,6 +221,26 @@ export default function EmbedPage() {
 
   return (
     <div className="space-y-4">
+      {subscription && subscription.status !== "ACTIVE" && subscription.status !== "PAST_DUE" && currentOrg && (
+        <Card className="border-yellow-500/50 bg-yellow-500/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <IconCreditCard className="h-5 w-5 shrink-0 text-yellow-500" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Subscription required</p>
+              <p className="text-xs text-muted-foreground">
+                Subscribe to activate your embed keys.{" "}
+                <Link
+                  href={`/dashboard/${currentOrg.slug}/billing`}
+                  className="text-primary underline underline-offset-4 hover:text-primary/80"
+                >
+                  Go to Billing
+                </Link>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {error && (
         <Card className="border-destructive">
           <CardContent className="py-4">

@@ -290,6 +290,40 @@ public class OrganizationService {
     }
 
     /**
+     * Gets an organization entity for billing operations.
+     * Verifies the user has OWNER role.
+     *
+     * @param slug the organization's URL slug
+     * @param userId the requesting user's ID
+     * @return the organization entity
+     * @throws ResourceNotFoundException if organization not found
+     * @throws AccessDeniedException if user is not OWNER
+     */
+    @Transactional(readOnly = true)
+    public Organization getOrganizationForBilling(String slug, UUID userId) {
+        Organization org = findBySlugOrThrow(slug);
+        verifyRole(org.getId(), userId, OrgRole.OWNER);
+        return org;
+    }
+
+    /**
+     * Gets an organization entity for billing status.
+     * Verifies the user has OWNER role.
+     *
+     * @param slug the organization's URL slug
+     * @param userId the requesting user's ID
+     * @return the organization entity
+     * @throws ResourceNotFoundException if organization not found
+     * @throws AccessDeniedException if user is not OWNER
+     */
+    @Transactional(readOnly = true)
+    public Organization getOrganizationForBillingStatus(String slug, UUID userId) {
+        Organization org = findBySlugOrThrow(slug);
+        verifyRole(org.getId(), userId, OrgRole.OWNER);
+        return org;
+    }
+
+    /**
      * Finds an organization by slug or throws an exception.
      *
      * @param slug the organization's URL slug

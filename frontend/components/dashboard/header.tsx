@@ -43,7 +43,7 @@ export function DashboardHeader() {
   const { currentOrg } = useOrganization();
 
   // Get nav items based on current org
-  const navItems = getNavItems(currentOrg?.slug || "");
+  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole);
 
   /**
    * Handles user logout by clearing the token and redirecting to login.

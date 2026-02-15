@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers("/v1/liveconnect/**").permitAll()  // Embed key auth handled separately
                         .requestMatchers("/api/projects/*/liveconnect/ws").permitAll()  // Rep WebSocket
                         .requestMatchers("/webhooks/livekit").permitAll()
+                        .requestMatchers("/webhooks/stripe").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
