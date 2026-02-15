@@ -25,6 +25,6 @@ public class StripeProcessedEvent {
     private String eventType;
 
     @CreationTimestamp
-    @Column(name = "processed_at")
+    @Column(name = "processed_at", nullable = false)
     private OffsetDateTime processedAt;
 }
