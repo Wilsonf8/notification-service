@@ -84,6 +84,16 @@ private struct ConversationStartedDTO: Codable {
     let liveKitUrl: String
 }
 
+/// DTO for message_received event from backend.
+private struct MessageReceivedDTO: Codable {
+    let messageId: UUID
+    let conversationId: UUID
+    let senderType: MessageSenderType
+    let senderName: String?
+    let content: String
+    let sentAt: Date?
+}
+
 /// Represents an active call from WebSocket events.
 struct ActiveCall: Codable, Identifiable, Sendable {
     let conversationId: UUID
@@ -341,7 +351,14 @@ final class WebSocketManager: WebSocketDelegate {
                 onConversationStarted?(response)
 
             case .messageReceived:
-                let message = try decoder.decode(Message.self, from: data)
+                let dto = try decoder.decode(MessageReceivedDTO.self, from: data)
+                let message = Message(
+                    id: dto.messageId,
+                    senderType: dto.senderType,
+                    senderName: dto.senderName,
+                    content: dto.content,
+                    createdAt: dto.sentAt
+                )
                 onMessageReceived?(message)
 
             case .repAvailabilityChanged, .repPresenceChanged:
