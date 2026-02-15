@@ -3,7 +3,6 @@
  * @module components/landing/hero-section
  */
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 /**
  * Displays the main hero section with title, description, and CTA buttons.
@@ -25,9 +24,6 @@ export function HeroSection() {
           >
             Login
           </Link>
-          <Button variant="outline" size="lg" disabled className="w-full sm:w-auto">
-            Join Waitlist
-          </Button>
         </div>
       </div>
     </section>
