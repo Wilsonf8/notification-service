@@ -18,6 +18,9 @@ struct ContentView: View {
     /// Active call response when a request is accepted from notification.
     @State private var activeCallFromNotification: AcceptedCallResponse?
 
+    /// WebSocket manager for calls accepted from notifications.
+    @State private var notificationWebSocketManager = WebSocketManager()
+
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
@@ -53,7 +56,8 @@ struct ContentView: View {
                     conversationId: call.conversationId,
                     livekitUrl: call.liveKitUrl,
                     livekitToken: call.token,
-                    projectId: projectId
+                    projectId: projectId,
+                    webSocketManager: notificationWebSocketManager
                 ) {
                     activeCallFromNotification = nil
                 }

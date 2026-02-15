@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
  */
 export function HeroSection() {
   return (
-    <section className="flex min-h-[80vh] flex-col items-center justify-center px-4 text-center">
+    <section className="flex min-h-[60vh] flex-col items-center justify-center px-4 text-center">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-5xl font-bold tracking-tight sm:text-6xl md:text-7xl">
           LiveConnect

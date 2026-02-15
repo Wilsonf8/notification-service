@@ -54,7 +54,7 @@ export function CodeBlock({ code, language, title, className }: CodeBlockProps) 
         </div>
       )}
       <div className="relative">
-        <pre className="overflow-x-auto bg-zinc-950 p-4 text-xs text-zinc-100">
+        <pre className="overflow-x-auto bg-zinc-800 p-4 text-xs text-zinc-100">
           <code className="font-mono">{code}</code>
         </pre>
         <Button

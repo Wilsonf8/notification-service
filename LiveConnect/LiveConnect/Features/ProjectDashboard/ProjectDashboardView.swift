@@ -53,7 +53,8 @@ struct ProjectDashboardView: View {
                     conversationId: call.conversationId,
                     livekitUrl: call.liveKitUrl,
                     livekitToken: call.token,
-                    projectId: projectId
+                    projectId: projectId,
+                    webSocketManager: viewModel.webSocketManager
                 ) {
                     activeCall = nil
                 }

@@ -9,7 +9,7 @@ import { WidgetMockup } from "./widget-mockup";
  */
 export function WidgetMockupSection() {
   return (
-    <section className="py-20 px-4">
+    <section className="py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold text-center sm:text-3xl">
           See It in Action

@@ -11,7 +11,7 @@ const EMBED_CODE = `<script src="https://app.notifykit.dev/sdk/liveconnect.js" d
  */
 export function EmbedDemoSection() {
   return (
-    <section className="py-20 px-4">
+    <section className="py-12 px-4">
       <div className="max-w-4xl mx-auto">
         <h2 className="text-2xl font-bold text-center sm:text-3xl">
           Add to Your Site in Seconds

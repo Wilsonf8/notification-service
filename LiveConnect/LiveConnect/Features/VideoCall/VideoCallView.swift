@@ -14,6 +14,7 @@ struct VideoCallView: View {
     let livekitUrl: String
     let livekitToken: String
     let projectId: UUID
+    let webSocketManager: WebSocketManager
     let onDismiss: () -> Void
 
     @State private var viewModel: VideoCallViewModel
@@ -24,12 +25,14 @@ struct VideoCallView: View {
         livekitUrl: String,
         livekitToken: String,
         projectId: UUID,
+        webSocketManager: WebSocketManager,
         onDismiss: @escaping () -> Void
     ) {
         self.conversationId = conversationId
         self.livekitUrl = livekitUrl
         self.livekitToken = livekitToken
         self.projectId = projectId
+        self.webSocketManager = webSocketManager
         self.onDismiss = onDismiss
         self._viewModel = State(initialValue: VideoCallViewModel(
             conversationId: conversationId,
@@ -52,8 +55,16 @@ struct VideoCallView: View {
         .task {
             await viewModel.connect(url: livekitUrl, token: livekitToken)
             await viewModel.loadMessages()
+
+            // Connect WebSocket message handler for this conversation
+            webSocketManager.onMessageReceived = { [viewModel] message in
+                viewModel.addReceivedMessage(message)
+            }
         }
         .onDisappear {
+            // Clear the message handler when leaving
+            webSocketManager.onMessageReceived = nil
+
             Task {
                 await viewModel.disconnect()
             }
@@ -304,6 +315,7 @@ private struct LocalVideoView: View {
         conversationId: UUID(),
         livekitUrl: "wss://example.livekit.cloud",
         livekitToken: "token",
-        projectId: UUID()
+        projectId: UUID(),
+        webSocketManager: WebSocketManager()
     ) {}
 }
