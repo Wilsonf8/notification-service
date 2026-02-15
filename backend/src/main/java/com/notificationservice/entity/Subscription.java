@@ -45,7 +45,7 @@ public class Subscription {
     @Column(name = "current_period_end")
     private OffsetDateTime currentPeriodEnd;
 
-    @Column(name = "cancel_at_period_end")
+    @Column(name = "cancel_at_period_end", nullable = false)
     @Builder.Default
     private Boolean cancelAtPeriodEnd = false;
 
@@ -56,11 +56,11 @@ public class Subscription {
     private Long lastEventTimestamp;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at")
+    @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
     /**
