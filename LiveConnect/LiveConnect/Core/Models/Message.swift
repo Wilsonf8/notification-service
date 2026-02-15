@@ -13,7 +13,7 @@ struct Message: Codable, Identifiable, Sendable {
     let senderType: MessageSenderType
     let senderName: String?
     let content: String
-    let createdAt: Date
+    let createdAt: Date?
 }
 
 /// The type of message sender.

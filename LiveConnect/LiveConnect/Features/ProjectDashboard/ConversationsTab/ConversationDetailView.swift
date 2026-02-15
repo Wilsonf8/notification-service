@@ -202,7 +202,7 @@ private struct MessageRow: View {
                         .foregroundStyle(isFromRep ? .black : .white)
 
                     // Timestamp
-                    Text(message.createdAt, style: .time)
+                    Text(message.createdAt ?? Date(), style: .time)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

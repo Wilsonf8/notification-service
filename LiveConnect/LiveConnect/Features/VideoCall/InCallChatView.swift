@@ -111,7 +111,7 @@ private struct ChatMessageRow: View {
                     .background(isFromRep ? Color.yellow : Color.white.opacity(0.2))
                     .foregroundStyle(isFromRep ? .black : .white)
 
-                Text(message.createdAt, style: .time)
+                Text(message.createdAt ?? Date(), style: .time)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

@@ -124,7 +124,7 @@ enum Endpoints {
     ///   - conversationId: The conversation UUID.
     /// - Returns: Endpoint path.
     static func sendMessage(projectId: UUID, conversationId: UUID) -> String {
-        "/api/projects/\(projectId)/liveconnect/conversations/\(conversationId)/messages"
+        "/api/projects/\(projectId)/liveconnect/conversations/\(conversationId)/message"
     }
 
     /// End a conversation.
