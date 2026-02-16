@@ -578,7 +578,7 @@ export default function BillingPage({
 
       {/* Checkout Dialog — Payment Element for new subscriptions */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Complete Subscription</DialogTitle>
             <DialogDescription>
@@ -607,7 +607,7 @@ export default function BillingPage({
 
       {/* Update Payment Method Dialog */}
       <Dialog open={updatePaymentOpen} onOpenChange={setUpdatePaymentOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Payment Method</DialogTitle>
             <DialogDescription>
