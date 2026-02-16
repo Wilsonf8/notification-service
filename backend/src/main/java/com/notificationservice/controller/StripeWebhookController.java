@@ -10,6 +10,7 @@ import com.stripe.model.StripeObject;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.model.Invoice;
+import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -180,13 +181,27 @@ public class StripeWebhookController {
         // which we'll handle via customer.subscription.updated webhook
     }
 
+    /**
+     * Deserializes the event data object, falling back to unsafe deserialization
+     * when the event API version doesn't match the SDK's pinned version.
+     *
+     * @param event the Stripe event
+     * @param clazz the expected object type
+     * @return the deserialized object, or null if deserialization fails
+     */
     @SuppressWarnings("unchecked")
     private <T extends StripeObject> T deserialize(Event event, Class<T> clazz) {
         EventDataObjectDeserializer deserializer = event.getDataObjectDeserializer();
         if (deserializer.getObject().isPresent()) {
             return (T) deserializer.getObject().get();
         }
-        log.warn("Failed to deserialize Stripe event {} data", event.getId());
-        return null;
+        // API version mismatch — fall back to unsafe deserialization
+        try {
+            return (T) deserializer.deserializeUnsafe();
+        } catch (StripeException e) {
+            log.error("Failed to deserialize Stripe event {} (type {}): {}",
+                    event.getId(), event.getType(), e.getMessage());
+            return null;
+        }
     }
 }
