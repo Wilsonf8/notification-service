@@ -46,7 +46,7 @@ export function PricingSection() {
             <CardTitle>Free</CardTitle>
             <CardDescription>For getting started</CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-6">
+          <CardContent className="flex flex-col gap-6 flex-1">
             <div>
               <span className="text-3xl font-bold">$0</span>
               <span className="text-muted-foreground ml-1">/month</span>
@@ -62,7 +62,7 @@ export function PricingSection() {
             </ul>
             <Link
               href="/login"
-              className="inline-flex items-center justify-center h-8 px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-all"
+              className="mt-auto inline-flex items-center justify-center h-8 px-2.5 text-xs font-medium border border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 transition-all"
             >
               Get Started
             </Link>
