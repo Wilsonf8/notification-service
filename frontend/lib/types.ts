@@ -352,3 +352,33 @@ export interface CheckoutSessionResponse {
 export interface SetupIntentResponse {
   clientSecret: string;
 }
+
+/** A single Stripe invoice */
+export interface Invoice {
+  id: string;
+  date: number;
+  description: string;
+  amountDue: number;
+  amountPaid: number;
+  currency: string;
+  status: string;
+  invoicePdfUrl: string | null;
+  hostedInvoiceUrl: string | null;
+}
+
+/** Paginated response for listing invoices with cursor-based pagination */
+export interface InvoiceListResponse {
+  invoices: Invoice[];
+  hasMore: boolean;
+  nextCursor: string | null;
+}
+
+/** Upcoming Stripe invoice with payment card details */
+export interface UpcomingInvoice {
+  amountDue: number;
+  currency: string;
+  nextBillingDate: number;
+  description: string;
+  cardBrand: string | null;
+  cardLast4: string | null;
+}

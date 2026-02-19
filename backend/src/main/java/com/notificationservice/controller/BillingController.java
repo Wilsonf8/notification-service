@@ -2,8 +2,10 @@ package com.notificationservice.controller;
 
 import com.notificationservice.dto.CheckoutSessionRequest;
 import com.notificationservice.dto.CheckoutSessionResponse;
+import com.notificationservice.dto.InvoiceListResponse;
 import com.notificationservice.dto.SetupIntentResponse;
 import com.notificationservice.dto.SubscriptionDto;
+import com.notificationservice.dto.UpcomingInvoiceDto;
 import com.notificationservice.entity.Organization;
 import com.notificationservice.entity.SubscriptionStatus;
 import com.notificationservice.service.OrganizationService;
@@ -149,5 +151,62 @@ public class BillingController {
         }
         String clientSecret = stripeService.createSetupIntent(org.getStripeCustomerId());
         return ResponseEntity.ok(new SetupIntentResponse(clientSecret));
+    }
+
+    /**
+     * Lists invoices for an organization's Stripe customer with cursor-based pagination.
+     * Restricted to OWNER role.
+     *
+     * @param slug the organization's URL slug
+     * @param limit the maximum number of invoices to return (1-100, default 10)
+     * @param startingAfter the invoice ID to start after for pagination
+     * @param userId the authenticated user's ID
+     * @return the paginated invoice list
+     * @throws StripeException if the Stripe API call fails
+     */
+    @GetMapping("/invoices")
+    public ResponseEntity<InvoiceListResponse> listInvoices(
+            @PathVariable String slug,
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(required = false) String startingAfter,
+            @AuthenticationPrincipal UUID userId) throws StripeException {
+        Organization org = organizationService.getOrganizationForBilling(slug, userId);
+
+        if (org.getStripeCustomerId() == null) {
+            return ResponseEntity.ok(new InvoiceListResponse(java.util.List.of(), false, null));
+        }
+
+        int clampedLimit = Math.max(1, Math.min(100, limit));
+        InvoiceListResponse response = stripeService.listInvoices(
+                org.getStripeCustomerId(), clampedLimit, startingAfter);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Gets the upcoming invoice for an organization's subscription.
+     * Returns 204 No Content if no upcoming invoice exists.
+     * Restricted to OWNER role.
+     *
+     * @param slug the organization's URL slug
+     * @param userId the authenticated user's ID
+     * @return the upcoming invoice or 204 if none
+     * @throws StripeException if the Stripe API call fails
+     */
+    @GetMapping("/upcoming")
+    public ResponseEntity<UpcomingInvoiceDto> getUpcomingInvoice(
+            @PathVariable String slug,
+            @AuthenticationPrincipal UUID userId) throws StripeException {
+        Organization org = organizationService.getOrganizationForBilling(slug, userId);
+
+        if (org.getStripeCustomerId() == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        UpcomingInvoiceDto upcoming = stripeService.getUpcomingInvoice(org.getStripeCustomerId());
+        if (upcoming == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(upcoming);
     }
 }

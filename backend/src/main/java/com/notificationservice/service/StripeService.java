@@ -1,18 +1,27 @@
 package com.notificationservice.service;
 
 import com.notificationservice.config.StripeProperties;
+import com.notificationservice.dto.InvoiceDto;
+import com.notificationservice.dto.InvoiceListResponse;
+import com.notificationservice.dto.UpcomingInvoiceDto;
 import com.notificationservice.entity.Organization;
 import com.notificationservice.repository.OrganizationRepository;
 import com.stripe.Stripe;
+import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.Event;
 import com.stripe.model.Invoice;
+import com.stripe.model.InvoiceLineItemCollection;
 import com.stripe.model.PaymentIntent;
+import com.stripe.model.PaymentMethod;
 import com.stripe.model.SetupIntent;
 import com.stripe.model.Subscription;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
+import com.stripe.param.CustomerRetrieveParams;
+import com.stripe.param.InvoiceListParams;
+import com.stripe.param.InvoiceUpcomingParams;
 import com.stripe.param.SetupIntentCreateParams;
 import com.stripe.param.SubscriptionCreateParams;
 import com.stripe.param.SubscriptionUpdateParams;
@@ -21,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -200,5 +211,110 @@ public class StripeService {
             ids.add(stripeProperties.priceIdDaily());
         }
         return ids;
+    }
+
+    /**
+     * Lists paid invoices for a Stripe customer with cursor-based pagination.
+     *
+     * @param stripeCustomerId the Stripe customer ID
+     * @param limit the maximum number of invoices to return
+     * @param startingAfter the invoice ID to start after (for pagination), nullable
+     * @return paginated invoice list response
+     * @throws StripeException if the Stripe API call fails
+     */
+    public InvoiceListResponse listInvoices(String stripeCustomerId, int limit, String startingAfter)
+            throws StripeException {
+        InvoiceListParams.Builder paramsBuilder = InvoiceListParams.builder()
+                .setCustomer(stripeCustomerId)
+                .setLimit((long) limit);
+
+        if (startingAfter != null && !startingAfter.isBlank()) {
+            paramsBuilder.setStartingAfter(startingAfter);
+        }
+
+        var invoiceCollection = Invoice.list(paramsBuilder.build());
+        List<InvoiceDto> invoiceDtos = new ArrayList<>();
+
+        for (Invoice invoice : invoiceCollection.getData()) {
+            invoiceDtos.add(new InvoiceDto(
+                    invoice.getId(),
+                    invoice.getCreated(),
+                    buildInvoiceDescription(invoice),
+                    invoice.getAmountDue(),
+                    invoice.getAmountPaid(),
+                    invoice.getCurrency(),
+                    invoice.getStatus(),
+                    invoice.getInvoicePdf(),
+                    invoice.getHostedInvoiceUrl()
+            ));
+        }
+
+        String nextCursor = invoiceDtos.isEmpty() ? null
+                : invoiceDtos.get(invoiceDtos.size() - 1).id();
+
+        return new InvoiceListResponse(invoiceDtos, invoiceCollection.getHasMore(), nextCursor);
+    }
+
+    /**
+     * Retrieves the upcoming invoice for a Stripe customer, including payment card details.
+     *
+     * @param stripeCustomerId the Stripe customer ID
+     * @return the upcoming invoice DTO, or null if no upcoming invoice exists
+     * @throws StripeException if the Stripe API call fails (except InvalidRequestException for no upcoming invoice)
+     */
+    public UpcomingInvoiceDto getUpcomingInvoice(String stripeCustomerId) throws StripeException {
+        Invoice upcoming;
+        try {
+            InvoiceUpcomingParams params = InvoiceUpcomingParams.builder()
+                    .setCustomer(stripeCustomerId)
+                    .build();
+            upcoming = Invoice.upcoming(params);
+        } catch (InvalidRequestException e) {
+            // No upcoming invoice (e.g. no active subscription)
+            return null;
+        }
+
+        String cardBrand = null;
+        String cardLast4 = null;
+        try {
+            CustomerRetrieveParams customerParams = CustomerRetrieveParams.builder()
+                    .addExpand("invoice_settings.default_payment_method")
+                    .build();
+            Customer customer = Customer.retrieve(stripeCustomerId, customerParams, null);
+            PaymentMethod pm = customer.getInvoiceSettings().getDefaultPaymentMethodObject();
+            if (pm != null && pm.getCard() != null) {
+                cardBrand = pm.getCard().getBrand();
+                cardLast4 = pm.getCard().getLast4();
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch card details for customer {}: {}", stripeCustomerId, e.getMessage());
+        }
+
+        return new UpcomingInvoiceDto(
+                upcoming.getAmountDue(),
+                upcoming.getCurrency(),
+                upcoming.getNextPaymentAttempt(),
+                buildInvoiceDescription(upcoming),
+                cardBrand,
+                cardLast4
+        );
+    }
+
+    /**
+     * Extracts a human-readable description from an invoice.
+     * Uses the first line item description or falls back to the invoice number.
+     *
+     * @param invoice the Stripe invoice
+     * @return a description string
+     */
+    private String buildInvoiceDescription(Invoice invoice) {
+        InvoiceLineItemCollection lines = invoice.getLines();
+        if (lines != null && lines.getData() != null && !lines.getData().isEmpty()) {
+            String desc = lines.getData().get(0).getDescription();
+            if (desc != null && !desc.isBlank()) {
+                return desc;
+            }
+        }
+        return invoice.getNumber() != null ? invoice.getNumber() : "Invoice";
     }
 }

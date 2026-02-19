@@ -31,10 +31,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
   IconCreditCard,
   IconLoader,
   IconX,
   IconRefresh,
+  IconDownload,
+  IconReceipt,
+  IconCalendarDue,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
@@ -43,8 +55,15 @@ import {
   cancelSubscription,
   reactivateSubscription,
   createSetupIntent,
+  getInvoices,
+  getUpcomingInvoice,
 } from "@/lib/api/billing";
-import type { Subscription, SubscriptionStatus } from "@/lib/types";
+import type {
+  Subscription,
+  SubscriptionStatus,
+  Invoice,
+  UpcomingInvoice,
+} from "@/lib/types";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { stripePromise } from "@/lib/stripe";
 import {
@@ -222,6 +241,15 @@ export default function BillingPage({
   const [reactivateLoading, setReactivateLoading] = useState(false);
   const [selectedInterval, setSelectedInterval] = useState("monthly");
 
+  // Invoice & upcoming state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoicesLoading, setInvoicesLoading] = useState(true);
+  const [invoicesHasMore, setInvoicesHasMore] = useState(false);
+  const [invoicesNextCursor, setInvoicesNextCursor] = useState<string | null>(null);
+  const [invoicesLoadingMore, setInvoicesLoadingMore] = useState(false);
+  const [upcomingInvoice, setUpcomingInvoice] = useState<UpcomingInvoice | null>(null);
+  const [upcomingLoading, setUpcomingLoading] = useState(true);
+
   // Dialog state
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null);
@@ -265,9 +293,52 @@ export default function BillingPage({
     }
   }, [orgSlug]);
 
+  const fetchInvoices = useCallback(async () => {
+    try {
+      setInvoicesLoading(true);
+      const data = await getInvoices(orgSlug);
+      setInvoices(data.invoices);
+      setInvoicesHasMore(data.hasMore);
+      setInvoicesNextCursor(data.nextCursor);
+    } catch {
+      // Silent — non-critical
+    } finally {
+      setInvoicesLoading(false);
+    }
+  }, [orgSlug]);
+
+  const loadMoreInvoices = async () => {
+    if (!invoicesNextCursor || invoicesLoadingMore) return;
+    try {
+      setInvoicesLoadingMore(true);
+      const data = await getInvoices(orgSlug, 10, invoicesNextCursor);
+      setInvoices((prev) => [...prev, ...data.invoices]);
+      setInvoicesHasMore(data.hasMore);
+      setInvoicesNextCursor(data.nextCursor);
+    } catch {
+      // Silent
+    } finally {
+      setInvoicesLoadingMore(false);
+    }
+  };
+
+  const fetchUpcomingInvoice = useCallback(async () => {
+    try {
+      setUpcomingLoading(true);
+      const data = await getUpcomingInvoice(orgSlug);
+      setUpcomingInvoice(data);
+    } catch {
+      // Silent — non-critical
+    } finally {
+      setUpcomingLoading(false);
+    }
+  }, [orgSlug]);
+
   useEffect(() => {
     fetchStatus();
-  }, [fetchStatus]);
+    fetchInvoices();
+    fetchUpcomingInvoice();
+  }, [fetchStatus, fetchInvoices, fetchUpcomingInvoice]);
 
   /**
    * Handles checkout: creates subscription and opens Payment Element dialog.
@@ -348,6 +419,34 @@ export default function BillingPage({
       setUpdatePaymentLoading(false);
     }
   };
+
+  /** Formats cents to a localized currency string. */
+  const formatAmount = (cents: number, currency: string) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(cents / 100);
+
+  /** Maps invoice status to Badge variant. */
+  const getInvoiceStatusVariant = (
+    status: string
+  ): "default" | "secondary" | "destructive" | "outline" => {
+    switch (status) {
+      case "paid":
+        return "default";
+      case "open":
+        return "secondary";
+      case "void":
+      case "uncollectible":
+        return "destructive";
+      default:
+        return "outline";
+    }
+  };
+
+  /** Formats a card brand string for display. */
+  const formatCardBrand = (brand: string) =>
+    brand.charAt(0).toUpperCase() + brand.slice(1);
 
   const isActive =
     subscription?.status === "ACTIVE" || subscription?.status === "PAST_DUE";
@@ -575,6 +674,158 @@ export default function BillingPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Payment History Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <IconReceipt className="h-5 w-5" />
+            Payment History
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {invoicesLoading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : invoices.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No invoices yet
+            </p>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-[60px]">Invoice</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {invoices.map((inv) => (
+                      <TableRow key={inv.id}>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {new Date(inv.date * 1000).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate text-sm">
+                          {inv.description}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatAmount(inv.amountDue, inv.currency)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getInvoiceStatusVariant(inv.status)}>
+                            {inv.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {inv.invoicePdfUrl && (
+                            <a
+                              href={inv.invoicePdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-muted-foreground hover:text-foreground"
+                            >
+                              <IconDownload className="h-4 w-4" />
+                            </a>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {invoicesHasMore && (
+                <div className="mt-4 flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadMoreInvoices}
+                    disabled={invoicesLoadingMore}
+                    className="gap-2"
+                  >
+                    {invoicesLoadingMore && (
+                      <IconLoader className="h-4 w-4 animate-spin" />
+                    )}
+                    Load More
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Upcoming Payment Card */}
+      {upcomingLoading ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconCalendarDue className="h-5 w-5" />
+              Upcoming Payment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-16 w-full" />
+          </CardContent>
+        </Card>
+      ) : upcomingInvoice ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <IconCalendarDue className="h-5 w-5" />
+              Upcoming Payment
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <p className="text-xs text-muted-foreground">
+                  Next billing date
+                </p>
+                <p className="text-sm font-medium">
+                  {new Date(
+                    upcomingInvoice.nextBillingDate * 1000
+                  ).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Amount</p>
+                <p className="text-sm font-medium">
+                  {formatAmount(
+                    upcomingInvoice.amountDue,
+                    upcomingInvoice.currency
+                  )}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Plan</p>
+                <p className="text-sm font-medium">
+                  {upcomingInvoice.description}
+                </p>
+              </div>
+              {upcomingInvoice.cardBrand && upcomingInvoice.cardLast4 && (
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Payment method
+                  </p>
+                  <p className="text-sm font-medium flex items-center gap-1">
+                    <IconCreditCard className="h-4 w-4" />
+                    {formatCardBrand(upcomingInvoice.cardBrand)} ····{" "}
+                    {upcomingInvoice.cardLast4}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Checkout Dialog — Payment Element for new subscriptions */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
