@@ -24,6 +24,7 @@ import {
   RemoteTrack,
   RemoteTrackPublication,
   RemoteParticipant,
+  LocalTrackPublication,
   createLocalTracks,
   VideoPresets,
 } from 'livekit-client';
@@ -37,6 +38,9 @@ import {
   IconLoader2,
   IconAlertTriangle,
   IconMessage,
+  IconScreenShare,
+  IconScreenShareOff,
+  IconFocusCentered,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { CallChat } from '@/components/liveconnect/call-chat';
@@ -64,7 +68,11 @@ interface CallState {
   error?: string;
   isMicEnabled: boolean;
   isCameraEnabled: boolean;
+  isScreenSharing: boolean;
+  isBlurEnabled: boolean;
+  isBlurSupported: boolean;
   hasRemoteVideo: boolean;
+  hasRemoteScreenShare: boolean;
   callDuration: number;
 }
 
@@ -157,6 +165,9 @@ function CallPageContent() {
   const localVideoTrackRef = useRef<LocalTrack | null>(null);
   const localAudioTrackRef = useRef<LocalTrack | null>(null);
   const remoteVideoTrackRef = useRef<RemoteTrack | null>(null);
+  const remoteScreenShareRef = useRef<RemoteTrack | null>(null);
+  const remoteScreenShareVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteCameraPipRef = useRef<HTMLVideoElement>(null);
   const callStartTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasEndedConversationRef = useRef<boolean>(false);
@@ -166,7 +177,11 @@ function CallPageContent() {
     status: 'loading',
     isMicEnabled: true,
     isCameraEnabled: true,
+    isScreenSharing: false,
+    isBlurEnabled: false,
+    isBlurSupported: false,
     hasRemoteVideo: false,
+    hasRemoteScreenShare: false,
     callDuration: 0,
   });
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -220,11 +235,25 @@ function CallPageContent() {
    */
   const handleTrackSubscribed = useCallback(
     (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
-      console.log('[CallPage] Track subscribed:', track.kind, participant.identity);
+      console.log('[CallPage] Track subscribed:', track.kind, track.source, participant.identity);
 
-      if (track.kind === Track.Kind.Video) {
+      if (track.source === Track.Source.ScreenShare) {
+        // Remote screen share track
+        remoteScreenShareRef.current = track;
+        if (remoteScreenShareVideoRef.current) {
+          attachTrack(track, remoteScreenShareVideoRef.current);
+        }
+        // Move remote camera to secondary PIP
+        if (remoteVideoTrackRef.current && remoteCameraPipRef.current) {
+          attachTrack(remoteVideoTrackRef.current, remoteCameraPipRef.current);
+        }
+        setCallState((prev) => ({ ...prev, hasRemoteScreenShare: true }));
+      } else if (track.kind === Track.Kind.Video) {
         remoteVideoTrackRef.current = track;
-        if (remoteVideoRef.current) {
+        if (callState.hasRemoteScreenShare && remoteCameraPipRef.current) {
+          // Screen share active — attach camera to secondary PIP
+          attachTrack(track, remoteCameraPipRef.current);
+        } else if (remoteVideoRef.current) {
           attachTrack(track, remoteVideoRef.current);
         }
         setCallState((prev) => ({ ...prev, hasRemoteVideo: true }));
@@ -233,7 +262,7 @@ function CallPageContent() {
         track.attach();
       }
     },
-    [attachTrack]
+    [attachTrack, callState.hasRemoteScreenShare]
   );
 
   /**
@@ -241,15 +270,22 @@ function CallPageContent() {
    */
   const handleTrackUnsubscribed = useCallback(
     (track: RemoteTrack) => {
-      console.log('[CallPage] Track unsubscribed:', track.kind);
+      console.log('[CallPage] Track unsubscribed:', track.kind, track.source);
       track.detach();
 
-      if (track.kind === Track.Kind.Video && remoteVideoTrackRef.current === track) {
+      if (track.source === Track.Source.ScreenShare && remoteScreenShareRef.current === track) {
+        remoteScreenShareRef.current = null;
+        // Move remote camera back to main video area
+        if (remoteVideoTrackRef.current && remoteVideoRef.current) {
+          attachTrack(remoteVideoTrackRef.current, remoteVideoRef.current);
+        }
+        setCallState((prev) => ({ ...prev, hasRemoteScreenShare: false }));
+      } else if (track.kind === Track.Kind.Video && remoteVideoTrackRef.current === track) {
         remoteVideoTrackRef.current = null;
         setCallState((prev) => ({ ...prev, hasRemoteVideo: false }));
       }
     },
-    []
+    [attachTrack]
   );
 
   /**
@@ -364,10 +400,19 @@ function CallPageContent() {
       room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.on(RoomEvent.Disconnected, handleDisconnected);
       room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+      room.on(RoomEvent.LocalTrackUnpublished, (publication: LocalTrackPublication) => {
+        if (publication.source === Track.Source.ScreenShare) {
+          setCallState((prev) => ({ ...prev, isScreenSharing: false }));
+        }
+      });
 
       // Create local tracks
       const tracks = await createLocalTracks({
-        audio: true,
+        audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        },
         video: {
           resolution: VideoPresets.h720.resolution,
         },
@@ -472,6 +517,45 @@ function CallPageContent() {
   }, [callState.isCameraEnabled]);
 
   /**
+   * Toggles screen sharing on/off.
+   */
+  const toggleScreenShare = useCallback(async () => {
+    const room = roomRef.current;
+    if (!room) return;
+
+    const newState = !callState.isScreenSharing;
+    try {
+      await room.localParticipant.setScreenShareEnabled(newState);
+      setCallState((prev) => ({ ...prev, isScreenSharing: newState }));
+    } catch (error) {
+      // User cancelled the screen share picker — not a real error
+      console.log('[CallPage] Screen share toggle cancelled or failed:', error);
+    }
+  }, [callState.isScreenSharing]);
+
+  /**
+   * Toggles background blur on the local video track.
+   */
+  const toggleBlur = useCallback(async () => {
+    const videoTrack = localVideoTrackRef.current;
+    if (!videoTrack) return;
+
+    try {
+      if (callState.isBlurEnabled) {
+        await videoTrack.stopProcessor();
+        setCallState((prev) => ({ ...prev, isBlurEnabled: false }));
+      } else {
+        const { BackgroundBlur } = await import('@livekit/track-processors');
+        const blurProcessor = BackgroundBlur(10);
+        await videoTrack.setProcessor(blurProcessor);
+        setCallState((prev) => ({ ...prev, isBlurEnabled: true }));
+      }
+    } catch (error) {
+      console.error('[CallPage] Failed to toggle background blur:', error);
+    }
+  }, [callState.isBlurEnabled]);
+
+  /**
    * Ends the call and closes the window.
    */
   const endCall = useCallback(() => {
@@ -495,6 +579,16 @@ function CallPageContent() {
       cleanup();
     };
   }, [connectToRoom, cleanup]);
+
+  // Check background blur support on mount
+  useEffect(() => {
+    import('@livekit/track-processors').then(({ supportsBackgroundProcessors }) => {
+      const supported = supportsBackgroundProcessors();
+      setCallState((prev) => ({ ...prev, isBlurSupported: supported }));
+    }).catch(() => {
+      // Module failed to load — blur not supported
+    });
+  }, []);
 
   // Attach local video track when video element becomes available
   useEffect(() => {
@@ -561,8 +655,24 @@ function CallPageContent() {
         'relative flex-1 overflow-hidden',
         isChatOpen && 'hidden sm:block'
       )}>
-        {/* Remote video wrapper (square, centered) */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square h-full max-h-full max-w-full overflow-hidden bg-muted">
+        {/* Remote screen share (fills main area when active) */}
+        {callState.hasRemoteScreenShare && (
+          <div className="absolute inset-0 bg-black">
+            <video
+              ref={remoteScreenShareVideoRef}
+              autoPlay
+              playsInline
+              className="size-full object-contain"
+              aria-label="Screen share"
+            />
+          </div>
+        )}
+
+        {/* Remote video wrapper (square, centered) — hidden when screen share active */}
+        <div className={cn(
+          'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 aspect-square h-full max-h-full max-w-full overflow-hidden bg-muted',
+          callState.hasRemoteScreenShare && 'hidden'
+        )}>
           <video
             ref={remoteVideoRef}
             autoPlay
@@ -572,8 +682,19 @@ function CallPageContent() {
           />
         </div>
 
+        {/* Remote camera PIP (bottom-left, shown during screen share) */}
+        {callState.hasRemoteScreenShare && callState.hasRemoteVideo && (
+          <video
+            ref={remoteCameraPipRef}
+            autoPlay
+            playsInline
+            className="absolute bottom-24 left-4 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover"
+            aria-label="Remote participant camera"
+          />
+        )}
+
         {/* Remote video placeholder */}
-        {!callState.hasRemoteVideo && (
+        {!callState.hasRemoteVideo && !callState.hasRemoteScreenShare && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted">
             <IconUser className="size-16 text-muted-foreground opacity-50" />
             <p className="mt-4 font-mono text-sm text-muted-foreground">
@@ -602,8 +723,7 @@ function CallPageContent() {
           playsInline
           muted
           className={cn(
-            'absolute bottom-24 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover transition-opacity',
-            isChatOpen ? 'right-4' : 'right-4',
+            'absolute bottom-24 right-4 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover transition-opacity',
             !callState.isCameraEnabled && 'opacity-0'
           )}
           aria-label="Your video"
@@ -653,6 +773,46 @@ function CallPageContent() {
             )}
           </button>
 
+          {/* Screen share toggle */}
+          <button
+            type="button"
+            onClick={toggleScreenShare}
+            className={cn(
+              'flex size-12 items-center justify-center border transition-colors',
+              callState.isScreenSharing
+                ? 'border-primary bg-primary/20 text-primary'
+                : 'border-border bg-card text-foreground hover:bg-muted'
+            )}
+            aria-label={callState.isScreenSharing ? 'Stop screen sharing' : 'Share screen'}
+            aria-pressed={callState.isScreenSharing}
+            title={callState.isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+          >
+            {callState.isScreenSharing ? (
+              <IconScreenShareOff className="size-6" />
+            ) : (
+              <IconScreenShare className="size-6" />
+            )}
+          </button>
+
+          {/* Background blur toggle */}
+          {callState.isBlurSupported && (
+            <button
+              type="button"
+              onClick={toggleBlur}
+              className={cn(
+                'flex size-12 items-center justify-center border transition-colors',
+                callState.isBlurEnabled
+                  ? 'border-primary bg-primary/20 text-primary'
+                  : 'border-border bg-card text-foreground hover:bg-muted'
+              )}
+              aria-label={callState.isBlurEnabled ? 'Disable background blur' : 'Enable background blur'}
+              aria-pressed={callState.isBlurEnabled}
+              title={callState.isBlurEnabled ? 'Blur Off' : 'Blur On'}
+            >
+              <IconFocusCentered className="size-6" />
+            </button>
+          )}
+
           {/* Chat toggle */}
           <button
             type="button"
@@ -694,6 +854,7 @@ function CallPageContent() {
             projectId={projectId || undefined}
             authToken={authToken}
             authType={authType}
+            room={roomRef.current}
             onClose={() => setIsChatOpen(false)}
           />
         </div>

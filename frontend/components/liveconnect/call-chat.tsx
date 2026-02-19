@@ -1,6 +1,7 @@
 /**
  * In-call chat component for video calls.
  * Shows message history and allows sending messages during a call.
+ * Uses LiveKit data channels for instant delivery and REST API for persistence.
  * @module components/liveconnect/call-chat
  */
 "use client";
@@ -15,10 +16,20 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import type { Room } from "livekit-client";
 import type { LiveConnectMessage } from "@/lib/types";
 
 /** Backend API base URL */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
+
+/** Data channel chat message payload */
+interface DataChannelChatPayload {
+  id: string;
+  content: string;
+  senderType: "USER" | "REP";
+  senderName: string;
+  sentAt: string;
+}
 
 /** Props for the CallChat component */
 interface CallChatProps {
@@ -26,6 +37,7 @@ interface CallChatProps {
   projectId?: string;
   authToken: string;
   authType: "session" | "jwt";
+  room: Room | null;
   onClose: () => void;
 }
 
@@ -48,6 +60,7 @@ export function CallChat({
   projectId,
   authToken,
   authType,
+  room,
   onClose,
 }: CallChatProps) {
   const [messages, setMessages] = useState<LiveConnectMessage[]>([]);
@@ -56,7 +69,7 @@ export function CallChat({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const receivedMessageIds = useRef(new Set<string>());
 
   /**
    * Scrolls to the bottom of the message list.
@@ -96,6 +109,8 @@ export function CallChat({
       }
 
       const data = await response.json();
+      // Seed dedup set with existing message IDs
+      data.forEach((msg: LiveConnectMessage) => receivedMessageIds.current.add(msg.id));
       setMessages(data);
       setError(null);
     } catch (err) {
@@ -107,27 +122,64 @@ export function CallChat({
   }, [conversationId, projectId, authToken, authType]);
 
   /**
-   * Sends a new message.
+   * Sends a new message via dual-path: data channel (instant) + REST API (persistence).
    */
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
+
+    const content = newMessage.trim();
+    const messageId = crypto.randomUUID();
+    const sentAt = new Date().toISOString();
+    const senderType = authType === "jwt" ? "REP" : "USER";
+
+    // Mark as seen for dedup and show optimistically
+    receivedMessageIds.current.add(messageId);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: messageId,
+        conversationId,
+        senderType: senderType as "USER" | "REP" | "SYSTEM",
+        senderId: null,
+        content,
+        createdAt: sentAt,
+      },
+    ]);
+    setNewMessage("");
 
     try {
       setSending(true);
       setError(null);
 
+      // Instant path: send via data channel
+      if (room) {
+        try {
+          const payload: DataChannelChatPayload = {
+            id: messageId,
+            content,
+            senderType,
+            senderName: senderType === "REP" ? "Rep" : "Visitor",
+            sentAt,
+          };
+          await room.localParticipant.sendText(JSON.stringify(payload), {
+            topic: "lc-chat",
+          });
+        } catch (err) {
+          console.error("[CallChat] Failed to send via data channel:", err);
+        }
+      }
+
+      // Persistence path: send via REST API
       let url: string;
       let headers: HeadersInit;
 
       if (authType === "jwt" && projectId) {
-        // Rep auth - use dashboard API
         url = `${API_URL}/api/projects/${projectId}/liveconnect/conversations/${conversationId}/messages`;
         headers = {
           Authorization: `Bearer ${authToken}`,
           "Content-Type": "application/json",
         };
       } else {
-        // Visitor auth - use public API
         url = `${API_URL}/v1/liveconnect/conversations/${conversationId}/messages`;
         headers = {
           "X-Session-Token": authToken,
@@ -138,16 +190,12 @@ export function CallChat({
       const response = await fetch(url, {
         method: "POST",
         headers,
-        body: JSON.stringify({ content: newMessage.trim() }),
+        body: JSON.stringify({ content }),
       });
 
       if (!response.ok) {
         throw new Error("Failed to send message");
       }
-
-      setNewMessage("");
-      // Refresh messages after sending
-      await fetchMessages();
     } catch (err) {
       console.error("[CallChat] Failed to send message:", err);
       setError("Failed to send message");
@@ -166,19 +214,52 @@ export function CallChat({
     }
   };
 
-  // Initial fetch and polling
+  // Initial fetch for message history
   useEffect(() => {
     fetchMessages();
+  }, [fetchMessages]);
 
-    // Poll for new messages every 3 seconds
-    pollIntervalRef.current = setInterval(fetchMessages, 3000);
+  // Register data channel text stream handler for instant messages
+  useEffect(() => {
+    if (!room) return;
+
+    const topic = "lc-chat";
+
+    room.registerTextStreamHandler(topic, async (reader) => {
+      try {
+        const text = await reader.readAll();
+        const payload: DataChannelChatPayload = JSON.parse(text);
+
+        // Deduplicate
+        if (receivedMessageIds.current.has(payload.id)) {
+          return;
+        }
+        receivedMessageIds.current.add(payload.id);
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: payload.id,
+            conversationId,
+            senderType: payload.senderType as "USER" | "REP" | "SYSTEM",
+            senderId: null,
+            content: payload.content,
+            createdAt: payload.sentAt,
+          },
+        ]);
+      } catch (err) {
+        console.error("[CallChat] Failed to parse data channel message:", err);
+      }
+    });
 
     return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+      try {
+        room.unregisterTextStreamHandler(topic);
+      } catch {
+        // Ignore if not registered
       }
     };
-  }, [fetchMessages]);
+  }, [room, conversationId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

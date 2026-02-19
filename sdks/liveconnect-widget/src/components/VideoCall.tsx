@@ -8,14 +8,23 @@ import { useRef, useEffect, useState } from 'preact/hooks';
 import {
   micEnabled,
   cameraEnabled,
+  screenSharing,
+  blurEnabled,
+  blurSupported,
   toggleMicrophone,
   toggleCamera,
+  toggleScreenShare,
+  toggleBlur,
+  checkBlurSupport,
   attachLocalVideo,
   attachRemoteVideo,
+  attachRemoteScreenShare,
   detachLocalVideo,
   detachRemoteVideo,
+  detachRemoteScreenShare,
   localVideoTrack,
   remoteVideoTrack,
+  remoteScreenShareTrack,
 } from '../livekit';
 
 /**
@@ -226,6 +235,92 @@ function MessageIcon(): h.JSX.Element {
 }
 
 /**
+ * Screen share icon (start sharing).
+ * @returns SVG element
+ */
+function ScreenShareIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12v3a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1h9" />
+      <path d="M7 20l10 0" />
+      <path d="M9 16l0 4" />
+      <path d="M15 16l0 4" />
+      <path d="M17 4h4v4" />
+      <path d="M16 9l5 -5" />
+    </svg>
+  );
+}
+
+/**
+ * Screen share off icon (stop sharing).
+ * @returns SVG element
+ */
+function ScreenShareOffIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12v3a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10a1 1 0 0 1 1 -1h9" />
+      <path d="M7 20l10 0" />
+      <path d="M9 16l0 4" />
+      <path d="M15 16l0 4" />
+      <path d="M3 3l18 18" />
+    </svg>
+  );
+}
+
+/**
+ * Background blur icon (focus centered).
+ * @returns SVG element
+ */
+function BlurIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="M4.93 4.93l1.41 1.41" />
+      <path d="M17.66 17.66l1.41 1.41" />
+      <path d="M4.93 19.07l1.41 -1.41" />
+      <path d="M17.66 6.34l1.41 -1.41" />
+    </svg>
+  );
+}
+
+/**
  * User icon (placeholder for remote video).
  * @returns SVG element
  */
@@ -303,6 +398,8 @@ export function VideoCall({
   // Video element refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteScreenShareRef = useRef<HTMLVideoElement>(null);
+  const remoteCameraPipRef = useRef<HTMLVideoElement>(null);
 
   // Call duration tracking
   const [callDuration, setCallDuration] = useState<number>(0);
@@ -310,10 +407,14 @@ export function VideoCall({
 
   // Track if remote video is available
   const [hasRemoteVideo, setHasRemoteVideo] = useState<boolean>(false);
+  const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState<boolean>(false);
 
   // Local state copies of signals (for rendering)
   const [isMicOn, setIsMicOn] = useState<boolean>(micEnabled.value);
   const [isCameraOn, setIsCameraOn] = useState<boolean>(cameraEnabled.value);
+  const [isScreenShareOn, setIsScreenShareOn] = useState<boolean>(screenSharing.value);
+  const [isBlurOn, setIsBlurOn] = useState<boolean>(blurEnabled.value);
+  const [isBlurAvailable, setIsBlurAvailable] = useState<boolean>(blurSupported.value);
 
   /**
    * Effect to cleanup video elements when component unmounts.
@@ -322,6 +423,7 @@ export function VideoCall({
     return () => {
       detachLocalVideo();
       detachRemoteVideo();
+      detachRemoteScreenShare();
     };
   }, []);
 
@@ -361,6 +463,28 @@ export function VideoCall({
   }, []);
 
   /**
+   * Effect to update remote screen share attachment when track becomes available.
+   */
+  useEffect(() => {
+    const unsubscribe = remoteScreenShareTrack.subscribe((track) => {
+      setHasRemoteScreenShare(track !== null);
+      if (track && remoteScreenShareRef.current) {
+        attachRemoteScreenShare(remoteScreenShareRef.current);
+      }
+      // When screen share starts, move camera to PIP; when it ends, reattach to main
+      if (track && remoteVideoTrack.value && remoteCameraPipRef.current) {
+        attachRemoteVideo(remoteCameraPipRef.current);
+      } else if (!track && remoteVideoTrack.value && remoteVideoRef.current) {
+        attachRemoteVideo(remoteVideoRef.current);
+      }
+    });
+
+    setHasRemoteScreenShare(remoteScreenShareTrack.value !== null);
+
+    return unsubscribe;
+  }, []);
+
+  /**
    * Effect to track call duration.
    */
   useEffect(() => {
@@ -373,15 +497,28 @@ export function VideoCall({
   }, []);
 
   /**
-   * Effect to subscribe to mic/camera state changes.
+   * Effect to check background blur support on mount.
+   */
+  useEffect(() => {
+    checkBlurSupport().then((supported) => setIsBlurAvailable(supported));
+  }, []);
+
+  /**
+   * Effect to subscribe to mic/camera/screen share/blur state changes.
    */
   useEffect(() => {
     const unsubMic = micEnabled.subscribe((value) => setIsMicOn(value));
     const unsubCamera = cameraEnabled.subscribe((value) => setIsCameraOn(value));
+    const unsubScreenShare = screenSharing.subscribe((value) => setIsScreenShareOn(value));
+    const unsubBlur = blurEnabled.subscribe((value) => setIsBlurOn(value));
+    const unsubBlurSupported = blurSupported.subscribe((value) => setIsBlurAvailable(value));
 
     return () => {
       unsubMic();
       unsubCamera();
+      unsubScreenShare();
+      unsubBlur();
+      unsubBlurSupported();
     };
   }, []);
 
@@ -397,6 +534,20 @@ export function VideoCall({
    */
   const handleToggleCamera = async (): Promise<void> => {
     await toggleCamera();
+  };
+
+  /**
+   * Handles screen share toggle.
+   */
+  const handleToggleScreenShare = async (): Promise<void> => {
+    await toggleScreenShare();
+  };
+
+  /**
+   * Handles background blur toggle.
+   */
+  const handleToggleBlur = async (): Promise<void> => {
+    await toggleBlur();
   };
 
   /**
@@ -457,8 +608,21 @@ export function VideoCall({
 
   return (
     <div class="lc-video" role="region" aria-label="Video call">
-      {/* Remote video (square container, centered) */}
-      <div class="lc-video__remote-wrapper">
+      {/* Remote screen share (fills main area when active) */}
+      {hasRemoteScreenShare && (
+        <div class="lc-video__screen-share">
+          <video
+            ref={remoteScreenShareRef}
+            class="lc-video__screen-share-video"
+            autoPlay
+            playsInline
+            aria-label="Screen share"
+          />
+        </div>
+      )}
+
+      {/* Remote video (square container, centered) — hidden when screen share active */}
+      <div class={`lc-video__remote-wrapper ${hasRemoteScreenShare ? 'lc-video__remote-wrapper--hidden' : ''}`}>
         <video
           ref={remoteVideoRef}
           class="lc-video__remote"
@@ -468,8 +632,19 @@ export function VideoCall({
         />
       </div>
 
+      {/* Remote camera PIP (bottom-left, shown during screen share) */}
+      {hasRemoteScreenShare && hasRemoteVideo && (
+        <video
+          ref={remoteCameraPipRef}
+          class="lc-video__remote-pip"
+          autoPlay
+          playsInline
+          aria-label={`${participantName}'s camera`}
+        />
+      )}
+
       {/* Remote video placeholder (shown when no remote video) */}
-      {!hasRemoteVideo && (
+      {!hasRemoteVideo && !hasRemoteScreenShare && (
         <div class="lc-video__remote-placeholder" aria-hidden="true">
           <UserIcon />
           <span>Waiting for {participantName}...</span>
@@ -528,6 +703,34 @@ export function VideoCall({
           {isCameraOn ? <VideoIcon /> : <VideoOffIcon />}
         </button>
 
+        {/* Screen share toggle */}
+        <button
+          type="button"
+          class={`lc-video__control ${isScreenShareOn ? 'lc-video__control--active' : ''}`}
+          onClick={() => handleToggleScreenShare()}
+          onKeyDown={(e) => handleKeyDown(e, handleToggleScreenShare)}
+          aria-label={isScreenShareOn ? 'Stop screen sharing' : 'Share screen'}
+          aria-pressed={isScreenShareOn}
+          title={isScreenShareOn ? 'Stop Sharing' : 'Share Screen'}
+        >
+          {isScreenShareOn ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
+        </button>
+
+        {/* Background blur toggle (only shown if supported) */}
+        {isBlurAvailable && (
+          <button
+            type="button"
+            class={`lc-video__control ${isBlurOn ? 'lc-video__control--active' : ''}`}
+            onClick={() => handleToggleBlur()}
+            onKeyDown={(e) => handleKeyDown(e, handleToggleBlur)}
+            aria-label={isBlurOn ? 'Disable background blur' : 'Enable background blur'}
+            aria-pressed={isBlurOn}
+            title={isBlurOn ? 'Blur Off' : 'Blur On'}
+          >
+            <BlurIcon />
+          </button>
+        )}
+
         {/* End call */}
         <button
           type="button"
@@ -572,7 +775,7 @@ export function VideoCall({
 
       {/* Screen reader announcement for call status */}
       <span class="lc-sr-only" role="status" aria-live="polite">
-        {!hasRemoteVideo && `Waiting for ${participantName} to join the call`}
+        {!hasRemoteVideo && !hasRemoteScreenShare && `Waiting for ${participantName} to join the call`}
       </span>
     </div>
   );

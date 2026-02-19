@@ -37,6 +37,8 @@ export interface LiveKitState {
   isMicEnabled: boolean;
   /** Whether the local camera is enabled */
   isCameraEnabled: boolean;
+  /** Whether local screen sharing is active */
+  isScreenSharing: boolean;
   /** Reference to the local video track */
   localVideoTrack: LocalTrack | null;
   /** Reference to the local audio track */
@@ -45,6 +47,8 @@ export interface LiveKitState {
   remoteVideoTrack: RemoteTrack | null;
   /** Reference to the primary remote audio track */
   remoteAudioTrack: RemoteTrack | null;
+  /** Reference to the remote screen share track */
+  remoteScreenShareTrack: RemoteTrack | null;
   /** Error message if connection failed */
   error: string | null;
 }
@@ -82,6 +86,18 @@ const remoteVideoTrackSignal = signal<RemoteTrack | null>(null);
 /** Remote audio track */
 const remoteAudioTrackSignal = signal<RemoteTrack | null>(null);
 
+/** Whether local screen sharing is active */
+const isScreenSharingSignal = signal<boolean>(false);
+
+/** Whether background blur is enabled */
+const isBlurEnabledSignal = signal<boolean>(false);
+
+/** Whether background blur is supported by the browser */
+const isBlurSupportedSignal = signal<boolean>(false);
+
+/** Remote screen share track */
+const remoteScreenShareTrackSignal = signal<RemoteTrack | null>(null);
+
 /** Error state */
 const errorSignal = signal<string | null>(null);
 
@@ -108,10 +124,12 @@ const fullState = computed<LiveKitState>(() => ({
   connectionState: connectionStateSignal.value,
   isMicEnabled: isMicEnabledSignal.value,
   isCameraEnabled: isCameraEnabledSignal.value,
+  isScreenSharing: isScreenSharingSignal.value,
   localVideoTrack: localVideoTrackSignal.value,
   localAudioTrack: localAudioTrackSignal.value,
   remoteVideoTrack: remoteVideoTrackSignal.value,
   remoteAudioTrack: remoteAudioTrackSignal.value,
+  remoteScreenShareTrack: remoteScreenShareTrackSignal.value,
   error: errorSignal.value,
 }));
 
@@ -146,11 +164,14 @@ function handleTrackSubscribed(
 ): void {
   console.log('[LiveKit] Track subscribed:', {
     kind: track.kind,
+    source: track.source,
     participantId: participant.identity,
     trackSid: publication.trackSid,
   });
 
-  if (track.kind === Track.Kind.Video) {
+  if (track.source === Track.Source.ScreenShare) {
+    remoteScreenShareTrackSignal.value = track;
+  } else if (track.kind === Track.Kind.Video) {
     remoteVideoTrackSignal.value = track;
   } else if (track.kind === Track.Kind.Audio) {
     remoteAudioTrackSignal.value = track;
@@ -174,6 +195,7 @@ function handleTrackUnsubscribed(
 ): void {
   console.log('[LiveKit] Track unsubscribed:', {
     kind: track.kind,
+    source: track.source,
     participantId: participant.identity,
     trackSid: publication.trackSid,
   });
@@ -181,7 +203,9 @@ function handleTrackUnsubscribed(
   // Detach the track from any elements
   track.detach();
 
-  if (track.kind === Track.Kind.Video && remoteVideoTrackSignal.value === track) {
+  if (track.source === Track.Source.ScreenShare && remoteScreenShareTrackSignal.value === track) {
+    remoteScreenShareTrackSignal.value = null;
+  } else if (track.kind === Track.Kind.Video && remoteVideoTrackSignal.value === track) {
     remoteVideoTrackSignal.value = null;
   } else if (track.kind === Track.Kind.Audio && remoteAudioTrackSignal.value === track) {
     remoteAudioTrackSignal.value = null;
@@ -263,16 +287,32 @@ function cleanupTracks(): void {
 
   remoteVideoTrackSignal.value = null;
   remoteAudioTrackSignal.value = null;
+  remoteScreenShareTrackSignal.value = null;
+  isScreenSharingSignal.value = false;
+  isBlurEnabledSignal.value = false;
 }
 
 /**
  * Sets up event listeners on a room.
  * @param room - The room to attach listeners to
  */
+/**
+ * Handles local track unpublished events (e.g., browser "Stop sharing" button).
+ * @param publication - The unpublished track publication
+ */
+function handleLocalTrackUnpublished(publication: TrackPublication): void {
+  if (publication.source === Track.Source.ScreenShare) {
+    console.log('[LiveKit] Local screen share ended');
+    isScreenSharingSignal.value = false;
+    notifyStateChange();
+  }
+}
+
 function setupRoomListeners(room: Room): void {
   room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
   room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
   room.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
+  room.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
   room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged);
   room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
   room.on(RoomEvent.Disconnected, handleDisconnected);
@@ -286,6 +326,7 @@ function removeRoomListeners(room: Room): void {
   room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
   room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
   room.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished);
+  room.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished);
   room.off(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged);
   room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
   room.off(RoomEvent.Disconnected, handleDisconnected);
@@ -328,7 +369,11 @@ export async function connectToRoom(url: string, token: string): Promise<Room> {
 
     // Create local tracks
     const tracks = await createLocalTracks({
-      audio: true,
+      audio: {
+        noiseSuppression: true,
+        echoCancellation: true,
+        autoGainControl: true,
+      },
       video: {
         resolution: VideoPresets.h720.resolution,
       },
@@ -355,6 +400,21 @@ export async function connectToRoom(url: string, token: string): Promise<Room> {
     isMicEnabledSignal.value = true;
     isCameraEnabledSignal.value = true;
     connectionStateSignal.value = ConnectionState.Connected;
+
+    // Register text stream handler for chat if a listener is registered
+    if (chatMessageListener) {
+      room.registerTextStreamHandler(LC_CHAT_TOPIC, async (reader) => {
+        try {
+          const text = await reader.readAll();
+          const message: DataChannelChatMessage = JSON.parse(text);
+          if (chatMessageListener) {
+            chatMessageListener(message);
+          }
+        } catch (err) {
+          console.error('[LiveKit] Failed to parse chat message:', err);
+        }
+      });
+    }
 
     console.log('[LiveKit] Connected to room:', room.name);
     notifyStateChange();
@@ -502,6 +562,113 @@ export async function setCameraEnabled(enabled: boolean): Promise<boolean> {
 }
 
 /**
+ * Toggles screen sharing on/off.
+ * @returns The new screen sharing state
+ */
+export async function toggleScreenShare(): Promise<boolean> {
+  const room = roomSignal.value;
+
+  if (!room) {
+    console.warn('[LiveKit] Cannot toggle screen share: not connected');
+    return isScreenSharingSignal.value;
+  }
+
+  const newState = !isScreenSharingSignal.value;
+
+  try {
+    await room.localParticipant.setScreenShareEnabled(newState);
+    isScreenSharingSignal.value = newState;
+    console.log('[LiveKit] Screen share', newState ? 'started' : 'stopped');
+    notifyStateChange();
+  } catch (err) {
+    // User cancelled the screen share picker — not a real error
+    console.log('[LiveKit] Screen share toggle cancelled or failed:', err);
+  }
+
+  return isScreenSharingSignal.value;
+}
+
+/**
+ * Attaches the remote screen share track to an HTMLVideoElement.
+ * @param element - The video element to attach to
+ */
+export function attachRemoteScreenShare(element: HTMLVideoElement): void {
+  const track = remoteScreenShareTrackSignal.value;
+
+  if (!track) {
+    console.warn('[LiveKit] No remote screen share track to attach');
+    return;
+  }
+
+  track.detach();
+  track.attach(element);
+  element.playsInline = true;
+
+  console.log('[LiveKit] Remote screen share attached');
+}
+
+/**
+ * Detaches the remote screen share track from its current element.
+ */
+export function detachRemoteScreenShare(): void {
+  const track = remoteScreenShareTrackSignal.value;
+
+  if (track) {
+    track.detach();
+    console.log('[LiveKit] Remote screen share detached');
+  }
+}
+
+/**
+ * Checks if background blur is supported by the browser.
+ * Lazy-loads the track-processors module to check support.
+ */
+export async function checkBlurSupport(): Promise<boolean> {
+  try {
+    const { supportsBackgroundProcessors } = await import('@livekit/track-processors');
+    const supported = supportsBackgroundProcessors();
+    isBlurSupportedSignal.value = supported;
+    return supported;
+  } catch {
+    isBlurSupportedSignal.value = false;
+    return false;
+  }
+}
+
+/**
+ * Toggles background blur on the local video track.
+ * Lazy-loads @livekit/track-processors to minimize bundle size.
+ * @returns The new blur enabled state
+ */
+export async function toggleBlur(): Promise<boolean> {
+  const videoTrack = localVideoTrackSignal.value;
+
+  if (!videoTrack) {
+    console.warn('[LiveKit] Cannot toggle blur: no local video track');
+    return isBlurEnabledSignal.value;
+  }
+
+  try {
+    if (isBlurEnabledSignal.value) {
+      await videoTrack.stopProcessor();
+      isBlurEnabledSignal.value = false;
+      console.log('[LiveKit] Background blur disabled');
+    } else {
+      const { BackgroundBlur } = await import('@livekit/track-processors');
+      const blurProcessor = BackgroundBlur(10);
+      await videoTrack.setProcessor(blurProcessor);
+      isBlurEnabledSignal.value = true;
+      console.log('[LiveKit] Background blur enabled');
+    }
+    notifyStateChange();
+  } catch (err) {
+    console.error('[LiveKit] Failed to toggle background blur:', err);
+  }
+
+  return isBlurEnabledSignal.value;
+}
+
+/**
  * Attaches the local video track to an HTMLVideoElement.
  * @param element - The video element to attach to
  */
@@ -627,11 +794,94 @@ export function hasRemoteAudio(): boolean {
 // Exported Signals (for reactive UI binding)
 // ============================================================================
 
+// ============================================================================
+// Data Channel Chat API
+// ============================================================================
+
+/** Topic identifier for LiveConnect chat messages */
+const LC_CHAT_TOPIC = 'lc-chat';
+
+/**
+ * Chat message payload sent/received via data channel.
+ */
+export interface DataChannelChatMessage {
+  id: string;
+  content: string;
+  senderType: 'USER' | 'REP';
+  senderName: string;
+  sentAt: string;
+}
+
+/** Callback for incoming data channel chat messages */
+type ChatMessageCallback = (message: DataChannelChatMessage) => void;
+
+/** Registered chat message listener */
+let chatMessageListener: ChatMessageCallback | null = null;
+
+/**
+ * Registers a handler for incoming data channel chat messages.
+ * Must be called after connecting to a room.
+ * @param callback - Function called when a chat message arrives via data channel
+ */
+export function onChatMessage(callback: ChatMessageCallback): void {
+  chatMessageListener = callback;
+
+  const room = roomSignal.value;
+  if (room) {
+    room.registerTextStreamHandler(LC_CHAT_TOPIC, async (reader, participantInfo) => {
+      try {
+        const text = await reader.readAll();
+        const message: DataChannelChatMessage = JSON.parse(text);
+        if (chatMessageListener) {
+          chatMessageListener(message);
+        }
+      } catch (err) {
+        console.error('[LiveKit] Failed to parse chat message:', err);
+      }
+    });
+  }
+}
+
+/**
+ * Unregisters the data channel chat message handler.
+ */
+export function offChatMessage(): void {
+  chatMessageListener = null;
+  const room = roomSignal.value;
+  if (room) {
+    try {
+      room.unregisterTextStreamHandler(LC_CHAT_TOPIC);
+    } catch {
+      // Ignore if not registered
+    }
+  }
+}
+
+/**
+ * Sends a chat message via the LiveKit data channel.
+ * @param message - The chat message payload to send
+ */
+export async function sendChatMessage(message: DataChannelChatMessage): Promise<void> {
+  const room = roomSignal.value;
+  if (!room) {
+    console.warn('[LiveKit] Cannot send chat message: not connected');
+    return;
+  }
+
+  await room.localParticipant.sendText(JSON.stringify(message), {
+    topic: LC_CHAT_TOPIC,
+  });
+}
+
 export {
   isMicEnabledSignal as micEnabled,
   isCameraEnabledSignal as cameraEnabled,
+  isScreenSharingSignal as screenSharing,
+  isBlurEnabledSignal as blurEnabled,
+  isBlurSupportedSignal as blurSupported,
   connectionStateSignal as connectionState,
   localVideoTrackSignal as localVideoTrack,
   remoteVideoTrackSignal as remoteVideoTrack,
+  remoteScreenShareTrackSignal as remoteScreenShareTrack,
   errorSignal as liveKitError,
 };

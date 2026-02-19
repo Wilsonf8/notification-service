@@ -621,6 +621,42 @@
   display: none;
 }
 
+/* Screen share (fills main area) */
+.lc-video__screen-share {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  z-index: 1;
+}
+
+.lc-video__screen-share-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Hide remote video wrapper when screen share active */
+.lc-video__remote-wrapper--hidden {
+  display: none;
+}
+
+/* Remote camera PIP (shown during screen share, bottom-left) */
+.lc-video__remote-pip {
+  position: absolute;
+  bottom: 80px;
+  left: var(--lc-spacing-lg);
+  width: 120px;
+  height: 90px;
+  background-color: var(--lc-bg-tertiary);
+  border: 2px solid var(--lc-border);
+  border-radius: var(--lc-radius);
+  object-fit: cover;
+  z-index: 10;
+}
+
 /* Video overlay (for status messages) */
 .lc-video__overlay {
   position: absolute;
