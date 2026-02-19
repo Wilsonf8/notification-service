@@ -39,6 +39,6 @@ public class LiveConnectVisitorVisit {
     private OffsetDateTime endedAt;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 }
