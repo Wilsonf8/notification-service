@@ -116,26 +116,63 @@ struct VideoCallView: View {
     private var callView: some View {
         GeometryReader { geometry in
             ZStack {
-                // Remote video (full screen)
-                if let visitorParticipant = viewModel.visitorParticipant {
-                    ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
+                if viewModel.hasRemoteScreenShare {
+                    // Screen share layout: screen share fills main area
+                    SwiftUIVideoView(viewModel.remoteScreenShareTrack!, layoutMode: .fit)
                         .ignoresSafeArea()
-                } else {
-                    // Waiting for visitor
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(.secondary)
 
-                        Text("Waiting for visitor...")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                    // Screen share indicator
+                    VStack {
+                        HStack {
+                            Label("Screen Share", systemImage: "rectangle.inset.filled.on.rectangle")
+                                .font(.caption)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(Color.green.opacity(0.8))
+                            Spacer()
+                        }
+                        .padding(.leading, 16)
+                        .padding(.top, geometry.safeAreaInsets.top + 8)
+                        Spacer()
+                    }
+
+                    // Remote camera PIP (bottom-left)
+                    if let visitorParticipant = viewModel.visitorParticipant {
+                        ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
+                            .frame(width: 120, height: 160)
+                            .clipShape(RoundedRectangle(cornerRadius: 0))
+                            .overlay(
+                                Rectangle()
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                            .shadow(radius: 8)
+                            .position(
+                                x: 80,
+                                y: geometry.size.height - 160
+                            )
+                    }
+                } else {
+                    // Normal layout: remote camera full screen
+                    if let visitorParticipant = viewModel.visitorParticipant {
+                        ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
+                            .ignoresSafeArea()
+                    } else {
+                        VStack(spacing: 16) {
+                            Image(systemName: "person.fill")
+                                .font(.system(size: 60))
+                                .foregroundStyle(.secondary)
+
+                            Text("Waiting for visitor...")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
 
-                // Local video (picture-in-picture)
+                // Local video (picture-in-picture, top-right)
                 if let localParticipant = viewModel.localParticipant {
-                    LocalVideoView(participant: localParticipant)
+                    LocalVideoView(participant: localParticipant, trackUpdateCount: viewModel.trackUpdateCount)
                         .frame(width: 120, height: 160)
                         .clipShape(RoundedRectangle(cornerRadius: 0))
                         .overlay(
@@ -202,6 +239,18 @@ struct VideoCallView: View {
                 }
             }
 
+            // Blur button (only shown when supported)
+            if viewModel.isBlurSupported {
+                ControlButton(
+                    icon: viewModel.isBlurEnabled ? "person.fill.viewfinder" : "person.viewfinder",
+                    isActive: viewModel.isBlurEnabled
+                ) {
+                    Task {
+                        await viewModel.toggleBlur()
+                    }
+                }
+            }
+
             // Chat button
             ControlButton(
                 icon: "bubble.left.fill",
@@ -261,15 +310,15 @@ private struct ParticipantVideoView: View {
     private var videoTrack: VideoTrack? {
         participant.trackPublications.values
             .compactMap { $0 as? RemoteTrackPublication }
-            .first { $0.kind == .video }?
+            .first { $0.kind == .video && $0.source == .camera }?
             .track as? VideoTrack
     }
 
     var body: some View {
-        if let track = videoTrack {
+        if let track = videoTrack, !track.isMuted {
             SwiftUIVideoView(track, layoutMode: .fill)
         } else {
-            // No video track, show placeholder
+            // No video track or track is muted, show placeholder
             ZStack {
                 Color.black
                 VStack(spacing: 12) {
@@ -289,6 +338,7 @@ private struct ParticipantVideoView: View {
 
 private struct LocalVideoView: View {
     let participant: LocalParticipant
+    let trackUpdateCount: Int
 
     private var videoTrack: VideoTrack? {
         participant.trackPublications.values
@@ -298,7 +348,7 @@ private struct LocalVideoView: View {
     }
 
     var body: some View {
-        if let track = videoTrack {
+        if let track = videoTrack, !track.isMuted {
             SwiftUIVideoView(track, layoutMode: .fill)
         } else {
             ZStack {

@@ -13,6 +13,15 @@ private struct MessageListResponse: Codable {
     let messages: [Message]
 }
 
+/// Chat message payload sent/received via LiveKit data channel.
+private struct DataChannelChatMessage: Codable {
+    let id: String
+    let content: String
+    let senderType: String
+    let senderName: String
+    let sentAt: String
+}
+
 /// View model for the video call screen.
 @MainActor
 @Observable
@@ -42,6 +51,18 @@ final class VideoCallViewModel: RoomDelegate {
     /// Whether the camera is enabled.
     private(set) var isCameraEnabled = true
 
+    /// The remote screen share video track (if visitor is sharing).
+    private(set) var remoteScreenShareTrack: VideoTrack?
+
+    /// Whether a remote participant is sharing their screen.
+    var hasRemoteScreenShare: Bool { remoteScreenShareTrack != nil }
+
+    /// Whether background blur is enabled on the local camera.
+    private(set) var isBlurEnabled = false
+
+    /// Whether the device supports background blur.
+    private(set) var isBlurSupported = false
+
     /// Chat messages.
     private(set) var messages: [Message] = []
 
@@ -56,6 +77,12 @@ final class VideoCallViewModel: RoomDelegate {
 
     /// Project ID for API calls.
     private let projectId: UUID
+
+    /// Topic for chat data channel messages (must match web: "lc-chat").
+    private let chatTopic = "lc-chat"
+
+    /// Set of message IDs already received (for deduplication between data channel and WebSocket).
+    private var receivedMessageIds: Set<UUID> = []
 
     init(conversationId: UUID, projectId: UUID) {
         self.conversationId = conversationId
@@ -79,10 +106,24 @@ final class VideoCallViewModel: RoomDelegate {
     nonisolated func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
         Task { @MainActor in
             trackUpdateCount += 1
+            if publication.source == .screenShareVideo,
+               let track = publication.track as? VideoTrack {
+                remoteScreenShareTrack = track
+            }
         }
     }
 
     nonisolated func room(_ room: Room, participant: RemoteParticipant, didUnsubscribeTrack publication: RemoteTrackPublication) {
+        Task { @MainActor in
+            trackUpdateCount += 1
+            if publication.source == .screenShareVideo {
+                remoteScreenShareTrack = nil
+            }
+        }
+    }
+
+    nonisolated func room(_ room: Room, participant: Participant,
+                          trackPublication: TrackPublication, didUpdateIsMuted isMuted: Bool) {
         Task { @MainActor in
             trackUpdateCount += 1
         }
@@ -114,9 +155,47 @@ final class VideoCallViewModel: RoomDelegate {
             // Sync any participants already in the room
             updateRemoteParticipants()
 
-            // Enable camera and microphone
+            // Enable camera and microphone with enhanced audio processing
             try await room.localParticipant.setCamera(enabled: true)
-            try await room.localParticipant.setMicrophone(enabled: true)
+            let audioCaptureOptions = AudioCaptureOptions(
+                echoCancellation: true,
+                autoGainControl: true,
+                noiseSuppression: true
+            )
+            try await room.localParticipant.setMicrophone(
+                enabled: true,
+                captureOptions: audioCaptureOptions
+            )
+
+            // Background blur is supported on all devices with the built-in processor
+            isBlurSupported = true
+
+            // Register data channel chat handler for instant messaging
+            let viewModel = self
+            try await room.registerTextStreamHandler(for: chatTopic) { reader, participantIdentity in
+                do {
+                    let text = try await reader.readAll()
+                    guard let data = text.data(using: .utf8) else { return }
+                    let payload = try JSONDecoder().decode(DataChannelChatMessage.self, from: data)
+                    guard let messageId = UUID(uuidString: payload.id) else { return }
+
+                    await MainActor.run {
+                        guard !viewModel.receivedMessageIds.contains(messageId) else { return }
+                        viewModel.receivedMessageIds.insert(messageId)
+
+                        let message = Message(
+                            id: messageId,
+                            senderType: payload.senderType == "REP" ? .rep : .user,
+                            senderName: payload.senderName,
+                            content: payload.content,
+                            createdAt: ISO8601DateFormatter().date(from: payload.sentAt)
+                        )
+                        viewModel.messages.append(message)
+                    }
+                } catch {
+                    print("[VideoCall] Failed to parse data channel chat: \(error)")
+                }
+            }
 
             isConnecting = false
         } catch {
@@ -131,6 +210,8 @@ final class VideoCallViewModel: RoomDelegate {
         await room?.disconnect()
         room = nil
         remoteParticipants = []
+        remoteScreenShareTrack = nil
+        isBlurEnabled = false
     }
 
     /// Toggles the microphone mute state.
@@ -159,6 +240,26 @@ final class VideoCallViewModel: RoomDelegate {
         }
     }
 
+    /// Toggles background blur on the local camera track.
+    func toggleBlur() async {
+        guard let localParticipant,
+              let cameraPublication = localParticipant.trackPublications.values
+                  .first(where: { $0.source == .camera }) as? LocalTrackPublication,
+              let videoTrack = cameraPublication.track as? LocalVideoTrack else { return }
+
+        do {
+            if isBlurEnabled {
+                videoTrack.processor = nil
+                isBlurEnabled = false
+            } else {
+                videoTrack.processor = BackgroundBlurVideoProcessor()
+                isBlurEnabled = true
+            }
+        } catch {
+            print("[VideoCall] Failed to toggle blur: \(error)")
+        }
+    }
+
     /// Ends the call.
     func endCall() async {
         // End the conversation via API
@@ -174,17 +275,50 @@ final class VideoCallViewModel: RoomDelegate {
         await disconnect()
     }
 
-    /// Sends a chat message.
+    /// Sends a chat message via dual-path: data channel (instant) + REST API (persistence).
     /// - Parameter content: The message content.
     func sendMessage(_ content: String) async {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
+        let messageId = UUID()
+
+        // Track this message ID to prevent dedup with WebSocket echo
+        receivedMessageIds.insert(messageId)
+
+        // Optimistic UI update
+        let optimistic = Message(
+            id: messageId,
+            senderType: .rep,
+            senderName: "You",
+            content: content,
+            createdAt: Date()
+        )
+        messages.append(optimistic)
+
+        // Path 1: Instant — data channel
+        if let room {
+            do {
+                let payload = DataChannelChatMessage(
+                    id: messageId.uuidString,
+                    content: content,
+                    senderType: "REP",
+                    senderName: "Rep",
+                    sentAt: ISO8601DateFormatter().string(from: Date())
+                )
+                let jsonData = try JSONEncoder().encode(payload)
+                let jsonString = String(data: jsonData, encoding: .utf8) ?? ""
+                try await room.localParticipant.sendText(jsonString, for: chatTopic)
+            } catch {
+                print("[VideoCall] Data channel send failed: \(error)")
+            }
+        }
+
+        // Path 2: Persistence — REST API
         do {
-            let message: Message = try await APIClient.shared.post(
+            let _: Message = try await APIClient.shared.post(
                 Endpoints.sendMessage(projectId: projectId, conversationId: conversationId),
                 body: ["content": content]
             )
-            messages.append(message)
         } catch {
             self.error = error
         }
@@ -197,13 +331,18 @@ final class VideoCallViewModel: RoomDelegate {
                 Endpoints.messages(projectId: projectId, conversationId: conversationId)
             )
             messages = response.messages
+            // Seed dedup set with existing message IDs
+            receivedMessageIds = Set(response.messages.map(\.id))
         } catch {
             self.error = error
         }
     }
 
-    /// Adds a received message (from WebSocket).
+    /// Adds a received message (from WebSocket). Deduplicates against data channel messages.
     func addReceivedMessage(_ message: Message) {
+        guard !receivedMessageIds.contains(message.id) else { return }
+        receivedMessageIds.insert(message.id)
+
         if !messages.contains(where: { $0.id == message.id }) {
             messages.append(message)
         }
