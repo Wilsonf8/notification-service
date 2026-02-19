@@ -6,6 +6,8 @@ import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
+import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
+import com.notificationservice.service.LiveConnectVisitService;
 import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
@@ -43,6 +45,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final VisitorConnectionGracePeriodManager gracePeriodManager;
     private final PushNotificationService pushNotificationService;
+    private final LiveConnectVisitService visitService;
+    private final LiveConnectVisitorVisitRepository visitRepository;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -77,6 +81,11 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitor.setLastSeenAt(OffsetDateTime.now());
             visitorRepository.save(visitor);
 
+            // Record visit on first connection
+            if (isFirstConnection) {
+                visitService.recordConnection(visitor);
+            }
+
             // Broadcast visitor_joined only on first connection
             // Skip if visitor has a pending request (waiting) or active conversation (in call)
             if (isFirstConnection) {
@@ -85,12 +94,24 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
 
                 if (!hasPendingRequest && !hasActiveConversation) {
                     String currentPage = extractCurrentPage(visitor);
+
+                    // Compute visit data for the event
+                    long totalVisitCount = visitRepository.countByVisitorId(visitorId);
+                    OffsetDateTime previousVisitEndedAt = visitRepository
+                            .findLatestCompletedByVisitorId(visitorId)
+                            .map(v -> v.getEndedAt())
+                            .orElse(null);
+                    boolean isFirstVisit = totalVisitCount <= 1;
+
                     VisitorJoinedEvent event = new VisitorJoinedEvent(
                             visitor.getId(),
                             visitor.getName(),
                             visitor.getEmail(),
                             currentPage,
-                            OffsetDateTime.now()
+                            OffsetDateTime.now(),
+                            isFirstVisit,
+                            previousVisitEndedAt,
+                            (int) totalVisitCount
                     );
                     broadcaster.broadcastToProject(projectId, event);
 
@@ -157,6 +178,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitor.setActiveConnections(actualSessionCount);
 
             if (isLastConnection) {
+                visitService.recordDisconnection(visitorId);
                 visitor.setDisconnectedAt(OffsetDateTime.now());
 
                 // Schedule disconnection broadcast with 3-second grace period

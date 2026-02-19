@@ -53,6 +53,9 @@ public class LiveConnectVisitor {
     @Column(name = "ping_cooldown_until")
     private OffsetDateTime pingCooldownUntil;
 
+    @Column(name = "first_seen_at")
+    private OffsetDateTime firstSeenAt;
+
     @Column(name = "last_seen_at")
     private OffsetDateTime lastSeenAt;
 

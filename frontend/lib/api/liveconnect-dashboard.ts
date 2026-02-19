@@ -17,6 +17,7 @@ import type {
   ConversationFilters,
   AddRepRequest,
   SendMessageRequest,
+  VisitorDetailResponse,
 } from "@/lib/types";
 
 // ============================================================================
@@ -129,6 +130,25 @@ export async function pingVisitor(
   await apiFetch(
     `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/ping`,
     { method: "POST" }
+  );
+}
+
+/**
+ * Fetches visit statistics and history for a visitor.
+ * @param projectId - The project ID
+ * @param visitorId - The visitor ID
+ * @param page - Page number (0-indexed)
+ * @param size - Page size
+ * @returns Visit stats and paginated history
+ */
+export async function getVisitorVisits(
+  projectId: string,
+  visitorId: string,
+  page: number = 0,
+  size: number = 20
+): Promise<VisitorDetailResponse> {
+  return apiFetch<VisitorDetailResponse>(
+    `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/visits?page=${page}&size=${size}`
   );
 }
 

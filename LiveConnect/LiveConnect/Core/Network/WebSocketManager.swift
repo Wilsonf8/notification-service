@@ -33,6 +33,9 @@ private struct VisitorJoinedDTO: Codable {
     let email: String?
     let currentPage: String?
     let joinedAt: Date
+    let isFirstVisit: Bool?
+    let previousVisitEndedAt: Date?
+    let totalVisitCount: Int?
 }
 
 /// DTO for visitor_left event from backend.
@@ -49,6 +52,9 @@ private struct VisitorUpdatedDTO: Codable {
     let currentPage: String?
     let currentPageTitle: String?
     let isConnected: Bool?
+    let isFirstVisit: Bool?
+    let previousVisitEndedAt: Date?
+    let totalVisitCount: Int?
 }
 
 /// DTO for request_received event from backend.
@@ -279,7 +285,10 @@ final class WebSocketManager: WebSocketDelegate {
                     currentPage: dto.currentPage,
                     isConnected: true,
                     isPingable: true,
-                    hasActiveRequest: false
+                    hasActiveRequest: false,
+                    isFirstVisit: dto.isFirstVisit,
+                    previousVisitEndedAt: dto.previousVisitEndedAt,
+                    totalVisitCount: dto.totalVisitCount
                 )
                 onVisitorJoined?(visitor)
 
@@ -298,7 +307,10 @@ final class WebSocketManager: WebSocketDelegate {
                     currentPage: dto.currentPage,
                     isConnected: isConnected,
                     isPingable: isConnected,  // Pingable only when connected
-                    hasActiveRequest: false
+                    hasActiveRequest: false,
+                    isFirstVisit: dto.isFirstVisit,
+                    previousVisitEndedAt: dto.previousVisitEndedAt,
+                    totalVisitCount: dto.totalVisitCount
                 )
                 onVisitorUpdated?(visitor)
 
@@ -313,7 +325,10 @@ final class WebSocketManager: WebSocketDelegate {
                     currentPage: nil,
                     isConnected: true,
                     isPingable: false,
-                    hasActiveRequest: true
+                    hasActiveRequest: true,
+                    isFirstVisit: nil,
+                    previousVisitEndedAt: nil,
+                    totalVisitCount: nil
                 )
                 let request = Request(
                     id: dto.requestId,

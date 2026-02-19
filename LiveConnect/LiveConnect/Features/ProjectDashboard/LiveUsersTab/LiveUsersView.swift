@@ -80,6 +80,7 @@ struct LiveUsersView: View {
             .sheet(item: $selectedVisitor) { visitor in
                 VisitorDetailPanel(
                     visitor: visitor,
+                    projectId: viewModel.project?.id ?? UUID(),
                     onPing: {
                         Task {
                             await viewModel.pingVisitor(visitor.id)

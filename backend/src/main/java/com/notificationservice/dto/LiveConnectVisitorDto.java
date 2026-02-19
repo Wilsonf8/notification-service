@@ -6,15 +6,18 @@ import java.util.UUID;
 /**
  * Response DTO for a LiveConnect visitor.
  *
- * @param id the visitor record ID
- * @param visitorId the client-side visitor identifier
- * @param name the visitor's name (if provided)
- * @param email the visitor's email (if provided)
- * @param currentPage the page the visitor is currently on (from metadata)
- * @param lastSeenAt when the visitor was last active
- * @param hasActiveRequest true if the visitor has a pending request in the queue
- * @param isConnected true if the visitor has an active WebSocket connection
- * @param isPingable true if the visitor can be pinged (connected and not in cooldown)
+ * @param id                   the visitor record ID
+ * @param visitorId            the client-side visitor identifier
+ * @param name                 the visitor's name (if provided)
+ * @param email                the visitor's email (if provided)
+ * @param currentPage          the page the visitor is currently on (from metadata)
+ * @param lastSeenAt           when the visitor was last active
+ * @param hasActiveRequest     true if the visitor has a pending request in the queue
+ * @param isConnected          true if the visitor has an active WebSocket connection
+ * @param isPingable           true if the visitor can be pinged (connected and not in cooldown)
+ * @param isFirstVisit         true when the visitor's total visit count is 1 or less
+ * @param previousVisitEndedAt when the last completed visit ended, for "Last seen X ago" display
+ * @param totalVisitCount      total number of visits for this visitor
  */
 public record LiveConnectVisitorDto(
         UUID id,
@@ -25,5 +28,8 @@ public record LiveConnectVisitorDto(
         OffsetDateTime lastSeenAt,
         boolean hasActiveRequest,
         boolean isConnected,
-        boolean isPingable
+        boolean isPingable,
+        boolean isFirstVisit,
+        OffsetDateTime previousVisitEndedAt,
+        int totalVisitCount
 ) {}

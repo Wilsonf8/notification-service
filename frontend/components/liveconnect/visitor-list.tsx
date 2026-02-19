@@ -68,6 +68,8 @@ interface VisitorItemProps {
 
 /**
  * Formats relative time since last seen.
+ * @param lastSeenAt - ISO timestamp of last seen time
+ * @returns Human-readable relative time string
  */
 function formatLastSeen(lastSeenAt: string): string {
   const lastSeen = new Date(lastSeenAt);
@@ -83,6 +85,31 @@ function formatLastSeen(lastSeenAt: string): string {
 
   const diffHr = Math.floor(diffMin / 60);
   return `${diffHr}h ago`;
+}
+
+/**
+ * Formats relative time since previous visit ended.
+ * @param previousVisitEndedAt - ISO timestamp of when the previous visit ended
+ * @returns Human-readable "Last seen ..." string
+ */
+function formatPreviousVisit(previousVisitEndedAt: string): string {
+  const prev = new Date(previousVisitEndedAt);
+  const now = new Date();
+  const diffMs = now.getTime() - prev.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+
+  if (diffSec < 60) return "Last seen just now";
+
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `Last seen ${diffMin}m ago`;
+
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `Last seen ${diffHr}h ago`;
+
+  const diffDays = Math.floor(diffHr / 24);
+  if (diffDays < 7) return `Last seen ${diffDays}d ago`;
+
+  return `Last seen ${prev.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
 /**
@@ -114,6 +141,15 @@ function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
           {visitor.currentPageTitle || visitor.currentPage || "Unknown page"}
         </p>
       </div>
+      {visitor.isFirstVisit ? (
+        <span className="flex-shrink-0 bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-1.5 py-0.5 uppercase font-mono">
+          NEW
+        </span>
+      ) : visitor.previousVisitEndedAt ? (
+        <span className="flex-shrink-0 text-[10px] text-muted-foreground">
+          {formatPreviousVisit(visitor.previousVisitEndedAt)}
+        </span>
+      ) : null}
       <span className="flex-shrink-0 text-xs text-muted-foreground">
         {formatLastSeen(visitor.lastSeenAt)}
       </span>

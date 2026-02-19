@@ -1,0 +1,18 @@
+package com.notificationservice.dto;
+
+import java.util.List;
+
+/**
+ * Response DTO for the visitor detail endpoint, including visit statistics and history.
+ *
+ * @param stats      visit count statistics across time windows
+ * @param recentVisits list of recent visits for the current page
+ * @param totalVisits total number of visits across all time
+ * @param totalPages  total number of pages available for pagination
+ */
+public record VisitorDetailResponse(
+        VisitorVisitStatsDto stats,
+        List<VisitorVisitDto> recentVisits,
+        long totalVisits,
+        int totalPages
+) {}

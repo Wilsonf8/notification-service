@@ -77,16 +77,34 @@ private struct BrowsingVisitorCard: View {
             HStack {
                 // Visitor info
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(visitor.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundStyle(.white)
+                    HStack(spacing: 6) {
+                        Text(visitor.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.white)
+
+                        if visitor.isFirstVisit == true {
+                            Text("NEW")
+                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.black)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 2)
+                                .background(.yellow)
+                        }
+                    }
 
                     if let page = visitor.currentPage {
                         Text(page)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+                    }
+
+                    if visitor.isFirstVisit != true,
+                       let previousVisitEndedAt = visitor.previousVisitEndedAt {
+                        Text("Last seen \(formatRelativeTime(previousVisitEndedAt))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -114,6 +132,23 @@ private struct BrowsingVisitorCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// Formats a date as relative time (e.g., "2h ago", "3d ago").
+    /// - Parameter date: The date to format relative to now.
+    /// - Returns: A human-readable relative time string.
+    private func formatRelativeTime(_ date: Date) -> String {
+        let interval = Date().timeIntervalSince(date)
+        let minutes = Int(interval / 60)
+        if minutes < 1 { return "just now" }
+        if minutes < 60 { return "\(minutes)m ago" }
+        let hours = minutes / 60
+        if hours < 24 { return "\(hours)h ago" }
+        let days = hours / 24
+        if days < 7 { return "\(days)d ago" }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d"
+        return formatter.string(from: date)
     }
 }
 

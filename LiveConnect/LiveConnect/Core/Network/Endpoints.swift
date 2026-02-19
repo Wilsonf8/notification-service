@@ -136,6 +136,19 @@ enum Endpoints {
         "/api/projects/\(projectId)/liveconnect/conversations/\(conversationId)/end"
     }
 
+    // MARK: - Visitor Visits
+
+    /// Endpoint for fetching visitor visit history and statistics.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    ///   - page: Page number (0-indexed).
+    ///   - size: Page size.
+    /// - Returns: The URL path string.
+    static func visitorVisits(projectId: UUID, visitorId: UUID, page: Int = 0, size: Int = 20) -> String {
+        "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/visits?page=\(page)&size=\(size)"
+    }
+
     // MARK: - WebSocket
 
     /// WebSocket URL for real-time dashboard updates.

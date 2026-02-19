@@ -185,7 +185,10 @@ public class LiveKitWebhookController {
                     visitor.getName(),
                     visitor.getEmail(),
                     currentPage,
-                    OffsetDateTime.now()
+                    OffsetDateTime.now(),
+                    false,
+                    null,
+                    0
             );
             broadcaster.broadcastToProject(
                     conversation.getProject().getId(),

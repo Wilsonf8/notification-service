@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,8 +16,23 @@ import {
   IconLoader2,
   IconCircleFilled,
 } from "@tabler/icons-react";
-import { pingVisitor } from "@/lib/api/liveconnect-dashboard";
-import type { LiveConnectVisitor } from "@/lib/types";
+import { pingVisitor, getVisitorVisits } from "@/lib/api/liveconnect-dashboard";
+import type { LiveConnectVisitor, VisitorDetailResponse } from "@/lib/types";
+
+/**
+ * Formats a duration in seconds to a human-readable string.
+ * @param seconds - Duration in seconds
+ * @returns Formatted duration string (e.g. "5m 32s", "2h 15m")
+ */
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const min = Math.floor(seconds / 60);
+  const sec = seconds % 60;
+  if (min < 60) return sec > 0 ? `${min}m ${sec}s` : `${min}m`;
+  const hr = Math.floor(min / 60);
+  const remainMin = min % 60;
+  return remainMin > 0 ? `${hr}h ${remainMin}m` : `${hr}h`;
+}
 
 /** Props for the VisitorDetail component */
 interface VisitorDetailProps {
@@ -34,6 +49,36 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
   const [isPinging, setIsPinging] = useState(false);
   const [pingError, setPingError] = useState<string | null>(null);
   const [pingSuccess, setPingSuccess] = useState(false);
+  const [visitData, setVisitData] = useState<VisitorDetailResponse | null>(null);
+  const [visitDataLoading, setVisitDataLoading] = useState(false);
+
+  /**
+   * Fetches visit data when the selected visitor changes.
+   */
+  useEffect(() => {
+    if (!visitor) {
+      setVisitData(null);
+      return;
+    }
+
+    let cancelled = false;
+    setVisitDataLoading(true);
+
+    getVisitorVisits(projectId, visitor.id)
+      .then((data) => {
+        if (!cancelled) setVisitData(data);
+      })
+      .catch(() => {
+        if (!cancelled) setVisitData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setVisitDataLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [visitor?.id, projectId]);
 
   /**
    * Handles pinging the visitor to initiate a call.
@@ -114,6 +159,63 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
                 <p className="truncate text-xs">{visitor.currentPage}</p>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Visit Activity */}
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visit Activity</p>
+          {visitDataLoading ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : visitData ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-muted/50 p-2">
+                <p className="text-lg font-bold">{visitData.stats.visits24h}</p>
+                <p className="text-xs text-muted-foreground">24h</p>
+              </div>
+              <div className="bg-muted/50 p-2">
+                <p className="text-lg font-bold">{visitData.stats.visits3d}</p>
+                <p className="text-xs text-muted-foreground">3 days</p>
+              </div>
+              <div className="bg-muted/50 p-2">
+                <p className="text-lg font-bold">{visitData.stats.visits7d}</p>
+                <p className="text-xs text-muted-foreground">7 days</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No visit data available</p>
+          )}
+        </div>
+
+        {/* Visit History */}
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visit History</p>
+          {visitDataLoading ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : visitData && visitData.recentVisits.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {visitData.recentVisits.map((visit) => (
+                <div key={visit.id} className="flex items-center justify-between p-1.5 text-xs bg-muted/30">
+                  <span className="text-muted-foreground">
+                    {new Date(visit.startedAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}{" "}
+                    {new Date(visit.startedAt).toLocaleTimeString("en-US", {
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  <span className="font-mono">
+                    {visit.durationSeconds != null
+                      ? formatDuration(visit.durationSeconds)
+                      : "Active"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No visits recorded</p>
           )}
         </div>
 

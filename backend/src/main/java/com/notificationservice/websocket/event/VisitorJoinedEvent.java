@@ -11,7 +11,10 @@ public record VisitorJoinedEvent(
         String name,
         String email,
         String currentPage,
-        OffsetDateTime joinedAt
+        OffsetDateTime joinedAt,
+        boolean isFirstVisit,
+        OffsetDateTime previousVisitEndedAt,
+        int totalVisitCount
 ) {
     /**
      * Returns the event type identifier.

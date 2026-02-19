@@ -318,7 +318,10 @@ public class LiveConnectConversationService {
                     visitor.getName(),
                     visitor.getEmail(),
                     currentPage,
-                    OffsetDateTime.now()
+                    OffsetDateTime.now(),
+                    false,
+                    null,
+                    0
             );
             broadcaster.broadcastToProject(
                     conversation.getProject().getId(),
@@ -423,7 +426,10 @@ public class LiveConnectConversationService {
                 visitor.getLastSeenAt(),
                 false,
                 isConnected,
-                isPingable
+                isPingable,
+                false,
+                null,
+                0
         );
 
         LiveConnectRepDto repDto = null;

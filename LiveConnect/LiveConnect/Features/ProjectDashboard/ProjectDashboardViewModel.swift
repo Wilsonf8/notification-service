@@ -201,6 +201,21 @@ final class ProjectDashboardViewModel {
         }
     }
 
+    /// Loads visit statistics and history for a visitor.
+    /// - Parameter visitorId: The visitor's UUID.
+    /// - Returns: The visitor detail response, or nil on failure.
+    func loadVisitorVisits(visitorId: UUID) async -> VisitorDetailResponse? {
+        guard let projectId else { return nil }
+        do {
+            return try await APIClient.shared.get(
+                Endpoints.visitorVisits(projectId: projectId, visitorId: visitorId)
+            )
+        } catch {
+            print("Failed to load visitor visits: \(error)")
+            return nil
+        }
+    }
+
     /// Disconnects WebSocket when leaving the dashboard.
     func disconnect() {
         webSocketManager.disconnect()

@@ -12,7 +12,9 @@ import com.notificationservice.dto.PingVisitorResponse;
 import com.notificationservice.dto.SendMessageRequest;
 import com.notificationservice.dto.TokenResponse;
 import com.notificationservice.dto.UpdateAvailabilityRequest;
+import com.notificationservice.dto.VisitorDetailResponse;
 import com.notificationservice.dto.VisitorListResponse;
+import com.notificationservice.dto.VisitorVisitDto;
 import com.notificationservice.entity.ConversationStatus;
 import com.notificationservice.entity.LiveConnectConversation;
 import com.notificationservice.entity.LiveConnectRep;
@@ -22,6 +24,7 @@ import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.LiveConnectConversationService;
 import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
+import com.notificationservice.service.LiveConnectVisitService;
 import com.notificationservice.service.LiveConnectVisitorService;
 import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.validation.Valid;
@@ -44,6 +47,7 @@ public class LiveConnectDashboardController {
 
     private final LiveConnectRepService repService;
     private final LiveConnectVisitorService visitorService;
+    private final LiveConnectVisitService visitService;
     private final LiveConnectRequestService requestService;
     private final LiveConnectConversationService conversationService;
     private final LiveConnectConversationRepository conversationRepository;
@@ -161,6 +165,34 @@ public class LiveConnectDashboardController {
             @PathVariable UUID visitorId,
             @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(visitorService.pingVisitor(projectId, visitorId, userId));
+    }
+
+    /**
+     * Gets visit statistics and paginated visit history for a visitor.
+     *
+     * @param projectId the project ID
+     * @param visitorId the visitor's internal ID
+     * @param page the page number (0-indexed)
+     * @param size the page size
+     * @param userId the authenticated user's ID (must be a rep)
+     * @return visit stats and paginated history
+     */
+    @GetMapping("/visitors/{visitorId}/visits")
+    public ResponseEntity<VisitorDetailResponse> getVisitorVisits(
+            @PathVariable UUID projectId,
+            @PathVariable UUID visitorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UUID userId) {
+        visitorService.validateProjectAndRepAccess(projectId, userId);
+        var stats = visitService.getVisitStats(visitorId);
+        var visits = visitService.getVisitHistory(visitorId, page, size);
+        return ResponseEntity.ok(new VisitorDetailResponse(
+                stats,
+                visits.getContent(),
+                stats.total(),
+                visits.getTotalPages()
+        ));
     }
 
     // Request Endpoints

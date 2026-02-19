@@ -158,6 +158,33 @@ export interface LiveConnectVisitor {
   lastSeenAt: string;
   isConnected: boolean;
   isPingable: boolean;
+  isFirstVisit: boolean;
+  previousVisitEndedAt: string | null;
+  totalVisitCount: number;
+}
+
+/** A single visitor visit (browsing session) */
+export interface VisitorVisit {
+  id: string;
+  startedAt: string;
+  endedAt: string | null;
+  durationSeconds: number | null;
+}
+
+/** Visit statistics across time windows */
+export interface VisitorVisitStats {
+  visits24h: number;
+  visits3d: number;
+  visits7d: number;
+  total: number;
+}
+
+/** Response from the visitor visits API endpoint */
+export interface VisitorDetailResponse {
+  stats: VisitorVisitStats;
+  recentVisits: VisitorVisit[];
+  totalVisits: number;
+  totalPages: number;
 }
 
 /** Request status enum */

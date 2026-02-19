@@ -525,7 +525,10 @@ public class LiveConnectRequestService {
                 visitor.getLastSeenAt(),
                 true,
                 isConnected,
-                isPingable
+                isPingable,
+                false,
+                null,
+                0
         );
     }
 

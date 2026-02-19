@@ -68,6 +68,9 @@ interface VisitorJoinedEvent extends BaseWebSocketEvent {
   email: string | null;
   currentPage: string | null;
   joinedAt: string;
+  isFirstVisit?: boolean;
+  previousVisitEndedAt?: string | null;
+  totalVisitCount?: number;
 }
 
 /** Visitor left event from backend */
@@ -291,6 +294,9 @@ export function useLiveConnectWebSocket(
           lastSeenAt: event.joinedAt,
           isConnected: true,
           isPingable: true,
+          isFirstVisit: event.isFirstVisit ?? true,
+          previousVisitEndedAt: event.previousVisitEndedAt ?? null,
+          totalVisitCount: event.totalVisitCount ?? 0,
         };
         setVisitors?.((prev) => {
           const existingIndex = prev.findIndex((v) => v.id === event.visitorId);
@@ -372,6 +378,9 @@ export function useLiveConnectWebSocket(
               lastSeenAt: new Date().toISOString(),
               isConnected: true,
               isPingable: true,
+              isFirstVisit: false,
+              previousVisitEndedAt: null,
+              totalVisitCount: 0,
             };
             setVisitors?.((prevVisitors) => [...prevVisitors, visitor]);
           }

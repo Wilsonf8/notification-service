@@ -17,6 +17,7 @@ import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
+import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
@@ -26,6 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,6 +46,7 @@ public class LiveConnectVisitorService {
     private static final int REQUEST_EXPIRY_MINUTES = 2;
 
     private final LiveConnectVisitorRepository visitorRepository;
+    private final LiveConnectVisitorVisitRepository visitRepository;
     private final LiveConnectRequestRepository requestRepository;
     private final LiveConnectRepRepository repRepository;
     private final LiveConnectConversationRepository conversationRepository;
@@ -80,10 +84,38 @@ public class LiveConnectVisitorService {
                 .collect(Collectors.toSet());
 
         // Browsing: online visitors without active requests and not in a call
-        List<LiveConnectVisitorDto> browsing = onlineVisitors.stream()
+        List<LiveConnectVisitor> browsingVisitors = onlineVisitors.stream()
                 .filter(v -> !visitorIdsWithRequests.contains(v.getId()))
                 .filter(v -> !visitorIdsInCall.contains(v.getId()))
-                .map(v -> toVisitorDto(v, false))
+                .toList();
+
+        // Batch-load visit data to avoid N+1 queries
+        Set<UUID> browsingVisitorIds = browsingVisitors.stream()
+                .map(LiveConnectVisitor::getId)
+                .collect(Collectors.toSet());
+
+        Map<UUID, Long> visitCountMap;
+        Map<UUID, OffsetDateTime> previousVisitEndedAtMap;
+        if (browsingVisitorIds.isEmpty()) {
+            visitCountMap = Collections.emptyMap();
+            previousVisitEndedAtMap = Collections.emptyMap();
+        } else {
+            visitCountMap = visitRepository.countByVisitorIds(browsingVisitorIds).stream()
+                    .collect(Collectors.toMap(
+                            row -> (UUID) row[0],
+                            row -> (Long) row[1]
+                    ));
+            previousVisitEndedAtMap = visitRepository.findLatestCompletedEndedAtByVisitorIds(browsingVisitorIds).stream()
+                    .collect(Collectors.toMap(
+                            row -> (UUID) row[0],
+                            row -> (OffsetDateTime) row[1]
+                    ));
+        }
+
+        List<LiveConnectVisitorDto> browsing = browsingVisitors.stream()
+                .map(v -> toVisitorDto(v, false,
+                        visitCountMap.getOrDefault(v.getId(), 0L).intValue(),
+                        previousVisitEndedAtMap.get(v.getId())))
                 .toList();
 
         // Queue: pending requests
@@ -161,6 +193,21 @@ public class LiveConnectVisitorService {
         return new PingVisitorResponse(request.getId(), expiresAt);
     }
 
+    /**
+     * Validates that the project exists and the user has rep access.
+     * Used by the controller for endpoints that need project + rep validation
+     * but delegate to other services for business logic.
+     *
+     * @param projectId the project ID
+     * @param userId the requesting user's ID
+     * @throws ResourceNotFoundException if project not found or user is not a rep
+     * @throws IllegalArgumentException if project is not LIVECONNECT type
+     */
+    public void validateProjectAndRepAccess(UUID projectId, UUID userId) {
+        getAndValidateProject(projectId, userId);
+        verifyRepAccess(projectId, userId);
+    }
+
     private Project getAndValidateProject(UUID projectId, UUID userId) {
         Project project = projectRepository.findByIdAndNotDeleted(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
@@ -183,7 +230,8 @@ public class LiveConnectVisitorService {
                 .orElseThrow(() -> new ResourceNotFoundException("You are not a rep for this project"));
     }
 
-    private LiveConnectVisitorDto toVisitorDto(LiveConnectVisitor visitor, boolean hasActiveRequest) {
+    private LiveConnectVisitorDto toVisitorDto(LiveConnectVisitor visitor, boolean hasActiveRequest,
+                                               int totalVisitCount, OffsetDateTime previousVisitEndedAt) {
         String currentPage = null;
         if (visitor.getMetadata() != null) {
             Object page = visitor.getMetadata().get("currentPage");
@@ -202,6 +250,8 @@ public class LiveConnectVisitorService {
                 || visitor.getPingCooldownUntil().isBefore(OffsetDateTime.now())
         );
 
+        boolean isFirstVisit = totalVisitCount <= 1;
+
         return new LiveConnectVisitorDto(
                 visitor.getId(),
                 visitor.getVisitorId(),
@@ -211,7 +261,10 @@ public class LiveConnectVisitorService {
                 visitor.getLastSeenAt(),
                 hasActiveRequest,
                 isConnected,
-                isPingable
+                isPingable,
+                isFirstVisit,
+                previousVisitEndedAt,
+                totalVisitCount
         );
     }
 
@@ -219,7 +272,7 @@ public class LiveConnectVisitorService {
         LiveConnectVisitor visitor = request.getVisitor();
         return new LiveConnectRequestDto(
                 request.getId(),
-                toVisitorDto(visitor, true),
+                toVisitorDto(visitor, true, 0, null),
                 request.getDirection().name(),
                 request.getStatus().name(),
                 request.getExpiresAt(),
