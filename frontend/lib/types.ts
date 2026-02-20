@@ -179,9 +179,23 @@ export interface VisitorVisitStats {
   total: number;
 }
 
+/** Engagement activity statistics across time windows */
+export interface VisitorEngagementStats {
+  pingsReceived24h: number;
+  pingsReceived3d: number;
+  pingsReceived7d: number;
+  requestsSent24h: number;
+  requestsSent3d: number;
+  requestsSent7d: number;
+  callsJoined24h: number;
+  callsJoined3d: number;
+  callsJoined7d: number;
+}
+
 /** Response from the visitor visits API endpoint */
 export interface VisitorDetailResponse {
   stats: VisitorVisitStats;
+  engagement: VisitorEngagementStats;
   recentVisits: VisitorVisit[];
   totalVisits: number;
   totalPages: number;

@@ -94,6 +94,48 @@ struct VisitorDetailPanel: View {
                             }
                         }
 
+                        // Engagement Activity
+                        if let engagement = visitData?.engagement {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("ENGAGEMENT ACTIVITY")
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Pings Received")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 8) {
+                                        StatCard(value: engagement.pingsReceived24h, label: "24h")
+                                        StatCard(value: engagement.pingsReceived3d, label: "3 days")
+                                        StatCard(value: engagement.pingsReceived7d, label: "7 days")
+                                    }
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Requests Sent")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 8) {
+                                        StatCard(value: engagement.requestsSent24h, label: "24h")
+                                        StatCard(value: engagement.requestsSent3d, label: "3 days")
+                                        StatCard(value: engagement.requestsSent7d, label: "7 days")
+                                    }
+                                }
+
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Calls Joined")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                    HStack(spacing: 8) {
+                                        StatCard(value: engagement.callsJoined24h, label: "24h")
+                                        StatCard(value: engagement.callsJoined3d, label: "3 days")
+                                        StatCard(value: engagement.callsJoined7d, label: "7 days")
+                                    }
+                                }
+                            }
+                        }
+
                         // Visit History
                         if let visits = visitData?.recentVisits, !visits.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {

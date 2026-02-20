@@ -187,6 +187,70 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
           )}
         </div>
 
+        {/* Engagement Activity */}
+        <div className="space-y-3 border-t pt-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Engagement Activity</p>
+          {visitDataLoading ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : visitData?.engagement ? (
+            <div className="space-y-3">
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Pings Received</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.pingsReceived24h}</p>
+                    <p className="text-xs text-muted-foreground">24h</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.pingsReceived3d}</p>
+                    <p className="text-xs text-muted-foreground">3 days</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.pingsReceived7d}</p>
+                    <p className="text-xs text-muted-foreground">7 days</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Requests Sent</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.requestsSent24h}</p>
+                    <p className="text-xs text-muted-foreground">24h</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.requestsSent3d}</p>
+                    <p className="text-xs text-muted-foreground">3 days</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.requestsSent7d}</p>
+                    <p className="text-xs text-muted-foreground">7 days</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Calls Joined</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.callsJoined24h}</p>
+                    <p className="text-xs text-muted-foreground">24h</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.callsJoined3d}</p>
+                    <p className="text-xs text-muted-foreground">3 days</p>
+                  </div>
+                  <div className="bg-muted/50 p-2">
+                    <p className="text-lg font-bold">{visitData.engagement.callsJoined7d}</p>
+                    <p className="text-xs text-muted-foreground">7 days</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No engagement data available</p>
+          )}
+        </div>
+
         {/* Visit History */}
         <div className="space-y-2 border-t pt-4">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Visit History</p>

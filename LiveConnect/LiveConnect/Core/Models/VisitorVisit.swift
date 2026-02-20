@@ -37,10 +37,43 @@ struct VisitorVisitStats: Codable {
     let total: Int
 }
 
+/// Engagement activity statistics across time windows.
+struct VisitorEngagementStats: Codable {
+    /// Number of pings received (REP_TO_USER) in the last 24 hours.
+    let pingsReceived24h: Int
+
+    /// Number of pings received in the last 3 days.
+    let pingsReceived3d: Int
+
+    /// Number of pings received in the last 7 days.
+    let pingsReceived7d: Int
+
+    /// Number of requests sent (USER_TO_REPS) in the last 24 hours.
+    let requestsSent24h: Int
+
+    /// Number of requests sent in the last 3 days.
+    let requestsSent3d: Int
+
+    /// Number of requests sent in the last 7 days.
+    let requestsSent7d: Int
+
+    /// Number of video calls joined in the last 24 hours.
+    let callsJoined24h: Int
+
+    /// Number of video calls joined in the last 3 days.
+    let callsJoined3d: Int
+
+    /// Number of video calls joined in the last 7 days.
+    let callsJoined7d: Int
+}
+
 /// Response from the visitor visits API endpoint.
 struct VisitorDetailResponse: Codable {
     /// Aggregated visit statistics.
     let stats: VisitorVisitStats
+
+    /// Engagement activity statistics (pings, requests, calls).
+    let engagement: VisitorEngagementStats
 
     /// List of recent visits for the current page.
     let recentVisits: [VisitorVisit]

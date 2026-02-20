@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -65,4 +66,14 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT c FROM LiveConnectConversation c WHERE c.status = 'ACTIVE'")
     List<LiveConnectConversation> findAllActive();
+
+    /**
+     * Counts VIDEO_CALL conversations for a visitor since a given time.
+     *
+     * @param visitorId the visitor's internal ID
+     * @param since     the start of the time window
+     * @return count of video calls
+     */
+    @Query("SELECT COUNT(c) FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId AND c.type = 'VIDEO_CALL' AND c.startedAt >= :since")
+    long countCallsByVisitorSince(UUID visitorId, OffsetDateTime since);
 }

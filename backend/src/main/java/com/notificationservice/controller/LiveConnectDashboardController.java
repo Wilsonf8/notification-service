@@ -186,9 +186,11 @@ public class LiveConnectDashboardController {
             @AuthenticationPrincipal UUID userId) {
         visitorService.validateProjectAndRepAccess(projectId, userId);
         var stats = visitService.getVisitStats(visitorId);
+        var engagement = visitService.getEngagementStats(visitorId);
         var visits = visitService.getVisitHistory(visitorId, page, size);
         return ResponseEntity.ok(new VisitorDetailResponse(
                 stats,
+                engagement,
                 visits.getContent(),
                 stats.total(),
                 visits.getTotalPages()

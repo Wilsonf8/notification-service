@@ -1,9 +1,12 @@
 package com.notificationservice.service;
 
+import com.notificationservice.dto.VisitorEngagementStatsDto;
 import com.notificationservice.dto.VisitorVisitDto;
 import com.notificationservice.dto.VisitorVisitStatsDto;
 import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.entity.LiveConnectVisitorVisit;
+import com.notificationservice.repository.LiveConnectConversationRepository;
+import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +35,8 @@ public class LiveConnectVisitService {
 
     private final LiveConnectVisitorVisitRepository visitRepository;
     private final LiveConnectVisitorRepository visitorRepository;
+    private final LiveConnectRequestRepository requestRepository;
+    private final LiveConnectConversationRepository conversationRepository;
 
     /**
      * Records a visitor connection event. Called from the WebSocket handler when
@@ -126,6 +131,30 @@ public class LiveConnectVisitService {
         long total = visitRepository.countByVisitorId(visitorId);
 
         return new VisitorVisitStatsDto(visits24h, visits3d, visits7d, total);
+    }
+
+    /**
+     * Returns engagement statistics for a visitor across multiple time windows
+     * (24 hours, 3 days, 7 days), covering pings received, requests sent, and calls joined.
+     *
+     * @param visitorId the internal ID of the visitor
+     * @return engagement stats with counts for each metric and time window
+     */
+    @Transactional(readOnly = true)
+    public VisitorEngagementStatsDto getEngagementStats(UUID visitorId) {
+        OffsetDateTime now = OffsetDateTime.now();
+
+        return new VisitorEngagementStatsDto(
+                requestRepository.countPingsReceivedSince(visitorId, now.minusHours(24)),
+                requestRepository.countPingsReceivedSince(visitorId, now.minusDays(3)),
+                requestRepository.countPingsReceivedSince(visitorId, now.minusDays(7)),
+                requestRepository.countRequestsSentSince(visitorId, now.minusHours(24)),
+                requestRepository.countRequestsSentSince(visitorId, now.minusDays(3)),
+                requestRepository.countRequestsSentSince(visitorId, now.minusDays(7)),
+                conversationRepository.countCallsByVisitorSince(visitorId, now.minusHours(24)),
+                conversationRepository.countCallsByVisitorSince(visitorId, now.minusDays(3)),
+                conversationRepository.countCallsByVisitorSince(visitorId, now.minusDays(7))
+        );
     }
 
     /**
