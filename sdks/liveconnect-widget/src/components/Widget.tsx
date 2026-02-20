@@ -37,6 +37,7 @@ import {
   sendChatMessage,
   type DataChannelChatMessage,
 } from '../livekit';
+import { startPageTracking } from '../page-tracker';
 import {
   getVisitorId,
   getSessionToken,
@@ -171,6 +172,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     let isMounted = true;
     let api: ApiClient;
     let ws: WebSocketClient;
+    let stopPageTracking: (() => void) | undefined;
 
     /**
      * Initializes the session with the backend.
@@ -233,6 +235,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         // Set up WebSocket event handlers
         setupWebSocketHandlers(ws);
 
+        // Track page navigations and send to backend
+        stopPageTracking = startPageTracking(ws);
+
         // Check for active call to reconnect
         const activeCall = getActiveCall();
         if (activeCall) {
@@ -258,6 +263,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Cleanup on unmount
     return () => {
       isMounted = false;
+      stopPageTracking?.();
       try {
         const wsClient = getWebSocketClient();
         wsClient.disconnect();
