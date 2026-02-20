@@ -57,4 +57,25 @@ public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectR
      */
     @Query("SELECT COUNT(r) FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId AND r.direction = 'USER_TO_REPS' AND r.createdAt >= :since")
     long countRequestsSentSince(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Counts declined or expired pings (REP_TO_USER) for a visitor since a given time.
+     *
+     * @param visitorId the visitor's internal ID
+     * @param since     the start of the time window
+     * @return count of declined or expired pings
+     */
+    @Query("SELECT COUNT(r) FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId "
+         + "AND r.direction = 'REP_TO_USER' AND r.status IN ('DECLINED', 'EXPIRED') "
+         + "AND r.createdAt >= :since")
+    long countDeclinedOrExpiredPingsSince(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Checks if any requests exist for a visitor (any direction, any status).
+     *
+     * @param visitorId the visitor's internal ID
+     * @return true if any requests exist
+     */
+    @Query("SELECT COUNT(r) > 0 FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId")
+    boolean existsAnyByVisitorId(UUID visitorId);
 }

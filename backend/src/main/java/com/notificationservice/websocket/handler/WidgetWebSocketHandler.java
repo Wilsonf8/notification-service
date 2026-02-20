@@ -3,10 +3,12 @@ package com.notificationservice.websocket.handler;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notificationservice.entity.LiveConnectVisitor;
+import com.notificationservice.entity.Project;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
+import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.service.LiveConnectVisitService;
 import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
@@ -47,6 +49,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final PushNotificationService pushNotificationService;
     private final LiveConnectVisitService visitService;
     private final LiveConnectVisitorVisitRepository visitRepository;
+    private final ProjectRepository projectRepository;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -115,8 +118,29 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                     );
                     broadcaster.broadcastToProject(projectId, event);
 
+                    // Resolve project name for notification title
+                    String projectName = projectRepository.findByIdAndNotDeleted(projectId)
+                            .map(Project::getName).orElse(null);
+
+                    // Fetch interaction data for returning visitors only
+                    long callsThisWeek = 0;
+                    long requestsThisWeek = 0;
+                    long declinedPingsThisWeek = 0;
+                    boolean hasAnyInteractions = false;
+                    if (!isFirstVisit) {
+                        OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
+                        callsThisWeek = conversationRepository.countCallsByVisitorSince(visitorId, weekAgo);
+                        requestsThisWeek = requestRepository.countRequestsSentSince(visitorId, weekAgo);
+                        declinedPingsThisWeek = requestRepository.countDeclinedOrExpiredPingsSince(visitorId, weekAgo);
+                        hasAnyInteractions = conversationRepository.existsAnyByVisitorId(visitorId)
+                                || requestRepository.existsAnyByVisitorId(visitorId);
+                    }
+
                     // Send push notification to reps who are offline
-                    pushNotificationService.sendVisitorPresenceNotification(projectId, visitor);
+                    pushNotificationService.sendVisitorPresenceNotification(
+                            projectId, visitor, projectName, isFirstVisit,
+                            totalVisitCount, callsThisWeek, requestsThisWeek,
+                            declinedPingsThisWeek, hasAnyInteractions);
                 } else {
                     log.debug("[WidgetWS] Skipping visitor_joined broadcast for visitor in waiting/call state: visitorId={}", visitorId);
                 }

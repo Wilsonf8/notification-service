@@ -76,4 +76,13 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT COUNT(c) FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId AND c.type = 'VIDEO_CALL' AND c.startedAt >= :since")
     long countCallsByVisitorSince(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Checks if any conversations exist for a visitor.
+     *
+     * @param visitorId the visitor's internal ID
+     * @return true if any conversations exist
+     */
+    @Query("SELECT COUNT(c) > 0 FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId")
+    boolean existsAnyByVisitorId(UUID visitorId);
 }

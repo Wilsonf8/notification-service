@@ -72,11 +72,22 @@ public class PushNotificationService {
      * Sends visitor presence notifications to available reps.
      * Throttled per visitor to avoid notification spam.
      *
-     * @param projectId the project ID
-     * @param visitor the visitor that joined
+     * @param projectId              the project ID
+     * @param visitor                the visitor that joined
+     * @param projectName            the project name for notification title, or null
+     * @param isFirstVisit           whether this is the visitor's first visit
+     * @param totalVisitCount        total number of visits by this visitor
+     * @param callsThisWeek          number of video calls in the last 7 days
+     * @param requestsThisWeek       number of visitor-initiated requests in the last 7 days
+     * @param declinedPingsThisWeek  number of declined/expired rep pings in the last 7 days
+     * @param hasAnyInteractions     whether the visitor has any interactions (calls or requests) ever
      */
     @Async
-    public void sendVisitorPresenceNotification(UUID projectId, LiveConnectVisitor visitor) {
+    public void sendVisitorPresenceNotification(
+            UUID projectId, LiveConnectVisitor visitor,
+            @Nullable String projectName, boolean isFirstVisit,
+            long totalVisitCount, long callsThisWeek, long requestsThisWeek,
+            long declinedPingsThisWeek, boolean hasAnyInteractions) {
         if (apnsClient == null) {
             log.debug("APNs client not configured, skipping presence notification");
             return;
@@ -113,7 +124,9 @@ public class PushNotificationService {
 
             // Send push to all of rep's devices
             log.info("Sending presence push to rep {} (user {})", rep.getId(), rep.getUser().getId());
-            sendVisitorPresenceToUser(rep.getUser().getId(), visitor, projectId);
+            sendVisitorPresenceToUser(rep.getUser().getId(), visitor, projectId,
+                    projectName, isFirstVisit, totalVisitCount, callsThisWeek,
+                    requestsThisWeek, declinedPingsThisWeek, hasAnyInteractions);
         }
     }
 
@@ -156,7 +169,10 @@ public class PushNotificationService {
         }
     }
 
-    private void sendVisitorPresenceToUser(UUID userId, LiveConnectVisitor visitor, UUID projectId) {
+    private void sendVisitorPresenceToUser(UUID userId, LiveConnectVisitor visitor, UUID projectId,
+            @Nullable String projectName, boolean isFirstVisit, long totalVisitCount,
+            long callsThisWeek, long requestsThisWeek,
+            long declinedPingsThisWeek, boolean hasAnyInteractions) {
         List<DeviceToken> tokens = deviceTokenService.getValidTokensForUser(userId);
         if (tokens.isEmpty()) {
             log.info("No device tokens for user {}", userId);
@@ -164,19 +180,19 @@ public class PushNotificationService {
         }
         log.info("Found {} device tokens for user {}", tokens.size(), userId);
 
-        String visitorName = visitor.getName() != null ? visitor.getName() : "A visitor";
-        String currentPage = extractCurrentPage(visitor);
-        String body = currentPage != null
-                ? visitorName + " is browsing " + currentPage
-                : visitorName + " is on your site";
+        String body = buildPresenceBody(visitor.getName(), extractCurrentPage(visitor),
+                isFirstVisit, totalVisitCount, callsThisWeek, requestsThisWeek,
+                declinedPingsThisWeek, hasAnyInteractions);
 
         ApnsPayloadBuilder payloadBuilder = new SimpleApnsPayloadBuilder()
-                .setAlertTitle("Visitor on Site")
+                .setAlertTitle(projectName != null ? projectName : "Visitor on Site")
                 .setAlertBody(body)
                 .setSound("default")
                 .addCustomProperty("type", "visitor_presence")
                 .addCustomProperty("projectId", projectId.toString())
-                .addCustomProperty("visitorId", visitor.getId().toString());
+                .addCustomProperty("visitorId", visitor.getId().toString())
+                .addCustomProperty("isFirstVisit", isFirstVisit)
+                .addCustomProperty("totalVisitCount", totalVisitCount);
 
         String payload = payloadBuilder.build();
 
@@ -241,6 +257,89 @@ public class PushNotificationService {
         } catch (Exception e) {
             log.error("Error sending push notification: {}", e.getMessage());
         }
+    }
+
+    /**
+     * Builds the notification body for visitor presence.
+     *
+     * @param name                   visitor name, or null if anonymous
+     * @param currentPage            current page path, or null
+     * @param isFirstVisit           whether this is the visitor's first visit
+     * @param totalVisitCount        total visit count
+     * @param callsThisWeek          calls in the last 7 days
+     * @param requestsThisWeek       visitor-initiated requests in the last 7 days
+     * @param declinedPingsThisWeek  declined/expired rep pings in the last 7 days
+     * @param hasAnyInteractions     whether any interactions exist ever
+     * @return the notification body string
+     */
+    private String buildPresenceBody(@Nullable String name, @Nullable String currentPage,
+            boolean isFirstVisit, long totalVisitCount, long callsThisWeek,
+            long requestsThisWeek, long declinedPingsThisWeek, boolean hasAnyInteractions) {
+        if (isFirstVisit) {
+            if (name != null) {
+                return name + " is visiting for the first time";
+            }
+            return "A first-time visitor is on your site";
+        }
+
+        // Returning visitor
+        String hint = buildEngagementHint(totalVisitCount, callsThisWeek, requestsThisWeek,
+                declinedPingsThisWeek, hasAnyInteractions);
+
+        if (name != null) {
+            if (currentPage != null) {
+                return name + " is browsing " + currentPage + " (" + hint + ")";
+            }
+            return name + " is back (" + hint + ")";
+        }
+        return "A visitor is back (" + hint + ")";
+    }
+
+    /**
+     * Builds the engagement hint string for returning visitors using priority ordering.
+     *
+     * @param totalVisitCount        total visit count
+     * @param callsThisWeek          calls in the last 7 days
+     * @param requestsThisWeek       visitor-initiated requests in the last 7 days
+     * @param declinedPingsThisWeek  declined/expired rep pings in the last 7 days
+     * @param hasAnyInteractions     whether any interactions exist ever
+     * @return the engagement hint (e.g. "3 calls this week", "5th visit")
+     */
+    private String buildEngagementHint(long totalVisitCount, long callsThisWeek,
+            long requestsThisWeek, long declinedPingsThisWeek, boolean hasAnyInteractions) {
+        if (callsThisWeek > 0) {
+            return callsThisWeek + (callsThisWeek == 1 ? " call this week" : " calls this week");
+        }
+        if (requestsThisWeek > 0) {
+            return requestsThisWeek + (requestsThisWeek == 1 ? " request this week" : " requests this week");
+        }
+        String ordinalVisit = toOrdinal(totalVisitCount) + " visit";
+        if (declinedPingsThisWeek > 0) {
+            return ordinalVisit + " \u00b7 declined contact";
+        }
+        if (!hasAnyInteractions) {
+            return ordinalVisit + " \u00b7 never connected";
+        }
+        return ordinalVisit;
+    }
+
+    /**
+     * Converts a number to its ordinal string (e.g. 1 → "1st", 2 → "2nd", 11 → "11th").
+     *
+     * @param n the number
+     * @return the ordinal string
+     */
+    private String toOrdinal(long n) {
+        long mod100 = n % 100;
+        if (mod100 >= 11 && mod100 <= 13) {
+            return n + "th";
+        }
+        return switch ((int) (n % 10)) {
+            case 1 -> n + "st";
+            case 2 -> n + "nd";
+            case 3 -> n + "rd";
+            default -> n + "th";
+        };
     }
 
     @Nullable
