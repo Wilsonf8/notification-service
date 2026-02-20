@@ -6,10 +6,11 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { removeToken } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -31,6 +32,7 @@ import { IconLogout, IconUser, IconMenu2 } from "@tabler/icons-react";
 import { getNavItems, isNavItemActive } from "@/components/dashboard/sidebar";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import type { User } from "@/lib/types";
 
 /**
  * Dashboard header with user dropdown menu and mobile navigation.
@@ -41,9 +43,25 @@ export function DashboardHeader() {
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
   const { currentOrg } = useOrganization();
+  const [user, setUser] = useState<User | null>(null);
 
   // Get nav items based on current org
   const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole);
+
+  useEffect(() => {
+    getCurrentUser().then(setUser).catch(() => {});
+  }, []);
+
+  /**
+   * Returns the display initial for the avatar.
+   * @param user - The current user
+   * @returns A single uppercase character
+   */
+  const getAvatarInitial = (user: User | null): string => {
+    if (user?.firstName) return user.firstName.charAt(0).toUpperCase();
+    if (user?.username) return user.username.charAt(0).toUpperCase();
+    return "U";
+  };
 
   /**
    * Handles user logout by clearing the token and redirecting to login.
@@ -117,7 +135,7 @@ export function DashboardHeader() {
       <DropdownMenu>
         <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center outline-none">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>U</AvatarFallback>
+            <AvatarFallback>{getAvatarInitial(user)}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">

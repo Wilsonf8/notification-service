@@ -1,6 +1,6 @@
 /**
- * Login page with GitHub OAuth authentication.
- * Redirects users to the backend OAuth endpoint for GitHub sign-in.
+ * Login page with OAuth authentication.
+ * Redirects users to the backend OAuth endpoint for sign-in.
  * @module app/login/page
  */
 "use client";
@@ -15,13 +15,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconBrandGithub } from "@tabler/icons-react";
+import { IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
 
 /** Backend API base URL for OAuth redirect */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
 
 /**
- * Login form component that displays the GitHub sign-in button.
+ * Login form component that displays OAuth sign-in buttons.
  * Wrapped in Suspense because it uses useSearchParams.
  *
  * Displays error messages when redirected from:
@@ -33,13 +33,15 @@ function LoginForm() {
   const error = searchParams.get("error");
 
   /**
-   * Initiates the OAuth flow by redirecting to the backend's GitHub OAuth endpoint.
+   * Initiates the OAuth flow by redirecting to the backend's OAuth endpoint.
    * The backend handles the OAuth dance and redirects back to /auth/callback with a JWT.
    * Passes the current origin so the backend knows where to redirect after auth.
+   *
+   * @param provider - The OAuth provider to use (e.g. "google", "github")
    */
-  const handleLogin = () => {
+  const handleOAuthLogin = (provider: string) => {
     const origin = encodeURIComponent(window.location.origin);
-    window.location.href = `${API_URL}/oauth2/authorization/github?redirect_origin=${origin}`;
+    window.location.href = `${API_URL}/oauth2/authorization/${provider}?redirect_origin=${origin}`;
   };
 
   return (
@@ -49,7 +51,7 @@ function LoginForm() {
           <CardTitle className="text-2xl">LiveConnect</CardTitle>
           <CardDescription>Sign in to engage with your customers</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {error && (
             <p className="text-sm text-destructive text-center">
               {error === "session_expired" &&
@@ -59,7 +61,11 @@ function LoginForm() {
               {!["session_expired", "no_token"].includes(error) && error}
             </p>
           )}
-          <Button onClick={handleLogin} className="w-full gap-2">
+          <Button onClick={() => handleOAuthLogin("google")} className="w-full gap-2">
+            <IconBrandGoogle className="h-5 w-5" />
+            Sign in with Google
+          </Button>
+          <Button onClick={() => handleOAuthLogin("github")} variant="outline" className="w-full gap-2">
             <IconBrandGithub className="h-5 w-5" />
             Sign in with GitHub
           </Button>
@@ -71,7 +77,7 @@ function LoginForm() {
 
 /**
  * Login page component.
- * Displays the login form with GitHub OAuth option.
+ * Displays the login form with OAuth options.
  */
 export default function LoginPage() {
   return (

@@ -17,6 +17,9 @@ enum Endpoints {
     /// Initiate GitHub OAuth flow.
     static let githubOAuth = "/oauth2/authorization/github"
 
+    /// Initiate Google OAuth flow.
+    static let googleOAuth = "/oauth2/authorization/google"
+
     /// Get current authenticated user.
     static let authMe = "/api/auth/me"
 

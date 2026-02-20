@@ -7,10 +7,11 @@
 /** User entity returned from the API */
 export interface User {
   id: string;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string;
-  displayName: string | null;
-  createdAt: string;
-  updatedAt: string;
+  avatarUrl: string | null;
 }
 
 /** Project type enum */
@@ -69,6 +70,8 @@ export interface OrganizationMember {
   id: string;
   userId: string;
   username: string;
+  firstName: string | null;
+  lastName: string | null;
   email: string | null;
   avatarUrl: string | null;
   role: OrgRole;

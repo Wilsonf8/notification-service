@@ -68,11 +68,25 @@ final class AuthManager {
     /// Initiates GitHub OAuth authentication flow.
     /// - Parameter presentationAnchor: The window to present the auth sheet from.
     func signInWithGitHub(presentationAnchor: ASPresentationAnchor) async {
+        await performSignIn(endpoint: Endpoints.githubOAuth, presentationAnchor: presentationAnchor)
+    }
+
+    /// Initiates Google OAuth authentication flow.
+    /// - Parameter presentationAnchor: The window to present the auth sheet from.
+    func signInWithGoogle(presentationAnchor: ASPresentationAnchor) async {
+        await performSignIn(endpoint: Endpoints.googleOAuth, presentationAnchor: presentationAnchor)
+    }
+
+    /// Performs sign-in using the given OAuth endpoint.
+    /// - Parameters:
+    ///   - endpoint: The OAuth endpoint path (e.g. `/oauth2/authorization/google`).
+    ///   - presentationAnchor: The window to present the auth sheet from.
+    private func performSignIn(endpoint: String, presentationAnchor: ASPresentationAnchor) async {
         isLoading = true
         error = nil
 
         do {
-            let token = try await performOAuthFlow(presentationAnchor: presentationAnchor)
+            let token = try await performOAuthFlow(endpoint: endpoint, presentationAnchor: presentationAnchor)
             print("Token received: \(token.prefix(50))...")
             KeychainService.shared.setToken(token)
             currentUser = try await APIClient.shared.get(Endpoints.authMe)
@@ -103,10 +117,12 @@ final class AuthManager {
     // MARK: - Private Methods
 
     /// Performs the OAuth flow using ASWebAuthenticationSession.
-    /// - Parameter presentationAnchor: The window to present the auth sheet from.
+    /// - Parameters:
+    ///   - endpoint: The OAuth endpoint path.
+    ///   - presentationAnchor: The window to present the auth sheet from.
     /// - Returns: The JWT token from the callback.
-    private func performOAuthFlow(presentationAnchor: ASPresentationAnchor) async throws -> String {
-        let authURL = URL(string: Endpoints.baseURL + Endpoints.githubOAuth + "?mobile=true")!
+    private func performOAuthFlow(endpoint: String, presentationAnchor: ASPresentationAnchor) async throws -> String {
+        let authURL = URL(string: Endpoints.baseURL + endpoint + "?mobile=true")!
 
         // Store context provider to keep it alive
         contextProvider = PresentationContextProvider(anchor: presentationAnchor)

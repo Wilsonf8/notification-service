@@ -85,14 +85,16 @@ export default function SettingsPage() {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="text-lg">
-                {user?.displayName?.charAt(0).toUpperCase() ||
-                  user?.email?.charAt(0).toUpperCase() ||
+                {user?.firstName?.charAt(0).toUpperCase() ||
+                  user?.username?.charAt(0).toUpperCase() ||
                   "U"}
               </AvatarFallback>
             </Avatar>
             <div>
               <p className="font-medium">
-                {user?.displayName || "User"}
+                {user?.firstName && user?.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user?.username || "User"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {user?.email || "No email"}
@@ -100,16 +102,8 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Connected Account</p>
-            <p className="text-sm text-muted-foreground">Signed in with GitHub</p>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Member Since</p>
-            <p className="text-sm text-muted-foreground">
-              {user?.createdAt
-                ? new Date(user.createdAt).toLocaleDateString()
-                : "Unknown"}
-            </p>
+            <p className="text-sm font-medium">Username</p>
+            <p className="text-sm text-muted-foreground">{user?.username || "Unknown"}</p>
           </div>
         </CardContent>
       </Card>

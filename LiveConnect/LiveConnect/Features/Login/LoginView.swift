@@ -8,7 +8,7 @@
 import SwiftUI
 import AuthenticationServices
 
-/// Login screen with GitHub OAuth authentication.
+/// Login screen with OAuth authentication.
 struct LoginView: View {
     @State private var viewModel = LoginViewModel()
 
@@ -48,10 +48,27 @@ struct LoginView: View {
                     Spacer()
 
                     // Login section
-                    VStack(spacing: 20) {
+                    VStack(spacing: 12) {
+                        // Google sign in button
+                        SignInButton(
+                            title: "Sign in with Google",
+                            icon: "g.circle.fill",
+                            isLoading: viewModel.isLoading,
+                            backgroundColor: .white,
+                            foregroundColor: .black
+                        ) {
+                            await signIn(provider: .google)
+                        }
+
                         // GitHub sign in button
-                        SignInButton(isLoading: viewModel.isLoading) {
-                            await signIn()
+                        SignInButton(
+                            title: "Sign in with GitHub",
+                            icon: "person.crop.circle.fill",
+                            isLoading: viewModel.isLoading,
+                            backgroundColor: Color(white: 0.15),
+                            foregroundColor: .white
+                        ) {
+                            await signIn(provider: .github)
                         }
 
                         // Error message
@@ -73,22 +90,37 @@ struct LoginView: View {
         }
     }
 
-    /// Performs the sign-in action.
+    /// OAuth provider type.
+    private enum OAuthProvider {
+        case google, github
+    }
+
+    /// Performs the sign-in action for the given provider.
+    /// - Parameter provider: The OAuth provider to sign in with.
     @MainActor
-    private func signIn() async {
+    private func signIn(provider: OAuthProvider) async {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else {
             return
         }
-        await viewModel.signInWithGitHub(anchor: window)
+        switch provider {
+        case .google:
+            await viewModel.signInWithGoogle(anchor: window)
+        case .github:
+            await viewModel.signInWithGitHub(anchor: window)
+        }
     }
 }
 
 // MARK: - SignInButton
 
-/// GitHub sign-in button component.
+/// OAuth sign-in button component.
 private struct SignInButton: View {
+    let title: String
+    let icon: String
     let isLoading: Bool
+    let backgroundColor: Color
+    let foregroundColor: Color
     let action: () async -> Void
 
     var body: some View {
@@ -100,19 +132,19 @@ private struct SignInButton: View {
             HStack(spacing: 12) {
                 if isLoading {
                     ProgressView()
-                        .tint(.black)
+                        .tint(foregroundColor)
                 } else {
-                    Image(systemName: "person.crop.circle.fill")
+                    Image(systemName: icon)
                         .font(.title2)
                 }
 
-                Text(isLoading ? "Signing in..." : "Sign in with GitHub")
+                Text(isLoading ? "Signing in..." : title)
                     .font(.headline)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(.white)
-            .foregroundStyle(.black)
+            .background(backgroundColor)
+            .foregroundStyle(foregroundColor)
             .clipShape(RoundedRectangle(cornerRadius: 0))
         }
         .disabled(isLoading)

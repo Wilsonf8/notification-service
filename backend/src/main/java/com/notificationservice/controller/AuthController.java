@@ -27,6 +27,8 @@ public class AuthController {
         return ResponseEntity.ok(new UserDto(
                 user.getId(),
                 user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getEmail(),
                 user.getAvatarUrl()
         ));

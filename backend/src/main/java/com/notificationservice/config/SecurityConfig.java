@@ -1,6 +1,7 @@
 package com.notificationservice.config;
 
 import com.notificationservice.security.CustomOAuth2UserService;
+import com.notificationservice.security.CustomOidcUserService;
 import com.notificationservice.security.JwtAuthenticationFilter;
 import com.notificationservice.security.OAuth2RedirectFilter;
 import com.notificationservice.security.OAuth2SuccessHandler;
@@ -35,6 +36,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final CustomOAuth2UserService oAuth2UserService;
+    private final CustomOidcUserService oidcUserService;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2RedirectFilter oAuth2RedirectFilter;
@@ -59,7 +61,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .userInfoEndpoint(userInfo -> userInfo.userService(oAuth2UserService))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oAuth2UserService)
+                                .oidcUserService(oidcUserService))
                         .successHandler(oAuth2SuccessHandler)
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -124,7 +124,11 @@ export function AddRepDialog({
                   {availableMembers.map((member) => (
                     <SelectItem key={member.userId} value={member.userId}>
                       <div className="flex items-center gap-2">
-                        <span>{member.username}</span>
+                        <span>
+                          {member.firstName && member.lastName
+                            ? `${member.firstName} ${member.lastName}`
+                            : member.username}
+                        </span>
                         {member.email && (
                           <span className="text-muted-foreground">
                             ({member.email})

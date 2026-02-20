@@ -10,6 +10,8 @@ import java.util.UUID;
  * @param id the unique identifier of the membership
  * @param userId the user's unique identifier
  * @param username the user's username
+ * @param firstName the user's first name
+ * @param lastName the user's last name
  * @param email the user's email address
  * @param avatarUrl the user's avatar URL
  * @param role the user's role in the organization
@@ -19,6 +21,8 @@ public record OrganizationMemberDto(
         UUID id,
         UUID userId,
         String username,
+        String firstName,
+        String lastName,
         String email,
         String avatarUrl,
         OrgRole role,

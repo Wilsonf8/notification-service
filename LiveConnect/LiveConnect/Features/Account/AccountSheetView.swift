@@ -98,7 +98,7 @@ struct AccountSheetView: View {
 
             // Name and email
             VStack(spacing: 4) {
-                Text(user.username)
+                Text(user.displayName)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundStyle(.white)
@@ -127,7 +127,7 @@ struct AccountSheetView: View {
             .fill(Color.yellow.opacity(0.3))
             .frame(width: 80, height: 80)
             .overlay(
-                Text(user.username.prefix(1).uppercased())
+                Text((user.firstName ?? user.username).prefix(1).uppercased())
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(.yellow)

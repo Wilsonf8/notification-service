@@ -353,11 +353,15 @@ export default function TeamPage({ params }: TeamPageProps) {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback>
-                          {member.username.charAt(0).toUpperCase()}
+                          {(member.firstName || member.username).charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{member.username}</p>
+                        <p className="font-medium">
+                          {member.firstName && member.lastName
+                            ? `${member.firstName} ${member.lastName}`
+                            : member.username}
+                        </p>
                         {member.email && (
                           <p className="text-sm text-muted-foreground">
                             {member.email}

@@ -438,6 +438,8 @@ public class OrganizationService {
                 member.getId(),
                 user.getId(),
                 user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
                 user.getEmail(),
                 user.getAvatarUrl(),
                 member.getRole(),

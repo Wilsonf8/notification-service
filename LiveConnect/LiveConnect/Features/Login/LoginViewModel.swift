@@ -32,4 +32,10 @@ final class LoginViewModel {
     func signInWithGitHub(anchor: ASPresentationAnchor) async {
         await AuthManager.shared.signInWithGitHub(presentationAnchor: anchor)
     }
+
+    /// Initiates Google OAuth sign-in.
+    /// - Parameter anchor: The presentation anchor for the auth sheet.
+    func signInWithGoogle(anchor: ASPresentationAnchor) async {
+        await AuthManager.shared.signInWithGoogle(presentationAnchor: anchor)
+    }
 }
