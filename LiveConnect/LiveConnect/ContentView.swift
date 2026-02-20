@@ -129,9 +129,8 @@ struct ContentView: View {
 
         switch navigation {
         case .visitorDetail(let projectId, _):
-            // Navigate to project dashboard and show visitor
+            // Navigate to project dashboard — LiveUsersView will clear after showing the sheet
             sidebarViewModel.selectedProjectId = projectId
-            // Visitor detail handled in dashboard
 
         case .acceptRequest(let projectId, let requestId):
             // Navigate to project and show accept sheet
@@ -140,9 +139,8 @@ struct ContentView: View {
                 projectId: projectId,
                 requestId: requestId
             )
+            NotificationRouter.shared.clearPendingNavigation()
         }
-
-        NotificationRouter.shared.clearPendingNavigation()
     }
 }
 

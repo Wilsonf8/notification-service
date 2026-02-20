@@ -77,6 +77,12 @@ struct LiveUsersView: View {
                     .pickerStyle(.segmented)
                 }
             }
+            .onChange(of: NotificationRouter.shared.pendingNavigation) { _, _ in
+                handlePendingVisitorNavigation()
+            }
+            .onChange(of: viewModel.browsingVisitors) { _, _ in
+                handlePendingVisitorNavigation()
+            }
             .sheet(item: $selectedVisitor) { visitor in
                 VisitorDetailPanel(
                     visitor: visitor,
@@ -91,6 +97,17 @@ struct LiveUsersView: View {
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
             }
+        }
+    }
+
+    /// Checks for a pending visitor detail navigation and opens the sheet if the visitor is found.
+    private func handlePendingVisitorNavigation() {
+        guard case .visitorDetail(_, let visitorId) = NotificationRouter.shared.pendingNavigation else { return }
+
+        if let visitor = viewModel.browsingVisitors.first(where: { $0.id == visitorId }) {
+            selectedSection = .browsing
+            selectedVisitor = visitor
+            NotificationRouter.shared.clearPendingNavigation()
         }
     }
 
