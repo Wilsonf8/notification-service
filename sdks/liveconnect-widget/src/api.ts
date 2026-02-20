@@ -78,6 +78,14 @@ export interface InitResponse {
   pendingRequest: PendingRequestInfo | null;
   /** Whether any reps are available to take calls */
   repsAvailable: boolean;
+  /** Widget panel background color (hex) */
+  backgroundColor: string;
+  /** Widget text color (hex) */
+  textColor: string;
+  /** Widget corner rounding in pixels */
+  borderRadius: number;
+  /** Widget font family name */
+  fontFamily: string;
 }
 
 /**

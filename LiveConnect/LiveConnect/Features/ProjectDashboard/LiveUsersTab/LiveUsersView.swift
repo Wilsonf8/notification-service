@@ -80,7 +80,7 @@ struct LiveUsersView: View {
             .onChange(of: NotificationRouter.shared.pendingNavigation) { _, _ in
                 handlePendingVisitorNavigation()
             }
-            .onChange(of: viewModel.browsingVisitors) { _, _ in
+            .onChange(of: viewModel.browsingVisitors.count) { _, _ in
                 handlePendingVisitorNavigation()
             }
             .sheet(item: $selectedVisitor) { visitor in

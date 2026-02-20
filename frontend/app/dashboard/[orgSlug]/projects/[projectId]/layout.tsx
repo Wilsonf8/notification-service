@@ -15,6 +15,7 @@ import {
   IconMessageCircle,
   IconUserCog,
   IconCode,
+  IconPalette,
   IconSettings,
   IconChevronLeft,
 } from "@tabler/icons-react";
@@ -60,6 +61,7 @@ const liveConnectTabs: NavTab[] = [
   { label: "Conversations", href: "/conversations", icon: IconMessageCircle },
   { label: "Reps", href: "/reps", icon: IconUserCog, adminOnly: true },
   { label: "Embed", href: "/embed", icon: IconCode },
+  { label: "Widget", href: "/widget", icon: IconPalette },
   { label: "Settings", href: "/settings", icon: IconSettings },
 ];
 

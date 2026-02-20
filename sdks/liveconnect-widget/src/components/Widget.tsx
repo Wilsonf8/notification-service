@@ -161,6 +161,43 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   }, [shadowRoot]);
 
   // ============================================================================
+  // Theme Application
+  // ============================================================================
+
+  /** Font family to CSS font stack mapping */
+  const fontStacks: Record<string, string> = {
+    'JetBrains Mono': "'JetBrains Mono', monospace",
+    'Inter': "'Inter', system-ui, sans-serif",
+    'DM Sans': "'DM Sans', sans-serif",
+    'Nunito': "'Nunito', sans-serif",
+    'System Default': "system-ui, -apple-system, sans-serif",
+  };
+
+  /**
+   * Applies theme custom properties from the init response to the shadow DOM host.
+   * @param initResponse - The init response containing theme settings
+   */
+  const applyTheme = (initResponse: { widgetColor: string; backgroundColor: string; textColor: string; borderRadius: number; fontFamily: string }): void => {
+    const host = shadowRoot.host as HTMLElement;
+    if (initResponse.widgetColor) {
+      host.style.setProperty('--lc-accent', initResponse.widgetColor);
+    }
+    if (initResponse.backgroundColor) {
+      host.style.setProperty('--lc-bg', initResponse.backgroundColor);
+    }
+    if (initResponse.textColor) {
+      host.style.setProperty('--lc-text', initResponse.textColor);
+    }
+    if (initResponse.borderRadius !== undefined) {
+      host.style.setProperty('--lc-radius', initResponse.borderRadius + 'px');
+    }
+    if (initResponse.fontFamily) {
+      const stack = fontStacks[initResponse.fontFamily] || fontStacks['JetBrains Mono'];
+      host.style.setProperty('--lc-font', stack);
+    }
+  };
+
+  // ============================================================================
   // Session Initialization
   // ============================================================================
 
@@ -202,6 +239,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         // Update local state from init response
         setWelcomeMessage(initResponse.welcomeMessage || 'How can we help you today?');
         setIsOnline(initResponse.repsAvailable);
+
+        // Apply theme custom properties to shadow DOM host
+        applyTheme(initResponse);
 
         // Check for pending request to restore WAITING state across page navigation
         console.log('[LiveConnect Widget] Init response pendingRequest:', initResponse.pendingRequest);

@@ -9,29 +9,29 @@
 /* ============================================
    Google Fonts Import - JetBrains Mono
    ============================================ */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap');
 
 /* ============================================
    CSS Variables - Theme Configuration
    ============================================ */
 :host {
-  /* Primary colors - Stone palette */
-  --lc-bg: #0c0a09;             /* stone-950 */
-  --lc-bg-secondary: #1c1917;   /* stone-900 */
-  --lc-bg-tertiary: #292524;    /* stone-800 */
-  --lc-border: #292524;         /* stone-800 */
-  --lc-border-hover: #44403c;   /* stone-700 */
+  /* Primary colors - derived from --lc-bg via color-mix */
+  --lc-bg: #0c0a09;             /* stone-950 (default, overridden at runtime) */
+  --lc-bg-secondary: color-mix(in srgb, var(--lc-bg), white 8%);
+  --lc-bg-tertiary: color-mix(in srgb, var(--lc-bg), white 14%);
+  --lc-border: color-mix(in srgb, var(--lc-bg), white 14%);
+  --lc-border-hover: color-mix(in srgb, var(--lc-bg), white 22%);
 
-  /* Text colors */
-  --lc-text: #fafaf9;           /* stone-50 */
+  /* Text colors - derived from --lc-text */
+  --lc-text: #fafaf9;           /* stone-50 (default, overridden at runtime) */
   --lc-text-secondary: #e7e5e4; /* stone-200 */
   --lc-text-muted: #a8a29e;     /* stone-400 */
   --lc-text-disabled: #78716c;  /* stone-500 */
 
-  /* Accent colors - Yellow palette */
-  --lc-accent: #eab308;         /* yellow-500 */
-  --lc-accent-hover: #ca8a04;   /* yellow-600 */
-  --lc-accent-active: #a16207;  /* yellow-700 */
+  /* Accent colors - derived from --lc-accent via color-mix */
+  --lc-accent: #eab308;         /* yellow-500 (default, overridden at runtime) */
+  --lc-accent-hover: color-mix(in srgb, var(--lc-accent), black 15%);
+  --lc-accent-active: color-mix(in srgb, var(--lc-accent), black 30%);
   --lc-accent-light: #fef08a;   /* yellow-200 */
   --lc-accent-text: #0c0a09;    /* stone-950 - for text on accent */
 

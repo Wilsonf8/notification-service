@@ -44,6 +44,22 @@ public class LiveConnectSettings {
     @Builder.Default
     private String offlineMessage = "No reps available. Leave your info and we'll get back to you.";
 
+    @Column(name = "background_color")
+    @Builder.Default
+    private String backgroundColor = "#0c0a09";
+
+    @Column(name = "text_color")
+    @Builder.Default
+    private String textColor = "#fafaf9";
+
+    @Column(name = "border_radius")
+    @Builder.Default
+    private Integer borderRadius = 0;
+
+    @Column(name = "font_family")
+    @Builder.Default
+    private String fontFamily = "JetBrains Mono";
+
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;

@@ -1,5 +1,5 @@
 /**
- * API functions for LiveConnect embed key management.
+ * API functions for LiveConnect embed key and settings management.
  * @module lib/api/liveconnect
  */
 
@@ -9,6 +9,8 @@ import type {
   LiveConnectEmbedKeyCreated,
   CreateEmbedKeyRequest,
   UpdateEmbedKeyRequest,
+  LiveConnectSettings,
+  UpdateLiveConnectSettingsRequest,
 } from "@/lib/types";
 
 /**
@@ -70,4 +72,33 @@ export async function deleteLiveConnectEmbedKey(
   await apiFetch(`/api/projects/${projectId}/liveconnect/embed-keys/${keyId}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * Fetches LiveConnect settings for a project.
+ * @param projectId - The project ID
+ * @returns The LiveConnect settings
+ */
+export async function getLiveConnectSettings(
+  projectId: string
+): Promise<LiveConnectSettings> {
+  return apiFetch<LiveConnectSettings>(
+    `/api/projects/${projectId}/liveconnect/settings`
+  );
+}
+
+/**
+ * Updates LiveConnect settings for a project.
+ * @param projectId - The project ID
+ * @param request - The settings update request
+ * @returns The updated settings
+ */
+export async function updateLiveConnectSettings(
+  projectId: string,
+  request: UpdateLiveConnectSettingsRequest
+): Promise<LiveConnectSettings> {
+  return apiFetch<LiveConnectSettings>(
+    `/api/projects/${projectId}/liveconnect/settings`,
+    { method: "PUT", body: JSON.stringify(request) }
+  );
 }

@@ -78,6 +78,18 @@ public class LiveConnectSettingsService {
         if (request.isActive() != null) {
             settings.setIsActive(request.isActive());
         }
+        if (request.backgroundColor() != null) {
+            settings.setBackgroundColor(request.backgroundColor());
+        }
+        if (request.textColor() != null) {
+            settings.setTextColor(request.textColor());
+        }
+        if (request.borderRadius() != null) {
+            settings.setBorderRadius(request.borderRadius());
+        }
+        if (request.fontFamily() != null) {
+            settings.setFontFamily(request.fontFamily());
+        }
 
         return toDto(settingsRepository.save(settings));
     }
@@ -112,7 +124,11 @@ public class LiveConnectSettingsService {
                 settings.getOfflineMessage(),
                 settings.getWidgetColor(),
                 settings.getWidgetPosition(),
-                settings.getIsActive()
+                settings.getIsActive(),
+                settings.getBackgroundColor(),
+                settings.getTextColor(),
+                settings.getBorderRadius(),
+                settings.getFontFamily()
         );
     }
 }

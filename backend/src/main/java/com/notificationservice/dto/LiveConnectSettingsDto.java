@@ -8,11 +8,19 @@ package com.notificationservice.dto;
  * @param widgetColor the widget theme color (hex format)
  * @param widgetPosition the widget position on the page
  * @param isActive whether the widget is active
+ * @param backgroundColor the widget panel background color (hex format)
+ * @param textColor the widget text color (hex format)
+ * @param borderRadius the widget corner rounding in pixels
+ * @param fontFamily the widget font family
  */
 public record LiveConnectSettingsDto(
         String welcomeMessage,
         String offlineMessage,
         String widgetColor,
         String widgetPosition,
-        Boolean isActive
+        Boolean isActive,
+        String backgroundColor,
+        String textColor,
+        Integer borderRadius,
+        String fontFamily
 ) {}

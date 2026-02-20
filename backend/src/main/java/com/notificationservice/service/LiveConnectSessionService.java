@@ -132,7 +132,11 @@ public class LiveConnectSessionService {
                 settings.getWidgetColor(),
                 settings.getWidgetPosition(),
                 pendingRequestInfo,
-                repsAvailable
+                repsAvailable,
+                settings.getBackgroundColor(),
+                settings.getTextColor(),
+                settings.getBorderRadius(),
+                settings.getFontFamily()
         );
     }
 

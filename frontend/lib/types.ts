@@ -128,6 +128,51 @@ export interface UpdateEmbedKeyRequest {
 }
 
 // ============================================================================
+// LiveConnect Settings Types
+// ============================================================================
+
+/** Valid widget positions */
+export type WidgetPosition =
+  | "bottom-right"
+  | "bottom-left"
+  | "top-right"
+  | "top-left";
+
+/** Valid widget font families */
+export type WidgetFontFamily =
+  | "JetBrains Mono"
+  | "Inter"
+  | "DM Sans"
+  | "Nunito"
+  | "System Default";
+
+/** LiveConnect settings returned from the API */
+export interface LiveConnectSettings {
+  welcomeMessage: string;
+  offlineMessage: string;
+  widgetColor: string;
+  widgetPosition: WidgetPosition;
+  isActive: boolean;
+  backgroundColor: string;
+  textColor: string;
+  borderRadius: number;
+  fontFamily: WidgetFontFamily;
+}
+
+/** Request body for updating LiveConnect settings */
+export interface UpdateLiveConnectSettingsRequest {
+  welcomeMessage?: string;
+  offlineMessage?: string;
+  widgetColor?: string;
+  widgetPosition?: WidgetPosition;
+  isActive?: boolean;
+  backgroundColor?: string;
+  textColor?: string;
+  borderRadius?: number;
+  fontFamily?: WidgetFontFamily;
+}
+
+// ============================================================================
 // LiveConnect Dashboard Types
 // ============================================================================
 
