@@ -727,6 +727,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   // Get app URL for pop-out (extracted from script src)
   const appUrl = config.appUrl;
 
+  // Hide widget entirely until initialized to prevent flash of unstyled content
+  if (!isInitialized) return null;
+
   // Render based on current state
   switch (state.type) {
     case WidgetStateType.COLLAPSED:
