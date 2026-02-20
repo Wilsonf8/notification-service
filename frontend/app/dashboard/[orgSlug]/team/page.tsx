@@ -1,6 +1,6 @@
 /**
  * Team settings page.
- * Allows organization owners and admins to manage team members.
+ * Allows organization owners and admins to manage team members and invitations.
  * @module app/dashboard/[orgSlug]/team/page
  */
 "use client";
@@ -61,18 +61,29 @@ import {
   IconDoorExit,
   IconUser,
   IconUsers,
+  IconX,
 } from "@tabler/icons-react";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import {
   getOrganizationMembers,
-  addMemberByUsername,
   updateMemberRole,
   removeMember,
   leaveOrganization,
   deleteOrganization,
   updateOrganization,
 } from "@/lib/api/organizations";
-import type { OrganizationMember, OrgRole } from "@/lib/types";
+import {
+  createInvitation,
+  getOrgInvitations,
+  revokeInvitation,
+} from "@/lib/api/invitations";
+import { UserSearchCombobox } from "@/components/dashboard/user-search-combobox";
+import type {
+  OrganizationMember,
+  OrganizationInvitation,
+  OrgRole,
+  UserSearchResult,
+} from "@/lib/types";
 
 /** Page params containing the org slug */
 interface TeamPageProps {
@@ -81,7 +92,7 @@ interface TeamPageProps {
 
 /**
  * Team settings page component.
- * Displays team members and provides management controls.
+ * Displays team members, pending invitations, and provides management controls.
  *
  * @param props - Component props
  * @param props.params - Route params with orgSlug
@@ -91,15 +102,16 @@ export default function TeamPage({ params }: TeamPageProps) {
   const router = useRouter();
   const { currentOrg, isLoading: orgLoading, refreshOrgs } = useOrganization();
   const [members, setMembers] = useState<OrganizationMember[]>([]);
+  const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Add member state
-  const [isAddOpen, setIsAddOpen] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
+  // Invite member state
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
   const [newRole, setNewRole] = useState<OrgRole>("MEMBER");
-  const [adding, setAdding] = useState(false);
-  const [addError, setAddError] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   // Edit org name state
   const [isEditNameOpen, setIsEditNameOpen] = useState(false);
@@ -117,15 +129,18 @@ export default function TeamPage({ params }: TeamPageProps) {
   const canManageMembers = isOwner || isAdmin;
 
   /**
-   * Fetches members from the API.
+   * Fetches members and invitations from the API.
    */
-  const fetchMembers = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      // Use orgSlug from URL directly to avoid race conditions
-      const data = await getOrganizationMembers(orgSlug);
-      setMembers(data);
+      const [membersData, invitationsData] = await Promise.all([
+        getOrganizationMembers(orgSlug),
+        getOrgInvitations(orgSlug).catch(() => [] as OrganizationInvitation[]),
+      ]);
+      setMembers(membersData);
+      setInvitations(invitationsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
     } finally {
@@ -136,32 +151,43 @@ export default function TeamPage({ params }: TeamPageProps) {
   useEffect(() => {
     // Only fetch when org context is loaded and matches URL
     if (!orgLoading && currentOrg?.slug === orgSlug) {
-      fetchMembers();
+      fetchData();
     }
-  }, [orgLoading, currentOrg?.slug, orgSlug, fetchMembers]);
+  }, [orgLoading, currentOrg?.slug, orgSlug, fetchData]);
 
   /**
-   * Handles adding a new member.
+   * Handles inviting a new member.
    */
-  const handleAddMember = async () => {
-    if (!newUsername.trim()) return;
+  const handleInviteMember = async () => {
+    if (!selectedUser) return;
 
     try {
-      setAdding(true);
-      setAddError(null);
-      // Use orgSlug from URL directly
-      const member = await addMemberByUsername(orgSlug, {
-        username: newUsername.trim(),
+      setInviting(true);
+      setInviteError(null);
+      const invitation = await createInvitation(orgSlug, {
+        userId: selectedUser.id,
         role: newRole,
       });
-      setMembers((prev) => [...prev, member]);
-      setNewUsername("");
+      setInvitations((prev) => [...prev, invitation]);
+      setSelectedUser(null);
       setNewRole("MEMBER");
-      setIsAddOpen(false);
+      setIsInviteOpen(false);
     } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Failed to add member");
+      setInviteError(err instanceof Error ? err.message : "Failed to send invitation");
     } finally {
-      setAdding(false);
+      setInviting(false);
+    }
+  };
+
+  /**
+   * Handles revoking an invitation.
+   */
+  const handleRevokeInvitation = async (invitationId: string) => {
+    try {
+      await revokeInvitation(orgSlug, invitationId);
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to revoke invitation");
     }
   };
 
@@ -170,7 +196,6 @@ export default function TeamPage({ params }: TeamPageProps) {
    */
   const handleRoleChange = async (memberId: string, role: OrgRole) => {
     try {
-      // Use orgSlug from URL directly
       const updated = await updateMemberRole(orgSlug, memberId, { role });
       setMembers((prev) =>
         prev.map((m) => (m.id === memberId ? updated : m))
@@ -185,7 +210,6 @@ export default function TeamPage({ params }: TeamPageProps) {
    */
   const handleRemoveMember = async (memberId: string) => {
     try {
-      // Use orgSlug from URL directly
       await removeMember(orgSlug, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
     } catch (err) {
@@ -199,10 +223,8 @@ export default function TeamPage({ params }: TeamPageProps) {
   const handleLeave = async () => {
     try {
       setLeaving(true);
-      // Use orgSlug from URL directly
       await leaveOrganization(orgSlug);
       await refreshOrgs();
-      // Redirect to dashboard - let it handle finding the new default org
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to leave organization");
@@ -216,10 +238,8 @@ export default function TeamPage({ params }: TeamPageProps) {
   const handleDelete = async () => {
     try {
       setDeleting(true);
-      // Use orgSlug from URL directly
       await deleteOrganization(orgSlug);
       await refreshOrgs();
-      // Redirect to dashboard - let it handle finding the new default org
       router.push("/dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete organization");
@@ -235,7 +255,6 @@ export default function TeamPage({ params }: TeamPageProps) {
 
     try {
       setSaving(true);
-      // Use orgSlug from URL directly
       await updateOrganization(orgSlug, { name: editedName.trim() });
       await refreshOrgs();
       setIsEditNameOpen(false);
@@ -330,9 +349,9 @@ export default function TeamPage({ params }: TeamPageProps) {
             </CardDescription>
           </div>
           {canManageMembers && !currentOrg.isPersonal && (
-            <Button onClick={() => setIsAddOpen(true)} className="gap-2">
+            <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
               <IconUserPlus className="h-4 w-4" />
-              Add Member
+              Invite Member
             </Button>
           )}
         </CardHeader>
@@ -436,6 +455,96 @@ export default function TeamPage({ params }: TeamPageProps) {
         </CardContent>
       </Card>
 
+      {/* Pending Invitations - visible to OWNER/ADMIN */}
+      {canManageMembers && !currentOrg.isPersonal && invitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Invitations</CardTitle>
+            <CardDescription>
+              {invitations.length} pending invitation{invitations.length !== 1 ? "s" : ""}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="hidden sm:table-cell">Invited</TableHead>
+                  <TableHead className="w-24">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invitations.map((invitation) => (
+                  <TableRow key={invitation.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>
+                            {(invitation.inviteeFirstName || invitation.inviteeUsername)
+                              .charAt(0)
+                              .toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">
+                            {invitation.inviteeFirstName && invitation.inviteeLastName
+                              ? `${invitation.inviteeFirstName} ${invitation.inviteeLastName}`
+                              : invitation.inviteeUsername}
+                          </p>
+                          {invitation.inviteeEmail && (
+                            <p className="text-sm text-muted-foreground">
+                              {invitation.inviteeEmail}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getRoleBadgeVariant(invitation.role)}>
+                        {invitation.role}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                      {new Date(invitation.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <AlertDialogTrigger
+                          render={
+                            <Button variant="ghost" size="icon-sm">
+                              <IconX className="h-4 w-4 text-destructive" />
+                            </Button>
+                          }
+                        />
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Revoke invitation</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to revoke the invitation for{" "}
+                              {invitation.inviteeUsername}?
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              variant="destructive"
+                              onClick={() => handleRevokeInvitation(invitation.id)}
+                            >
+                              Revoke
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       {!currentOrg.isPersonal && (
         <Card className="border-destructive">
           <CardHeader>
@@ -523,24 +632,45 @@ export default function TeamPage({ params }: TeamPageProps) {
         </Card>
       )}
 
-      {/* Add Member Dialog */}
-      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+      {/* Invite Member Dialog */}
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add team member</DialogTitle>
+            <DialogTitle>Invite team member</DialogTitle>
             <DialogDescription>
-              Add an existing user to this team by their username.
+              Search for an existing user to invite to this team.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                placeholder="Enter username"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-              />
+              <Label>User</Label>
+              {selectedUser ? (
+                <div className="flex items-center justify-between border border-border p-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">
+                      {selectedUser.firstName && selectedUser.lastName
+                        ? `${selectedUser.firstName} ${selectedUser.lastName}`
+                        : selectedUser.username}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      @{selectedUser.username}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedUser(null)}
+                  >
+                    Change
+                  </Button>
+                </div>
+              ) : (
+                <UserSearchCombobox
+                  excludeOrgId={currentOrg?.id || ""}
+                  onSelect={setSelectedUser}
+                  disabled={inviting}
+                />
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
@@ -554,15 +684,15 @@ export default function TeamPage({ params }: TeamPageProps) {
                 </SelectContent>
               </Select>
             </div>
-            {addError && <p className="text-sm text-destructive">{addError}</p>}
+            {inviteError && <p className="text-sm text-destructive">{inviteError}</p>}
           </div>
           <DialogFooter>
             <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
             <Button
-              onClick={handleAddMember}
-              disabled={adding || !newUsername.trim()}
+              onClick={handleInviteMember}
+              disabled={inviting || !selectedUser}
             >
-              {adding ? "Adding..." : "Add Member"}
+              {inviting ? "Inviting..." : "Invite Member"}
             </Button>
           </DialogFooter>
         </DialogContent>

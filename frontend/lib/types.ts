@@ -99,6 +99,44 @@ export interface UpdateMemberRoleRequest {
   role: OrgRole;
 }
 
+/** User search result returned from the search API */
+export interface UserSearchResult {
+  id: string;
+  username: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
+/** Invitation status enum */
+export type InvitationStatus = "PENDING" | "ACCEPTED" | "DECLINED" | "REVOKED";
+
+/** Organization invitation returned from the API */
+export interface OrganizationInvitation {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  organizationSlug: string;
+  inviterId: string;
+  inviterUsername: string;
+  inviteeId: string;
+  inviteeUsername: string;
+  inviteeFirstName: string | null;
+  inviteeLastName: string | null;
+  inviteeEmail: string | null;
+  inviteeAvatarUrl: string | null;
+  role: OrgRole;
+  status: InvitationStatus;
+  createdAt: string;
+}
+
+/** Request body for creating an invitation */
+export interface CreateInvitationRequest {
+  userId: string;
+  role: OrgRole;
+}
+
 /** LiveConnect embed key returned from the API */
 export interface LiveConnectEmbedKey {
   id: string;

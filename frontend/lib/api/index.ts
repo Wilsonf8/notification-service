@@ -6,7 +6,9 @@
 
 export * from "./projects";
 export * from "./user";
+export * from "./users";
 export * from "./organizations";
+export * from "./invitations";
 export * from "./liveconnect";
 export * from "./liveconnect-dashboard";
 export * from "./billing";

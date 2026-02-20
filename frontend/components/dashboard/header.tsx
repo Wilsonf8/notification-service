@@ -31,6 +31,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { IconLogout, IconUser, IconMenu2 } from "@tabler/icons-react";
 import { getNavItems, isNavItemActive } from "@/components/dashboard/sidebar";
 import { OrgSwitcher } from "@/components/dashboard/org-switcher";
+import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import type { User } from "@/lib/types";
 
@@ -132,24 +133,27 @@ export function DashboardHeader() {
         </Sheet>
         {/* Breadcrumbs or page title can go here */}
       </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center outline-none">
-          <Avatar className="h-8 w-8">
-            <AvatarFallback>{getAvatarInitial(user)}</AvatarFallback>
-          </Avatar>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
-            <IconUser className="mr-2 h-4 w-4" />
-            Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <IconLogout className="mr-2 h-4 w-4" />
-            Log out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2">
+        <NotificationBell />
+        <DropdownMenu>
+          <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center outline-none">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>{getAvatarInitial(user)}</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => router.push("/dashboard/settings")}>
+              <IconUser className="mr-2 h-4 w-4" />
+              Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <IconLogout className="mr-2 h-4 w-4" />
+              Log out
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }
