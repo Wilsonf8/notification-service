@@ -5,6 +5,7 @@
 
 import { h } from 'preact';
 import { useState } from 'preact/hooks';
+import { ApiError } from '../api';
 
 /**
  * Data structure for the contact form submission.
@@ -228,7 +229,11 @@ export function ContactForm({
       await onSubmit(trimmedData);
       setIsSuccess(true);
     } catch (err) {
-      setSubmitError('Failed to submit. Please try again.');
+      if (err instanceof ApiError && err.status === 429) {
+        setSubmitError('You have submitted the form too many times. Please try again in an hour.');
+      } else {
+        setSubmitError('Failed to submit. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
