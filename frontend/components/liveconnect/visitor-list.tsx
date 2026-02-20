@@ -90,7 +90,7 @@ function formatLastSeen(lastSeenAt: string): string {
 /**
  * Formats relative time since previous visit ended.
  * @param previousVisitEndedAt - ISO timestamp of when the previous visit ended
- * @returns Human-readable "Last seen ..." string
+ * @returns Human-readable "Last visit ..." string
  */
 function formatPreviousVisit(previousVisitEndedAt: string): string {
   const prev = new Date(previousVisitEndedAt);
@@ -98,18 +98,18 @@ function formatPreviousVisit(previousVisitEndedAt: string): string {
   const diffMs = now.getTime() - prev.getTime();
   const diffSec = Math.floor(diffMs / 1000);
 
-  if (diffSec < 60) return "Last seen just now";
+  if (diffSec < 60) return "Last visit just now";
 
   const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `Last seen ${diffMin}m ago`;
+  if (diffMin < 60) return `Last visit ${diffMin}m ago`;
 
   const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return `Last seen ${diffHr}h ago`;
+  if (diffHr < 24) return `Last visit ${diffHr}h ago`;
 
   const diffDays = Math.floor(diffHr / 24);
-  if (diffDays < 7) return `Last seen ${diffDays}d ago`;
+  if (diffDays < 7) return `Last visit ${diffDays}d ago`;
 
-  return `Last seen ${prev.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  return `Last visit ${prev.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 }
 
 /**

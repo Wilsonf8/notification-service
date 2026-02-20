@@ -102,7 +102,7 @@ private struct BrowsingVisitorCard: View {
 
                     if visitor.isFirstVisit != true,
                        let previousVisitEndedAt = visitor.previousVisitEndedAt {
-                        Text("Last seen \(formatRelativeTime(previousVisitEndedAt))")
+                        Text("Last visit \(formatRelativeTime(previousVisitEndedAt))")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
