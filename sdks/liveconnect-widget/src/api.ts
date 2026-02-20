@@ -383,6 +383,7 @@ export class ApiClient {
       headers: {
         'X-Session-Token': this.sessionToken!,
       },
+      expectNoContent: true,
     });
   }
 

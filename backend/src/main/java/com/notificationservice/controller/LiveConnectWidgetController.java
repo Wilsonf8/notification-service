@@ -257,7 +257,7 @@ public class LiveConnectWidgetController {
 
         contactService.submitContactForm(session, request);
 
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
