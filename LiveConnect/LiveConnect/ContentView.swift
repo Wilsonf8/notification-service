@@ -140,6 +140,10 @@ struct ContentView: View {
                 requestId: requestId
             )
             NotificationRouter.shared.clearPendingNavigation()
+
+        case .conversationDetail(let projectId, _):
+            // Navigate to project — ConversationsListView will handle opening the conversation
+            sidebarViewModel.selectedProjectId = projectId
         }
     }
 }

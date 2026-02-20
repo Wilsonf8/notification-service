@@ -36,6 +36,10 @@ public class RepNotificationPreference {
     @Builder.Default
     private Boolean notifyVisitorRequest = true;
 
+    @Column(name = "notify_contact_form")
+    @Builder.Default
+    private Boolean notifyContactForm = true;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

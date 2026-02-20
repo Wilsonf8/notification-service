@@ -50,6 +50,12 @@ struct ConversationsListView: View {
                 conversation: conversation
             )
         }
+        .onChange(of: NotificationRouter.shared.pendingNavigation) { _, _ in
+            handlePendingConversationNavigation()
+        }
+        .onChange(of: conversations.count) { _, _ in
+            handlePendingConversationNavigation()
+        }
     }
 
     // MARK: - Subviews
@@ -172,6 +178,33 @@ struct ConversationsListView: View {
         }
 
         isLoading = false
+    }
+
+    // MARK: - Notification Handling
+
+    /// Checks for a pending conversation detail navigation and opens the conversation if found.
+    private func handlePendingConversationNavigation() {
+        guard case .conversationDetail(_, let conversationId) = NotificationRouter.shared.pendingNavigation else { return }
+
+        // Check if conversation is already loaded in the list
+        if let conversation = conversations.first(where: { $0.id == conversationId }) {
+            selectedConversation = conversation
+            NotificationRouter.shared.clearPendingNavigation()
+        } else {
+            // Fetch the conversation directly from the API
+            Task {
+                do {
+                    let conversation: Conversation = try await APIClient.shared.get(
+                        Endpoints.conversation(projectId: projectId, conversationId: conversationId)
+                    )
+                    selectedConversation = conversation
+                    NotificationRouter.shared.clearPendingNavigation()
+                } catch {
+                    print("ConversationsListView: Failed to fetch conversation from notification: \(error)")
+                    NotificationRouter.shared.clearPendingNavigation()
+                }
+            }
+        }
     }
 }
 

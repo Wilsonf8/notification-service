@@ -15,9 +15,13 @@ struct NotificationPreferences: Codable, Sendable {
     /// Whether to receive notifications when visitors request calls.
     var notifyVisitorRequest: Bool
 
-    init(notifyVisitorPresence: Bool = true, notifyVisitorRequest: Bool = true) {
+    /// Whether to receive notifications when contact forms are submitted.
+    var notifyContactForm: Bool
+
+    init(notifyVisitorPresence: Bool = true, notifyVisitorRequest: Bool = true, notifyContactForm: Bool = true) {
         self.notifyVisitorPresence = notifyVisitorPresence
         self.notifyVisitorRequest = notifyVisitorRequest
+        self.notifyContactForm = notifyContactForm
     }
 }
 
@@ -25,4 +29,5 @@ struct NotificationPreferences: Codable, Sendable {
 struct UpdateNotificationPreferencesRequest: Encodable {
     let notifyVisitorPresence: Bool?
     let notifyVisitorRequest: Bool?
+    let notifyContactForm: Bool?
 }

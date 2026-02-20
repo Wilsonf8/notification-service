@@ -78,6 +78,11 @@ struct ProjectDashboardView: View {
                     viewModel.clearIncomingCall()
                 }
             }
+            .onChange(of: NotificationRouter.shared.pendingNavigation) { _, navigation in
+                if case .conversationDetail = navigation {
+                    selectedTab = .conversations
+                }
+            }
     }
 
     // MARK: - Dashboard Tab View

@@ -46,6 +46,14 @@ final class NotificationRouter {
                 pendingNavigation = .acceptRequest(projectId: projectId, requestId: requestId)
             }
 
+        case "contact_form":
+            if let projectIdString = userInfo["projectId"] as? String,
+               let projectId = UUID(uuidString: projectIdString),
+               let conversationIdString = userInfo["conversationId"] as? String,
+               let conversationId = UUID(uuidString: conversationIdString) {
+                pendingNavigation = .conversationDetail(projectId: projectId, conversationId: conversationId)
+            }
+
         default:
             print("NotificationRouter: Unknown notification type: \(type)")
         }
@@ -64,4 +72,7 @@ enum NotificationNavigation: Equatable {
 
     /// Show request accept sheet.
     case acceptRequest(projectId: UUID, requestId: UUID)
+
+    /// Navigate to conversation detail view.
+    case conversationDetail(projectId: UUID, conversationId: UUID)
 }

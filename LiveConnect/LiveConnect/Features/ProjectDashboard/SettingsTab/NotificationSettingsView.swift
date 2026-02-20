@@ -28,6 +28,11 @@ struct NotificationSettingsView: View {
                     .onChange(of: prefs.notifyVisitorRequest) { _, _ in
                         Task { await save() }
                     }
+
+                Toggle("Contact Form Submitted", isOn: $prefs.notifyContactForm)
+                    .onChange(of: prefs.notifyContactForm) { _, _ in
+                        Task { await save() }
+                    }
             } header: {
                 Text("Push Notifications")
             } footer: {
@@ -111,7 +116,8 @@ struct NotificationSettingsView: View {
                 Endpoints.notificationPreferences(projectId: projectId),
                 body: UpdateNotificationPreferencesRequest(
                     notifyVisitorPresence: prefs.notifyVisitorPresence,
-                    notifyVisitorRequest: prefs.notifyVisitorRequest
+                    notifyVisitorRequest: prefs.notifyVisitorRequest,
+                    notifyContactForm: prefs.notifyContactForm
                 )
             )
             prefs = updated

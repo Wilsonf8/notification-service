@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Service for sending push notifications to iOS devices.
- * Handles visitor presence and visitor request notifications.
+ * Handles visitor presence, visitor request, and contact form notifications.
  */
 @Service
 @Slf4j
@@ -166,6 +166,76 @@ public class PushNotificationService {
 
             // Send push to all of rep's devices
             sendVisitorRequestToUser(rep.getUser().getId(), visitor, request.getId(), projectId);
+        }
+    }
+
+    /**
+     * Sends contact form submission notifications to all reps in the project.
+     * Sends to all reps (not just available) since contact forms imply reps are offline.
+     *
+     * @param projectId      the project ID
+     * @param visitorName    the visitor's name from the contact form
+     * @param message        the visitor's message
+     * @param conversationId the conversation ID for navigation
+     * @param projectName    the project name for notification title, or null
+     */
+    @Async
+    public void sendContactFormNotification(UUID projectId, String visitorName, String message,
+                                            UUID conversationId, @Nullable String projectName) {
+        if (apnsClient == null) {
+            log.debug("APNs client not configured, skipping contact form notification");
+            return;
+        }
+
+        // Get ALL reps for project (not just available, since contact forms imply reps are offline)
+        List<LiveConnectRep> reps = repRepository.findByProjectId(projectId);
+        log.info("Sending contact form push to {} reps in project {}", reps.size(), projectId);
+
+        for (LiveConnectRep rep : reps) {
+            // Skip if rep has active WebSocket sessions
+            if (repSessionManager.hasActiveSessions(rep.getUser().getId())) {
+                log.debug("Skipping push for rep {} - has active WebSocket sessions", rep.getId());
+                continue;
+            }
+
+            // Check rep's notification preferences
+            RepNotificationPreference pref = preferenceRepository.findByRepId(rep.getId())
+                    .orElse(null);
+            if (pref != null && !pref.getNotifyContactForm()) {
+                log.debug("Skipping push for rep {} - contact form notifications disabled", rep.getId());
+                continue;
+            }
+
+            sendContactFormToUser(rep.getUser().getId(), visitorName, message, projectId,
+                    conversationId, projectName);
+        }
+    }
+
+    private void sendContactFormToUser(UUID userId, String visitorName, String message,
+                                       UUID projectId, UUID conversationId,
+                                       @Nullable String projectName) {
+        List<DeviceToken> tokens = deviceTokenService.getValidTokensForUser(userId);
+        if (tokens.isEmpty()) {
+            log.debug("No device tokens for user {}", userId);
+            return;
+        }
+
+        String title = projectName != null ? projectName : "Contact Form";
+        String preview = message.length() > 100 ? message.substring(0, 100) + "..." : message;
+        String body = visitorName + ": " + preview;
+
+        ApnsPayloadBuilder payloadBuilder = new SimpleApnsPayloadBuilder()
+                .setAlertTitle(title)
+                .setAlertBody(body)
+                .setSound("default")
+                .addCustomProperty("type", "contact_form")
+                .addCustomProperty("projectId", projectId.toString())
+                .addCustomProperty("conversationId", conversationId.toString());
+
+        String payload = payloadBuilder.build();
+
+        for (DeviceToken token : tokens) {
+            sendPush(token.getDeviceToken(), payload, token.getBundleId());
         }
     }
 

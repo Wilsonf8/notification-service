@@ -46,7 +46,8 @@ public class NotificationPreferencesService {
 
         return new NotificationPreferencesDto(
                 pref.getNotifyVisitorPresence(),
-                pref.getNotifyVisitorRequest()
+                pref.getNotifyVisitorRequest(),
+                pref.getNotifyContactForm()
         );
     }
 
@@ -72,12 +73,16 @@ public class NotificationPreferencesService {
         if (request.notifyVisitorRequest() != null) {
             pref.setNotifyVisitorRequest(request.notifyVisitorRequest());
         }
+        if (request.notifyContactForm() != null) {
+            pref.setNotifyContactForm(request.notifyContactForm());
+        }
 
         pref = preferenceRepository.save(pref);
 
         return new NotificationPreferencesDto(
                 pref.getNotifyVisitorPresence(),
-                pref.getNotifyVisitorRequest()
+                pref.getNotifyVisitorRequest(),
+                pref.getNotifyContactForm()
         );
     }
 
@@ -86,6 +91,7 @@ public class NotificationPreferencesService {
                 .rep(rep)
                 .notifyVisitorPresence(true)
                 .notifyVisitorRequest(true)
+                .notifyContactForm(true)
                 .build();
         return preferenceRepository.save(pref);
     }

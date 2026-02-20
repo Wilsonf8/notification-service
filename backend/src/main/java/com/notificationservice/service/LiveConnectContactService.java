@@ -29,6 +29,7 @@ public class LiveConnectContactService {
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveConnectMessageRepository messageRepository;
     private final LiveConnectVisitorRepository visitorRepository;
+    private final PushNotificationService pushNotificationService;
 
     /**
      * Submits a contact form when reps are offline.
@@ -74,6 +75,15 @@ public class LiveConnectContactService {
                 .content(messageContent.toString())
                 .build();
         messageRepository.save(message);
+
+        // Send push notification to all reps
+        pushNotificationService.sendContactFormNotification(
+                session.getProject().getId(),
+                request.name(),
+                request.message(),
+                conversation.getId(),
+                session.getProject().getName()
+        );
 
         log.info("Contact form submitted for project {} by visitor {}",
                 session.getProject().getId(), visitor.getVisitorId());
