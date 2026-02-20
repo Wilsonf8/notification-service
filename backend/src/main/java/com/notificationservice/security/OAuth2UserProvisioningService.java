@@ -48,8 +48,8 @@ public class OAuth2UserProvisioningService {
             if (userInfo.firstName() != null) user.setFirstName(userInfo.firstName());
             if (userInfo.lastName() != null) user.setLastName(userInfo.lastName());
             userRepository.save(user);
-        } else if (userInfo.email() != null) {
-            Optional<User> existingUser = userRepository.findByEmail(userInfo.email());
+        } else if (userInfo.email() != null && userInfo.emailVerified()) {
+            Optional<User> existingUser = userRepository.findByEmailIgnoreCase(userInfo.email());
 
             if (existingUser.isPresent()) {
                 // ACCOUNT LINKING: User exists with this email - link new identity
@@ -87,33 +87,49 @@ public class OAuth2UserProvisioningService {
      * @return extracted user info
      */
     private OAuth2UserInfo extractUserInfo(AuthProvider provider, Map<String, Object> attributes) {
+        String email = normalizeEmail((String) attributes.get("email"));
+        boolean emailVerified = Boolean.TRUE.equals(attributes.get("email_verified"));
+
         return switch (provider) {
             case GITHUB -> new OAuth2UserInfo(
                     String.valueOf(attributes.get("id")),
                     (String) attributes.get("login"),
                     null,
                     null,
-                    (String) attributes.get("email"),
-                    (String) attributes.get("avatar_url")
+                    email,
+                    (String) attributes.get("avatar_url"),
+                    emailVerified
             );
             case GOOGLE -> new OAuth2UserInfo(
                     (String) attributes.get("sub"),
                     (String) attributes.get("name"),
                     (String) attributes.get("given_name"),
                     (String) attributes.get("family_name"),
-                    (String) attributes.get("email"),
-                    (String) attributes.get("picture")
+                    email,
+                    (String) attributes.get("picture"),
+                    emailVerified
             );
             case APPLE -> new OAuth2UserInfo(
                     (String) attributes.get("sub"),
                     (String) attributes.getOrDefault("email", "Apple User"),
                     null,
                     null,
-                    (String) attributes.get("email"),
-                    null
+                    email,
+                    null,
+                    emailVerified
             );
             case EMAIL -> throw new IllegalArgumentException("EMAIL provider not supported for OAuth2");
         };
+    }
+
+    /**
+     * Normalizes an email to lowercase for consistent storage and lookups.
+     *
+     * @param email the email to normalize (nullable)
+     * @return the lowercased email, or null if input was null
+     */
+    private String normalizeEmail(String email) {
+        return email != null ? email.toLowerCase() : null;
     }
 
     /**
@@ -178,6 +194,7 @@ public class OAuth2UserProvisioningService {
      * @param lastName the user's last name (nullable)
      * @param email the user's email (nullable)
      * @param avatarUrl the user's avatar URL (nullable)
+     * @param emailVerified whether the provider has verified the email
      */
     private record OAuth2UserInfo(
             String providerUserId,
@@ -185,6 +202,7 @@ public class OAuth2UserProvisioningService {
             String firstName,
             String lastName,
             String email,
-            String avatarUrl
+            String avatarUrl,
+            boolean emailVerified
     ) {}
 }

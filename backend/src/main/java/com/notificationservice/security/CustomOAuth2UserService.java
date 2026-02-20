@@ -49,6 +49,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             if (email != null) {
                 attributes = new HashMap<>(attributes);
                 attributes.put("email", email);
+                // fetchGitHubPrimaryEmail only returns primary+verified emails
+                attributes.put("email_verified", true);
                 oauth2User = new DefaultOAuth2User(
                         oauth2User.getAuthorities(),
                         attributes,
