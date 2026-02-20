@@ -87,6 +87,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   /** Widget position, initialized from script tag, overridden by backend setting */
   const [position, setPosition] = useState<WidgetPosition>(config.position);
 
+  /** Widget icon name from init response */
+  const [widgetIcon, setWidgetIcon] = useState<string>('video');
+
   /** Welcome message from init response */
   const [welcomeMessage, setWelcomeMessage] = useState<string>('How can we help you today?');
 
@@ -244,6 +247,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         setIsOnline(initResponse.repsAvailable);
         if (initResponse.widgetPosition) {
           setPosition(initResponse.widgetPosition as WidgetPosition);
+        }
+        if (initResponse.widgetIcon) {
+          setWidgetIcon(initResponse.widgetIcon);
         }
 
         // Apply theme custom properties to shadow DOM host
@@ -740,6 +746,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             availability={availability}
             onClick={() => expand()}
             disabled={!isInitialized}
+            icon={widgetIcon}
           />
         </div>
       );
@@ -753,6 +760,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             onClick={() => collapse()}
             disabled={!isInitialized}
             ariaLabel="Close panel"
+            icon={widgetIcon}
           />
           <Panel
             position={position}
@@ -773,6 +781,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             availability="busy"
             onClick={() => {}}
             disabled={true}
+            icon={widgetIcon}
           />
           <div class={`lc-panel lc-panel--${position}`}>
             <WaitingView
@@ -792,6 +801,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             availability="online"
             onClick={() => {}}
             disabled={true}
+            icon={widgetIcon}
           />
           <IncomingPing
             repName={state.repName}
@@ -838,6 +848,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             position={position}
             availability="busy"
             onClick={() => collapse()}
+            icon={widgetIcon}
           />
           <div class={`lc-panel lc-panel--${position}`}>
             <div class="lc-waiting" style={{ minHeight: '200px' }}>
@@ -864,6 +875,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             position={position}
             availability={availability}
             onClick={() => expand()}
+            icon={widgetIcon}
           />
           <div class={`lc-panel lc-panel--${position}`}>
             <div class="lc-panel__content">
@@ -884,6 +896,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             position={position}
             availability={availability}
             onClick={() => expand()}
+            icon={widgetIcon}
           />
         </div>
       );

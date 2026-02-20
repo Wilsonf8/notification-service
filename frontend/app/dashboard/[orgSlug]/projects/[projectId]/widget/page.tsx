@@ -32,7 +32,36 @@ import {
   IconVideo,
   IconMail,
   IconCircleFilled,
+  IconPhone,
+  IconHeadset,
+  IconMicrophone,
+  IconLifebuoy,
+  IconHelpCircle,
+  IconFirstAidKit,
+  IconShieldCheck,
+  IconBuilding,
+  IconBriefcase,
+  IconShoppingCart,
+  IconBuildingStore,
+  IconReceipt,
+  IconCode,
+  IconTerminal,
+  IconCpu,
+  IconDeviceDesktop,
+  IconCloud,
+  IconPalette,
+  IconCamera,
+  IconMusic,
+  IconPhoto,
+  IconBrush,
+  IconStar,
+  IconHeart,
+  IconBolt,
+  IconRocket,
+  IconDiamond,
+  IconFlame,
 } from "@tabler/icons-react";
+import type { Icon } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { useProject } from "../layout";
 import {
@@ -43,6 +72,7 @@ import type {
   LiveConnectSettings,
   WidgetPosition,
   WidgetFontFamily,
+  WidgetIcon,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +91,106 @@ const POSITION_OPTIONS: { value: WidgetPosition; label: string }[] = [
   { value: "top-right", label: "Top Right" },
   { value: "bottom-left", label: "Bottom Left" },
   { value: "bottom-right", label: "Bottom Right" },
+];
+
+/** Maps icon name strings to Tabler React components */
+const ICON_MAP: Record<WidgetIcon, Icon> = {
+  "video": IconVideo,
+  "message-circle": IconMessageCircle,
+  "phone": IconPhone,
+  "headset": IconHeadset,
+  "mail": IconMail,
+  "microphone": IconMicrophone,
+  "lifebuoy": IconLifebuoy,
+  "help-circle": IconHelpCircle,
+  "first-aid-kit": IconFirstAidKit,
+  "shield-check": IconShieldCheck,
+  "building": IconBuilding,
+  "briefcase": IconBriefcase,
+  "shopping-cart": IconShoppingCart,
+  "store": IconBuildingStore,
+  "receipt": IconReceipt,
+  "code": IconCode,
+  "terminal": IconTerminal,
+  "cpu": IconCpu,
+  "device-desktop": IconDeviceDesktop,
+  "cloud": IconCloud,
+  "palette": IconPalette,
+  "camera": IconCamera,
+  "music": IconMusic,
+  "photo": IconPhoto,
+  "brush": IconBrush,
+  "star": IconStar,
+  "heart": IconHeart,
+  "bolt": IconBolt,
+  "rocket": IconRocket,
+  "diamond": IconDiamond,
+  "flame": IconFlame,
+};
+
+/** Widget icon options grouped by category */
+const WIDGET_ICONS: { category: string; icons: { name: WidgetIcon; label: string }[] }[] = [
+  {
+    category: "Communication",
+    icons: [
+      { name: "video", label: "Video" },
+      { name: "message-circle", label: "Message" },
+      { name: "phone", label: "Phone" },
+      { name: "headset", label: "Headset" },
+      { name: "mail", label: "Mail" },
+      { name: "microphone", label: "Mic" },
+    ],
+  },
+  {
+    category: "Support",
+    icons: [
+      { name: "lifebuoy", label: "Lifebuoy" },
+      { name: "help-circle", label: "Help" },
+      { name: "first-aid-kit", label: "First Aid" },
+      { name: "shield-check", label: "Shield" },
+    ],
+  },
+  {
+    category: "Business",
+    icons: [
+      { name: "building", label: "Building" },
+      { name: "briefcase", label: "Briefcase" },
+      { name: "shopping-cart", label: "Cart" },
+      { name: "store", label: "Store" },
+      { name: "receipt", label: "Receipt" },
+    ],
+  },
+  {
+    category: "Tech",
+    icons: [
+      { name: "code", label: "Code" },
+      { name: "terminal", label: "Terminal" },
+      { name: "cpu", label: "CPU" },
+      { name: "device-desktop", label: "Desktop" },
+      { name: "cloud", label: "Cloud" },
+    ],
+  },
+  {
+    category: "Creative",
+    icons: [
+      { name: "palette", label: "Palette" },
+      { name: "camera", label: "Camera" },
+      { name: "music", label: "Music" },
+      { name: "photo", label: "Photo" },
+      { name: "brush", label: "Brush" },
+    ],
+  },
+  {
+    category: "General",
+    icons: [
+      { name: "star", label: "Star" },
+      { name: "heart", label: "Heart" },
+      { name: "bolt", label: "Bolt" },
+      { name: "rocket", label: "Rocket" },
+      { name: "diamond", label: "Diamond" },
+      { name: "flame", label: "Flame" },
+    ],
+  },
 ];
 
 /** Maps font family names to CSS font stacks */
@@ -109,6 +239,7 @@ export default function WidgetPage() {
   const [offlineMessage, setOfflineMessage] = useState(
     "No reps available. Leave your info and we'll get back to you."
   );
+  const [widgetIcon, setWidgetIcon] = useState<WidgetIcon>("video");
 
   // Preview state
   const [previewExpanded, setPreviewExpanded] = useState(false);
@@ -126,6 +257,7 @@ export default function WidgetPage() {
     setWidgetPosition(s.widgetPosition);
     setWelcomeMessage(s.welcomeMessage);
     setOfflineMessage(s.offlineMessage);
+    setWidgetIcon(s.widgetIcon);
   }, []);
 
   /**
@@ -170,7 +302,8 @@ export default function WidgetPage() {
       fontFamily !== savedSettings.fontFamily ||
       widgetPosition !== savedSettings.widgetPosition ||
       welcomeMessage !== savedSettings.welcomeMessage ||
-      offlineMessage !== savedSettings.offlineMessage);
+      offlineMessage !== savedSettings.offlineMessage ||
+      widgetIcon !== savedSettings.widgetIcon);
 
   /**
    * Saves all settings to the API.
@@ -189,6 +322,7 @@ export default function WidgetPage() {
         widgetPosition,
         welcomeMessage,
         offlineMessage,
+        widgetIcon,
       });
       setSavedSettings(updated);
       toast.success("Widget settings saved");
@@ -337,6 +471,46 @@ export default function WidgetPage() {
                 textColor,
                 setTextColor
               )}
+            </CardContent>
+          </Card>
+
+          {/* Widget Icon */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Widget Icon</CardTitle>
+              <CardDescription>
+                Choose the icon displayed on the floating button
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {WIDGET_ICONS.map((group) => (
+                <div key={group.category} className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {group.category}
+                  </p>
+                  <div className="grid grid-cols-6 gap-1.5">
+                    {group.icons.map((icon) => {
+                      const IconComp = ICON_MAP[icon.name];
+                      return (
+                        <button
+                          key={icon.name}
+                          type="button"
+                          title={icon.label}
+                          onClick={() => setWidgetIcon(icon.name)}
+                          className={cn(
+                            "flex items-center justify-center border p-2 transition-colors",
+                            widgetIcon === icon.name
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border bg-background text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <IconComp className="h-5 w-5" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -656,10 +830,15 @@ export default function WidgetPage() {
                           style={{ color: backgroundColor }}
                         />
                       ) : (
-                        <IconMessageCircle
-                          className="h-5 w-5"
-                          style={{ color: backgroundColor }}
-                        />
+                        (() => {
+                          const FabIcon = ICON_MAP[widgetIcon] || IconVideo;
+                          return (
+                            <FabIcon
+                              className="h-5 w-5"
+                              style={{ color: backgroundColor }}
+                            />
+                          );
+                        })()
                       )}
                     </button>
                   </div>

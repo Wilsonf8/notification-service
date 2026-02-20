@@ -90,6 +90,9 @@ public class LiveConnectSettingsService {
         if (request.fontFamily() != null) {
             settings.setFontFamily(request.fontFamily());
         }
+        if (request.widgetIcon() != null) {
+            settings.setWidgetIcon(request.widgetIcon());
+        }
 
         return toDto(settingsRepository.save(settings));
     }
@@ -128,7 +131,8 @@ public class LiveConnectSettingsService {
                 settings.getBackgroundColor(),
                 settings.getTextColor(),
                 settings.getBorderRadius(),
-                settings.getFontFamily()
+                settings.getFontFamily(),
+                settings.getWidgetIcon()
         );
     }
 }

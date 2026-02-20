@@ -60,6 +60,10 @@ public class LiveConnectSettings {
     @Builder.Default
     private String fontFamily = "JetBrains Mono";
 
+    @Column(name = "widget_icon", nullable = false)
+    @Builder.Default
+    private String widgetIcon = "video";
+
     @Column(name = "is_active")
     @Builder.Default
     private Boolean isActive = true;

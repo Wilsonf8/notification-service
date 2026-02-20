@@ -136,7 +136,8 @@ public class LiveConnectSessionService {
                 settings.getBackgroundColor(),
                 settings.getTextColor(),
                 settings.getBorderRadius(),
-                settings.getFontFamily()
+                settings.getFontFamily(),
+                settings.getWidgetIcon()
         );
     }
 

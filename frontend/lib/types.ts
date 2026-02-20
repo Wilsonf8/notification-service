@@ -187,6 +187,40 @@ export type WidgetFontFamily =
   | "Nunito"
   | "System Default";
 
+/** Valid widget icon names */
+export type WidgetIcon =
+  | "video"
+  | "message-circle"
+  | "phone"
+  | "headset"
+  | "mail"
+  | "microphone"
+  | "lifebuoy"
+  | "help-circle"
+  | "first-aid-kit"
+  | "shield-check"
+  | "building"
+  | "briefcase"
+  | "shopping-cart"
+  | "store"
+  | "receipt"
+  | "code"
+  | "terminal"
+  | "cpu"
+  | "device-desktop"
+  | "cloud"
+  | "palette"
+  | "camera"
+  | "music"
+  | "photo"
+  | "brush"
+  | "star"
+  | "heart"
+  | "bolt"
+  | "rocket"
+  | "diamond"
+  | "flame";
+
 /** LiveConnect settings returned from the API */
 export interface LiveConnectSettings {
   welcomeMessage: string;
@@ -198,6 +232,7 @@ export interface LiveConnectSettings {
   textColor: string;
   borderRadius: number;
   fontFamily: WidgetFontFamily;
+  widgetIcon: WidgetIcon;
 }
 
 /** Request body for updating LiveConnect settings */
@@ -211,6 +246,7 @@ export interface UpdateLiveConnectSettingsRequest {
   textColor?: string;
   borderRadius?: number;
   fontFamily?: WidgetFontFamily;
+  widgetIcon?: WidgetIcon;
 }
 
 // ============================================================================

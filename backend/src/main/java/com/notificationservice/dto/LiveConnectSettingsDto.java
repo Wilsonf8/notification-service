@@ -12,6 +12,7 @@ package com.notificationservice.dto;
  * @param textColor the widget text color (hex format)
  * @param borderRadius the widget corner rounding in pixels
  * @param fontFamily the widget font family
+ * @param widgetIcon the widget FAB button icon name
  */
 public record LiveConnectSettingsDto(
         String welcomeMessage,
@@ -22,5 +23,6 @@ public record LiveConnectSettingsDto(
         String backgroundColor,
         String textColor,
         Integer borderRadius,
-        String fontFamily
+        String fontFamily,
+        String widgetIcon
 ) {}
