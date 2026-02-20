@@ -30,6 +30,12 @@ export function HeroSection() {
             >
               Login
             </Link>
+            <Link
+              href="/docs"
+              className="flex h-9 items-center justify-center border border-border px-4 text-xs font-medium text-foreground transition-all hover:bg-muted w-full sm:w-auto"
+            >
+              Docs
+            </Link>
           </div>
         </div>
 

@@ -27,6 +27,12 @@ export function Footer() {
             >
               Login
             </Link>
+            <Link
+              href="/docs"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Docs
+            </Link>
             <a
               href="https://github.com"
               target="_blank"
