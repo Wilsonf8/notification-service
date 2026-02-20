@@ -354,10 +354,8 @@ export default function WidgetPage() {
                   </span>
                 </div>
                 <Slider
-                  value={[borderRadius]}
-                  onValueChange={(v) => {
-                    if (Array.isArray(v)) setBorderRadius(v[0]);
-                  }}
+                  value={borderRadius}
+                  onValueChange={(v) => setBorderRadius(v as number)}
                   min={0}
                   max={24}
                 />
@@ -493,8 +491,10 @@ export default function WidgetPage() {
                       <div
                         className="absolute"
                         style={{
-                          [widgetPosition.includes("bottom") ? "bottom" : "top"]: 72,
-                          [widgetPosition.includes("right") ? "right" : "left"]: 16,
+                          top: widgetPosition.includes("top") ? 72 : "auto",
+                          bottom: widgetPosition.includes("bottom") ? 72 : "auto",
+                          left: widgetPosition.includes("left") ? 16 : "auto",
+                          right: widgetPosition.includes("right") ? 16 : "auto",
                           width: 260,
                           backgroundColor,
                           color: textColor,
@@ -634,8 +634,10 @@ export default function WidgetPage() {
                       onClick={() => setPreviewExpanded(!previewExpanded)}
                       className="absolute"
                       style={{
-                        [widgetPosition.includes("bottom") ? "bottom" : "top"]: 16,
-                        [widgetPosition.includes("right") ? "right" : "left"]: 16,
+                        top: widgetPosition.includes("top") ? 16 : "auto",
+                        bottom: widgetPosition.includes("bottom") ? 16 : "auto",
+                        left: widgetPosition.includes("left") ? 16 : "auto",
+                        right: widgetPosition.includes("right") ? 16 : "auto",
                         width: 48,
                         height: 48,
                         backgroundColor: widgetColor,
