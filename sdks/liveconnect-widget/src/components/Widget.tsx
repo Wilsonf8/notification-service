@@ -53,7 +53,7 @@ import { IncomingPing } from './IncomingPing';
 import { VideoCall } from './VideoCall';
 import { ChatPanel, type ChatMessage } from './ChatPanel';
 import { ContactForm, type ContactFormData } from './ContactForm';
-import type { WidgetConfig } from '../config';
+import type { WidgetConfig, WidgetPosition } from '../config';
 
 // Import CSS as string for shadow DOM injection
 import widgetStyles from '../styles/widget.css?inline';
@@ -83,6 +83,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
   /** Whether representatives are online/available */
   const [isOnline, setIsOnline] = useState<boolean>(false);
+
+  /** Widget position, initialized from script tag, overridden by backend setting */
+  const [position, setPosition] = useState<WidgetPosition>(position);
 
   /** Welcome message from init response */
   const [welcomeMessage, setWelcomeMessage] = useState<string>('How can we help you today?');
@@ -239,6 +242,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         // Update local state from init response
         setWelcomeMessage(initResponse.welcomeMessage || 'How can we help you today?');
         setIsOnline(initResponse.repsAvailable);
+        if (initResponse.widgetPosition) {
+          setPosition(initResponse.widgetPosition as WidgetPosition);
+        }
 
         // Apply theme custom properties to shadow DOM host
         applyTheme(initResponse);
@@ -727,7 +733,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability={availability}
             onClick={() => expand()}
             disabled={!isInitialized}
@@ -739,14 +745,14 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability={availability}
             onClick={() => collapse()}
             disabled={!isInitialized}
             ariaLabel="Close panel"
           />
           <Panel
-            position={config.position}
+            position={position}
             welcomeMessage={welcomeMessage}
             isOnline={isOnline}
             onRequestCall={handleRequestCall}
@@ -760,12 +766,12 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability="busy"
             onClick={() => {}}
             disabled={true}
           />
-          <div class={`lc-panel lc-panel--${config.position}`}>
+          <div class={`lc-panel lc-panel--${position}`}>
             <WaitingView
               expiresAt={state.expiresAt}
               onCancel={handleCancelWaiting}
@@ -779,7 +785,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability="online"
             onClick={() => {}}
             disabled={true}
@@ -790,7 +796,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
             onAccept={() => handleAcceptPing(state.requestId)}
             onDecline={() => handleDeclinePing(state.requestId)}
             onExpired={handlePingExpired}
-            position={config.position}
+            position={position}
           />
         </div>
       );
@@ -798,7 +804,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     case WidgetStateType.IN_CALL:
       return (
         <div class="lc-widget">
-          <div class={`lc-panel lc-panel--${config.position}`} style={{ height: '500px' }}>
+          <div class={`lc-panel lc-panel--${position}`} style={{ height: '500px' }}>
             <VideoCall
               conversationId={state.conversationId}
               roomName={state.roomName}
@@ -826,11 +832,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability="busy"
             onClick={() => collapse()}
           />
-          <div class={`lc-panel lc-panel--${config.position}`}>
+          <div class={`lc-panel lc-panel--${position}`}>
             <div class="lc-waiting" style={{ minHeight: '200px' }}>
               <p class="lc-waiting__title">Call in Progress</p>
               <p class="lc-waiting__message">
@@ -852,11 +858,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability={availability}
             onClick={() => expand()}
           />
-          <div class={`lc-panel lc-panel--${config.position}`}>
+          <div class={`lc-panel lc-panel--${position}`}>
             <div class="lc-panel__content">
               <ContactForm
                 onSubmit={handleContactSubmit}
@@ -872,7 +878,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <Button
-            position={config.position}
+            position={position}
             availability={availability}
             onClick={() => expand()}
           />
