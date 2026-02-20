@@ -85,7 +85,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   const [isOnline, setIsOnline] = useState<boolean>(false);
 
   /** Widget position, initialized from script tag, overridden by backend setting */
-  const [position, setPosition] = useState<WidgetPosition>(position);
+  const [position, setPosition] = useState<WidgetPosition>(config.position);
 
   /** Welcome message from init response */
   const [welcomeMessage, setWelcomeMessage] = useState<string>('How can we help you today?');
