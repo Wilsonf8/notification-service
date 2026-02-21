@@ -315,7 +315,7 @@ public class LiveConnectDashboardController {
      * @param userId the authenticated user's ID (must be the assigned rep)
      * @return the created message
      */
-    @PostMapping("/conversations/{conversationId}/message")
+    @PostMapping("/conversations/{conversationId}/messages")
     public ResponseEntity<LiveConnectMessageDto> sendMessage(
             @PathVariable UUID projectId,
             @PathVariable UUID conversationId,
