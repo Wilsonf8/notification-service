@@ -102,6 +102,10 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
 
                     // Combined query: visit count + latest completed endedAt (2 queries → 1)
                     Object[] visitData = visitRepository.countAndLatestEndedAtByVisitorId(visitorId);
+                    // JPA may nest the row inside an outer Object[] — unwrap if needed
+                    if (visitData.length > 0 && visitData[0] instanceof Object[]) {
+                        visitData = (Object[]) visitData[0];
+                    }
                     long totalVisitCount = visitData[0] != null ? ((Number) visitData[0]).longValue() : 0;
                     OffsetDateTime previousVisitEndedAt = (OffsetDateTime) visitData[1];
                     boolean isFirstVisit = totalVisitCount <= 1;
