@@ -26,7 +26,7 @@ export function HeroSection() {
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Link
               href="/login"
-              className="flex h-9 items-center justify-center bg-primary px-4 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/80 w-full sm:w-auto sm:min-w-28"
+              className="flex h-9 items-center justify-center border border-primary bg-primary px-4 text-xs font-medium text-primary-foreground transition-all hover:bg-primary/80 w-full sm:w-auto sm:min-w-28"
             >
               Login
             </Link>
