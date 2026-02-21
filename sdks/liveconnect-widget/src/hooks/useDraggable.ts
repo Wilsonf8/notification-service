@@ -120,6 +120,9 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       const handle = handleElRef.current;
       if (!container || !handle) return;
 
+      // Prevent native text selection / drag-and-drop so pointermove keeps firing
+      e.preventDefault();
+
       const rect = container.getBoundingClientRect();
       offsetRef.current = {
         x: e.clientX - rect.left,
@@ -165,20 +168,37 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     []
   );
 
+  /** Resets drag state if the browser cancels the pointer sequence for any reason. */
+  const onPointerCancel = useCallback(
+    (e: PointerEvent) => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      setIsDragging(false);
+    },
+    []
+  );
+
   // Attach/detach pointer event listeners on the handle.
   // Depends on handleEl (state set by callback ref) so it re-runs when the
   // handle element mounts — critical because VideoCall renders conditionally.
   useEffect(() => {
     if (!handleEl || disabled) return;
 
+    /** Blocks native HTML5 drag on text/images inside the handle. */
+    const onDragStart = (e: Event) => e.preventDefault();
+
     handleEl.addEventListener('pointerdown', onPointerDown);
     handleEl.addEventListener('pointermove', onPointerMove);
     handleEl.addEventListener('pointerup', onPointerUp);
+    handleEl.addEventListener('pointercancel', onPointerCancel);
+    handleEl.addEventListener('dragstart', onDragStart);
 
     return () => {
       handleEl.removeEventListener('pointerdown', onPointerDown);
       handleEl.removeEventListener('pointermove', onPointerMove);
       handleEl.removeEventListener('pointerup', onPointerUp);
+      handleEl.removeEventListener('pointercancel', onPointerCancel);
+      handleEl.removeEventListener('dragstart', onDragStart);
     };
   }, [handleEl, disabled]);
 
