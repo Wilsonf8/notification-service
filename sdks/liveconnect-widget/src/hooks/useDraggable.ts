@@ -65,7 +65,8 @@ function clampToViewport(
 
 /**
  * Hook that enables drag-to-reposition on a fixed-position element.
- * Uses Pointer Events API with setPointerCapture for reliable tracking.
+ * Uses window-level pointer event listeners for reliable tracking across
+ * all DOM contexts including Shadow DOM.
  *
  * @param options - Configuration options
  * @returns Refs, state, and style to wire up dragging
@@ -111,31 +112,6 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     }
   }, [disabled]);
 
-  const onPointerDown = useCallback(
-    (e: PointerEvent) => {
-      if (disabled) return;
-      if (e.button !== 0) return; // Only primary button
-
-      const container = containerRef.current;
-      const handle = handleElRef.current;
-      if (!container || !handle) return;
-
-      // Prevent native text selection / drag-and-drop so pointermove keeps firing
-      e.preventDefault();
-
-      const rect = container.getBoundingClientRect();
-      offsetRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      };
-
-      handle.setPointerCapture(e.pointerId);
-      isDraggingRef.current = true;
-      setIsDragging(true);
-    },
-    [disabled]
-  );
-
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
       if (!isDraggingRef.current) return;
@@ -155,30 +131,43 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
   );
 
   const onPointerUp = useCallback(
-    (e: PointerEvent) => {
+    () => {
       if (!isDraggingRef.current) return;
 
-      const handle = handleElRef.current;
-      if (handle) {
-        handle.releasePointerCapture(e.pointerId);
-      }
       isDraggingRef.current = false;
       setIsDragging(false);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     },
-    []
+    [onPointerMove]
   );
 
-  /** Resets drag state if the browser cancels the pointer sequence for any reason. */
-  const onPointerCancel = useCallback(
+  const onPointerDown = useCallback(
     (e: PointerEvent) => {
-      if (!isDraggingRef.current) return;
-      isDraggingRef.current = false;
-      setIsDragging(false);
+      if (disabled) return;
+      if (e.button !== 0) return; // Only primary button
+
+      const container = containerRef.current;
+      if (!container) return;
+
+      // Prevent native text selection / drag-and-drop so pointermove keeps firing
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      offsetRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+
+      isDraggingRef.current = true;
+      setIsDragging(true);
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
     },
-    []
+    [disabled, onPointerMove, onPointerUp]
   );
 
-  // Attach/detach pointer event listeners on the handle.
+  // Attach pointerdown and dragstart listeners on the handle.
   // Depends on handleEl (state set by callback ref) so it re-runs when the
   // handle element mounts — critical because VideoCall renders conditionally.
   useEffect(() => {
@@ -188,19 +177,16 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     const onDragStart = (e: Event) => e.preventDefault();
 
     handleEl.addEventListener('pointerdown', onPointerDown);
-    handleEl.addEventListener('pointermove', onPointerMove);
-    handleEl.addEventListener('pointerup', onPointerUp);
-    handleEl.addEventListener('pointercancel', onPointerCancel);
     handleEl.addEventListener('dragstart', onDragStart);
 
     return () => {
       handleEl.removeEventListener('pointerdown', onPointerDown);
-      handleEl.removeEventListener('pointermove', onPointerMove);
-      handleEl.removeEventListener('pointerup', onPointerUp);
-      handleEl.removeEventListener('pointercancel', onPointerCancel);
       handleEl.removeEventListener('dragstart', onDragStart);
+      // Clean up any lingering window listeners if unmounting mid-drag
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
     };
-  }, [handleEl, disabled]);
+  }, [handleEl, disabled, onPointerDown, onPointerMove, onPointerUp]);
 
   const dragStyle: DragStyle | undefined = hasDragged
     ? {
