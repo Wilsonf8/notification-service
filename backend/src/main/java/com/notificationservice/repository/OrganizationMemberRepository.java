@@ -16,6 +16,13 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
 
     boolean existsByOrganizationIdAndUserId(UUID organizationId, UUID userId);
 
+    /**
+     * Counts members for an organization.
+     * @param organizationId the organization ID
+     * @return number of members
+     */
+    long countByOrganizationId(UUID organizationId);
+
     @Query("SELECT m FROM OrganizationMember m WHERE m.organization.id = :orgId AND m.role = :role")
     List<OrganizationMember> findByOrganizationIdAndRole(UUID orgId, OrgRole role);
 }

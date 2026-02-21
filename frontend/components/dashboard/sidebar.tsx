@@ -34,7 +34,7 @@ interface NavItem {
  * @param userRole - The current user's role in the organization
  * @returns Array of navigation items (Billing only shown for OWNER)
  */
-export function getNavItems(orgSlug: string, userRole?: string): NavItem[] {
+export function getNavItems(orgSlug: string, userRole?: string, isPersonal?: boolean): NavItem[] {
   const items: NavItem[] = [
     {
       label: "Overview",
@@ -53,7 +53,7 @@ export function getNavItems(orgSlug: string, userRole?: string): NavItem[] {
     },
   ];
 
-  if (userRole === "OWNER") {
+  if (userRole === "OWNER" && !isPersonal) {
     items.push({
       label: "Billing",
       href: `/dashboard/${orgSlug}/billing`,
@@ -104,7 +104,7 @@ export function DashboardSidebar() {
   const { currentOrg } = useOrganization();
 
   // Get nav items based on current org (fallback to empty slug if no org)
-  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole);
+  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole, currentOrg?.isPersonal);
 
   return (
     <aside className="hidden md:flex w-64 flex-col border-r border-border bg-sidebar">

@@ -75,6 +75,8 @@ import type {
   WidgetIcon,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
+import { IconLock } from "@tabler/icons-react";
 
 /** Font family options with their CSS stacks */
 const FONT_OPTIONS: { value: WidgetFontFamily; label: string }[] = [
@@ -213,7 +215,9 @@ function getFontStack(fontFamily: WidgetFontFamily): string {
  * Widget customization page component.
  */
 export default function WidgetPage() {
-  const { projectId } = useProject();
+  const { projectId, orgSlug } = useProject();
+  const { limits } = useTierLimits(orgSlug);
+  const customizationDisabled = limits ? !limits.widgetCustomizationEnabled : false;
 
   // Loading / error state
   const [loading, setLoading] = useState(true);
@@ -407,6 +411,23 @@ export default function WidgetPage() {
         </p>
       </div>
 
+      {customizationDisabled && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <IconLock className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Upgrade to Pro to customize your widget
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Create a team organization and subscribe to unlock full widget customization.
+                The preview below shows the default widget appearance.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {error && (
         <Card className="border-destructive">
           <CardContent className="py-4">
@@ -419,7 +440,7 @@ export default function WidgetPage() {
         {/* ================================================================
             Settings Form (Left Column)
             ================================================================ */}
-        <div className="space-y-4 lg:col-span-3">
+        <div className={cn("space-y-4 lg:col-span-3", customizationDisabled && "pointer-events-none opacity-50")}>
           {/* Widget Status */}
           <Card>
             <CardHeader>

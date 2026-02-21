@@ -519,3 +519,21 @@ export interface UpcomingInvoice {
   cardBrand: string | null;
   cardLast4: string | null;
 }
+
+// ============================================================================
+// Tier Limits Types
+// ============================================================================
+
+/** Tier limits and current usage for an organization */
+export interface TierLimits {
+  tier: "FREE" | "PRO";
+  maxProjects: number;
+  currentProjects: number;
+  maxMembers: number;
+  currentMembers: number;
+  maxRepsPerProject: number;
+  maxEmbedKeysPerProject: number;
+  widgetCustomizationEnabled: boolean;
+  invitationsEnabled: boolean;
+  orgActive: boolean;
+}

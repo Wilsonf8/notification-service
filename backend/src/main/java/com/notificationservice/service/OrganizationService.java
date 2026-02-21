@@ -30,6 +30,7 @@ public class OrganizationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
+    private final TierService tierService;
 
     private static final Pattern NONLATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
@@ -170,6 +171,8 @@ public class OrganizationService {
     @Transactional
     public OrganizationMemberDto addMember(String slug, AddMemberRequest request, UUID userId) {
         Organization org = findBySlugOrThrow(slug);
+        tierService.enforceOrgActive(org);
+        tierService.enforceMemberLimit(org);
         verifyRole(org.getId(), userId, OrgRole.OWNER, OrgRole.ADMIN);
 
         if (request.role() == OrgRole.OWNER) {

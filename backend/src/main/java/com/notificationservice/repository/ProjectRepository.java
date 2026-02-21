@@ -15,6 +15,14 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     @Query("SELECT p FROM Project p JOIN FETCH p.organization WHERE p.id = :id AND p.deletedAt IS NULL")
     Optional<Project> findByIdAndNotDeleted(UUID id);
 
+    /**
+     * Counts non-deleted projects for an organization.
+     * @param orgId the organization ID
+     * @return number of active projects
+     */
+    @Query("SELECT COUNT(p) FROM Project p WHERE p.organization.id = :orgId AND p.deletedAt IS NULL")
+    long countByOrganizationIdAndNotDeleted(UUID orgId);
+
     @Query("SELECT p FROM Project p JOIN FETCH p.organization WHERE p.id = :id AND p.organization.id = :orgId AND p.deletedAt IS NULL")
     Optional<Project> findByIdAndOrganizationIdAndNotDeleted(UUID id, UUID orgId);
 

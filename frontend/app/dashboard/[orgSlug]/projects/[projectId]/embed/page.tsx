@@ -63,6 +63,7 @@ import {
   getSubscriptionStatus,
 } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import type {
   LiveConnectEmbedKey,
   LiveConnectEmbedKeyCreated,
@@ -73,8 +74,9 @@ import type {
  * Embed keys management page component.
  */
 export default function EmbedPage() {
-  const { projectId } = useProject();
+  const { projectId, orgSlug } = useProject();
   const { currentOrg } = useOrganization();
+  const { limits, refresh: refreshLimits } = useTierLimits(orgSlug);
 
   // Subscription state
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -157,6 +159,7 @@ export default function EmbedPage() {
       setEmbedKeyName("");
       setEmbedKeyDomains("");
       await fetchEmbedKeys();
+      refreshLimits();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create embed key");
     } finally {
@@ -256,11 +259,21 @@ export default function EmbedPage() {
             <div>
               <CardTitle>Embed Keys</CardTitle>
               <CardDescription>
-                Keys to authenticate widget installations on customer websites
+                {limits
+                  ? `${embedKeys.length} / ${limits.maxEmbedKeysPerProject} embed keys`
+                  : "Keys to authenticate widget installations on customer websites"}
               </CardDescription>
             </div>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-              <DialogTrigger render={<Button className="gap-2" />}>
+              <DialogTrigger
+                render={
+                  <Button
+                    className="gap-2"
+                    disabled={limits ? embedKeys.length >= limits.maxEmbedKeysPerProject : false}
+                    title={limits && embedKeys.length >= limits.maxEmbedKeysPerProject ? "Embed key limit reached" : undefined}
+                  />
+                }
+              >
                 <IconPlus className="h-4 w-4" />
                 Create Key
               </DialogTrigger>

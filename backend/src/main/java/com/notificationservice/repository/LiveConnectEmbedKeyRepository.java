@@ -19,6 +19,14 @@ public interface LiveConnectEmbedKeyRepository extends JpaRepository<LiveConnect
     @Query("SELECT k FROM LiveConnectEmbedKey k WHERE k.project.id = :projectId")
     List<LiveConnectEmbedKey> findByProjectId(UUID projectId);
 
+    /**
+     * Counts active (non-revoked) embed keys for a project.
+     * @param projectId the project ID
+     * @return number of active embed keys
+     */
+    @Query("SELECT COUNT(k) FROM LiveConnectEmbedKey k WHERE k.project.id = :projectId AND k.isRevoked = false")
+    long countActiveByProjectId(UUID projectId);
+
     @Query("SELECT k FROM LiveConnectEmbedKey k WHERE k.keyHash = :keyHash AND k.isRevoked = false")
     Optional<LiveConnectEmbedKey> findByKeyHashAndNotRevoked(String keyHash);
 }

@@ -10,9 +10,10 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { IconFolder, IconPlus } from "@tabler/icons-react";
+import { IconFolder, IconPlus, IconAlertTriangle } from "@tabler/icons-react";
 import { getOrganizationProjects } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import type { Project } from "@/lib/types";
 
 /** Dashboard statistics */
@@ -35,6 +36,7 @@ interface OverviewPageProps {
 export default function OverviewPage({ params }: OverviewPageProps) {
   const { orgSlug } = use(params);
   const { currentOrg, isLoading: orgLoading } = useOrganization();
+  const { limits } = useTierLimits(orgSlug);
   const [stats, setStats] = useState<Stats>({
     totalProjects: 0,
   });
@@ -82,6 +84,25 @@ export default function OverviewPage({ params }: OverviewPageProps) {
 
   return (
     <div className="space-y-6">
+      {currentOrg && !currentOrg.isPersonal && limits && !limits.orgActive && (
+        <Card className="border-yellow-500/50 bg-yellow-500/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <IconAlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Set up billing to activate this organization
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your team needs an active subscription to create projects, invite members, and more.
+              </p>
+            </div>
+            <Link href={`/dashboard/${orgSlug}/billing`}>
+              <Button size="sm">Set Up Billing</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">

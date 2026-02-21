@@ -24,6 +24,7 @@ public class LiveConnectSettingsService {
     private final LiveConnectSettingsRepository settingsRepository;
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final TierService tierService;
 
     /**
      * Gets LiveConnect settings for a project. Creates default settings if none exist.
@@ -59,6 +60,7 @@ public class LiveConnectSettingsService {
     @Transactional
     public LiveConnectSettingsDto updateSettings(UUID projectId, UpdateLiveConnectSettingsRequest request, UUID userId) {
         Project project = getAndValidateProject(projectId, userId);
+        tierService.enforceWidgetCustomization(project.getOrganization());
 
         LiveConnectSettings settings = settingsRepository.findByProjectId(projectId)
                 .orElseGet(() -> createDefaultSettings(project));

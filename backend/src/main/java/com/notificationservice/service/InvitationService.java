@@ -28,6 +28,7 @@ public class InvitationService {
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
+    private final TierService tierService;
 
     /**
      * Creates an invitation for a user to join an organization.
@@ -42,6 +43,9 @@ public class InvitationService {
     @Transactional
     public OrganizationInvitationDto createInvitation(String slug, CreateInvitationRequest request, UUID inviterId) {
         Organization org = findBySlugOrThrow(slug);
+        tierService.enforceOrgActive(org);
+        tierService.enforceInvitationsEnabled(org);
+        tierService.enforceMemberLimit(org);
         verifyRole(org.getId(), inviterId, OrgRole.OWNER, OrgRole.ADMIN);
 
         if (request.role() == OrgRole.OWNER) {
@@ -168,6 +172,11 @@ public class InvitationService {
     public OrganizationInvitationDto acceptInvitation(UUID invitationId, UUID userId) {
         OrganizationInvitation invitation = invitationRepository.findById(invitationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+
+        // Safety re-check: org must still be active and have room
+        Organization org = invitation.getOrganization();
+        tierService.enforceOrgActive(org);
+        tierService.enforceMemberLimit(org);
 
         if (!invitation.getInvitee().getId().equals(userId)) {
             throw new AccessDeniedException("You are not the invitee of this invitation");

@@ -28,6 +28,14 @@ public interface OrganizationInvitationRepository extends JpaRepository<Organiza
     long countByInviteeIdAndStatus(UUID inviteeId, InvitationStatus status);
 
     /**
+     * Counts invitations for an organization with a specific status.
+     * @param organizationId the organization ID
+     * @param status the invitation status
+     * @return number of matching invitations
+     */
+    long countByOrganizationIdAndStatus(UUID organizationId, InvitationStatus status);
+
+    /**
      * Checks if a pending invitation already exists for this org/user combination.
      */
     boolean existsByOrganizationIdAndInviteeIdAndStatus(UUID organizationId, UUID inviteeId, InvitationStatus status);

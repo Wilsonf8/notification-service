@@ -64,6 +64,8 @@ import type {
   Invoice,
   UpcomingInvoice,
 } from "@/lib/types";
+import Link from "next/link";
+import { IconCheck } from "@tabler/icons-react";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { stripePromise } from "@/lib/stripe";
 import {
@@ -460,13 +462,93 @@ export default function BillingPage({
     );
   }
 
-  if (error) {
+  if (error && !currentOrg?.isPersonal) {
     return (
       <Card className="border-destructive">
         <CardContent className="py-4">
           <p className="text-sm text-destructive">{error}</p>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Personal org: show free tier info
+  if (currentOrg?.isPersonal) {
+    const freeFeatures = [
+      "3 projects",
+      "1 embed key per project",
+      "1 rep per project",
+      "Default widget styling",
+      "Messaging & video calls",
+    ];
+    const proFeatures = [
+      "5 projects",
+      "3 embed keys per project",
+      "5 reps per project",
+      "10 team members",
+      "Full widget customization",
+      "Messaging & video calls",
+    ];
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Billing</h1>
+          <p className="text-muted-foreground">
+            You&apos;re on the Free tier
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Free</CardTitle>
+              <CardDescription>Your current plan</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <span className="text-3xl font-bold">$0</span>
+                <span className="text-muted-foreground ml-1">/month</span>
+              </div>
+              <ul className="space-y-2">
+                {freeFeatures.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm">
+                    <IconCheck className="h-4 w-4 text-primary shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/30">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CardTitle>Pro</CardTitle>
+                <Badge>Upgrade</Badge>
+              </div>
+              <CardDescription>For teams</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <span className="text-3xl font-bold">$10</span>
+                <span className="text-muted-foreground ml-1">/month</span>
+              </div>
+              <ul className="space-y-2">
+                {proFeatures.map((f) => (
+                  <li key={f} className="flex items-center gap-2 text-sm">
+                    <IconCheck className="h-4 w-4 text-primary shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Create a team organization to subscribe to Pro.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     );
   }
 

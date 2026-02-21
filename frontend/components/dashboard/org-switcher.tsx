@@ -64,8 +64,8 @@ export function OrgSwitcher() {
       setError(null);
       const newOrg = await createOrganization({ name: teamName.trim() });
       await refreshOrgs();
-      // Navigate to the new team's dashboard
-      router.push(`/dashboard/${newOrg.slug}`);
+      // Navigate to billing page for subscription setup
+      router.push(`/dashboard/${newOrg.slug}/billing`);
       setTeamName("");
       setIsCreateOpen(false);
     } catch (err) {
@@ -141,7 +141,8 @@ export function OrgSwitcher() {
           <DialogHeader>
             <DialogTitle>Create a new team</DialogTitle>
             <DialogDescription>
-              Teams let you collaborate with others on projects.
+              Teams let you collaborate with others on projects. You&apos;ll need
+              to set up billing ($10/mo) to activate your team.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">

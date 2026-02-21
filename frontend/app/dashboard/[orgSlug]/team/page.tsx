@@ -62,8 +62,10 @@ import {
   IconUser,
   IconUsers,
   IconX,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import {
   getOrganizationMembers,
   updateMemberRole,
@@ -101,6 +103,7 @@ export default function TeamPage({ params }: TeamPageProps) {
   const { orgSlug } = use(params);
   const router = useRouter();
   const { currentOrg, isLoading: orgLoading, refreshOrgs } = useOrganization();
+  const { limits, refresh: refreshLimits } = useTierLimits(orgSlug);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -172,6 +175,7 @@ export default function TeamPage({ params }: TeamPageProps) {
       setSelectedUser(null);
       setNewRole("MEMBER");
       setIsInviteOpen(false);
+      refreshLimits();
     } catch (err) {
       setInviteError(err instanceof Error ? err.message : "Failed to send invitation");
     } finally {
@@ -302,8 +306,30 @@ export default function TeamPage({ params }: TeamPageProps) {
     );
   }
 
+  const memberLimitReached = limits ? members.length + invitations.length >= limits.maxMembers : false;
+  const isInactive = currentOrg && !currentOrg.isPersonal && limits && !limits.orgActive;
+
   return (
     <div className="space-y-6">
+      {isInactive && (
+        <Card className="border-yellow-500/50 bg-yellow-500/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <IconAlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Set up billing to activate this organization
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your team needs an active subscription to invite members.
+              </p>
+            </div>
+            <a href={`/dashboard/${orgSlug}/billing`}>
+              <Button size="sm">Set Up Billing</Button>
+            </a>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           {currentOrg.isPersonal ? (
@@ -344,12 +370,18 @@ export default function TeamPage({ params }: TeamPageProps) {
           <div>
             <CardTitle>Members</CardTitle>
             <CardDescription>
-              {members.length} member{members.length !== 1 ? "s" : ""} in this{" "}
-              {currentOrg.isPersonal ? "workspace" : "team"}
+              {limits && !currentOrg.isPersonal
+                ? `${members.length} / ${limits.maxMembers} members`
+                : `${members.length} member${members.length !== 1 ? "s" : ""} in this ${currentOrg.isPersonal ? "workspace" : "team"}`}
             </CardDescription>
           </div>
           {canManageMembers && !currentOrg.isPersonal && (
-            <Button onClick={() => setIsInviteOpen(true)} className="gap-2">
+            <Button
+              onClick={() => setIsInviteOpen(true)}
+              className="gap-2"
+              disabled={memberLimitReached || !!isInactive}
+              title={memberLimitReached ? "Member limit reached" : undefined}
+            >
               <IconUserPlus className="h-4 w-4" />
               Invite Member
             </Button>

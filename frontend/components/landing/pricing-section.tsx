@@ -14,17 +14,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 const freeTierFeatures = [
-  "1 project",
-  "1 embed key",
-  "Messaging",
+  "3 projects",
+  "1 embed key per project",
+  "1 rep per project",
+  "Default widget styling",
+  "Messaging & video calls",
 ];
 
 const proTierFeatures = [
-  "Unlimited projects",
-  "Unlimited embed keys",
-  "Unlimited visitor sessions",
-  "Video calls with LiveKit",
-  "Messaging",
+  "5 projects",
+  "3 embed keys per project",
+  "5 reps per project",
+  "10 team members",
+  "Full widget customization",
+  "Messaging & video calls",
 ];
 
 /**

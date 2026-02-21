@@ -47,7 +47,7 @@ export function DashboardHeader() {
   const [user, setUser] = useState<User | null>(null);
 
   // Get nav items based on current org
-  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole);
+  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole, currentOrg?.isPersonal);
 
   useEffect(() => {
     getCurrentUser().then(setUser).catch(() => {});

@@ -35,6 +35,14 @@ public interface LiveConnectRepRepository extends JpaRepository<LiveConnectRep, 
     @Query("SELECT r FROM LiveConnectRep r WHERE r.project.id = :projectId")
     List<LiveConnectRep> findByProjectId(UUID projectId);
 
+    /**
+     * Counts reps for a project.
+     * @param projectId the project ID
+     * @return number of reps
+     */
+    @Query("SELECT COUNT(r) FROM LiveConnectRep r WHERE r.project.id = :projectId")
+    long countByProjectId(UUID projectId);
+
     @Query("SELECT r FROM LiveConnectRep r WHERE r.presence = 'ONLINE' AND r.lastHeartbeat < :threshold")
     List<LiveConnectRep> findStaleOnlineReps(OffsetDateTime threshold);
 

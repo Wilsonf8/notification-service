@@ -4,6 +4,7 @@ import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.RateLimitExceededException;
 import com.notificationservice.service.ResourceNotFoundException;
 import com.notificationservice.service.SubscriptionRequiredException;
+import com.notificationservice.service.TierLimitExceededException;
 import com.stripe.exception.StripeException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -39,6 +40,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(SubscriptionRequiredException.class)
     public ResponseEntity<Map<String, String>> handleSubscriptionRequired(SubscriptionRequiredException e) {
         return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(TierLimitExceededException.class)
+    public ResponseEntity<Map<String, String>> handleTierLimitExceeded(TierLimitExceededException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", e.getMessage()));
     }
 

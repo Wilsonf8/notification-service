@@ -34,6 +34,7 @@ public class LiveConnectRepService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final UserRepository userRepository;
     private final WebSocketBroadcaster broadcaster;
+    private final TierService tierService;
 
     /**
      * Gets all reps for a project.
@@ -68,6 +69,8 @@ public class LiveConnectRepService {
     @Transactional
     public LiveConnectRepDto addRep(UUID projectId, AddRepRequest request, UUID userId) {
         Project project = getAndValidateProject(projectId, userId);
+        tierService.enforceOrgActive(project.getOrganization());
+        tierService.enforceRepLimit(project.getOrganization(), projectId);
 
         User userToAdd = userRepository.findById(request.userId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

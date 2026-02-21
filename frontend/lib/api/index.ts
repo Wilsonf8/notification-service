@@ -12,3 +12,4 @@ export * from "./invitations";
 export * from "./liveconnect";
 export * from "./liveconnect-dashboard";
 export * from "./billing";
+export * from "./tier";

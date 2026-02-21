@@ -27,9 +27,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IconPlus, IconFolder, IconVideo } from "@tabler/icons-react";
+import { IconPlus, IconFolder, IconVideo, IconAlertTriangle } from "@tabler/icons-react";
 import { getOrganizationProjects, createOrganizationProject } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import type { Project } from "@/lib/types";
 
 /** Page params containing the org slug */
@@ -48,6 +49,7 @@ interface ProjectsPageProps {
 export default function ProjectsPage({ params }: ProjectsPageProps) {
   const { orgSlug } = use(params);
   const { currentOrg, isLoading: orgLoading } = useOrganization();
+  const { limits, refresh: refreshLimits } = useTierLimits(orgSlug);
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +90,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
       setProjects((prev) => [...prev, project]);
       setNewProjectName("");
       setIsCreateOpen(false);
+      refreshLimits();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create project");
     } finally {
@@ -121,17 +124,45 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
     );
   }
 
+  const limitReached = limits ? projects.length >= limits.maxProjects : false;
+  const isInactive = currentOrg && !currentOrg.isPersonal && limits && !limits.orgActive;
+
   return (
     <div className="space-y-6">
+      {isInactive && (
+        <Card className="border-yellow-500/50 bg-yellow-500/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <IconAlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">
+                Set up billing to activate this organization
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Your team needs an active subscription to create projects.
+              </p>
+            </div>
+            <Link href={`/dashboard/${orgSlug}/billing`}>
+              <Button size="sm">Set Up Billing</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl md:text-2xl font-semibold">Projects</h1>
           <p className="text-muted-foreground">
-            Manage your LiveConnect projects
+            {limits
+              ? `${projects.length} / ${limits.maxProjects} projects`
+              : "Manage your LiveConnect projects"}
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90">
+          <DialogTrigger
+            className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none"
+            disabled={limitReached || !!isInactive}
+            title={limitReached ? "Project limit reached" : undefined}
+          >
             <IconPlus className="h-4 w-4" />
             New Project
           </DialogTrigger>

@@ -24,6 +24,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final OrganizationRepository organizationRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
+    private final TierService tierService;
 
     @Transactional(readOnly = true)
     public List<ProjectDto> getProjectsForUser(UUID userId) {
@@ -56,6 +57,8 @@ public class ProjectService {
     @Transactional
     public ProjectDto createProject(CreateProjectRequest request, UUID orgId, UUID userId) {
         Organization org = verifyOrgMembership(orgId, userId);
+        tierService.enforceOrgActive(org);
+        tierService.enforceProjectLimit(org);
 
         Project project = Project.builder()
                 .organization(org)
@@ -72,6 +75,7 @@ public class ProjectService {
         // Create project under user's personal organization
         Organization personalOrg = organizationRepository.findPersonalOrgByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Personal organization not found"));
+        tierService.enforceProjectLimit(personalOrg);
 
         Project project = Project.builder()
                 .organization(personalOrg)

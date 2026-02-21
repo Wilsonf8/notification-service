@@ -34,6 +34,7 @@ public class LiveConnectEmbedKeyService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final PasswordEncoder passwordEncoder;
     private final SubscriptionService subscriptionService;
+    private final TierService tierService;
 
     /**
      * Gets all embed keys for a project.
@@ -67,6 +68,8 @@ public class LiveConnectEmbedKeyService {
     @Transactional
     public LiveConnectEmbedKeyCreatedDto createEmbedKey(UUID projectId, CreateLiveConnectEmbedKeyRequest request, UUID userId) {
         Project project = getAndValidateProject(projectId, userId);
+        tierService.enforceOrgActive(project.getOrganization());
+        tierService.enforceEmbedKeyLimit(project.getOrganization(), projectId);
 
         String rawKey = generateRawKey();
         String fullKey = KEY_PREFIX + rawKey;
@@ -177,9 +180,8 @@ public class LiveConnectEmbedKeyService {
             }
         }
 
-        // Check organization subscription
-        UUID orgId = embedKey.getProject().getOrganization().getId();
-        if (!subscriptionService.isOrganizationSubscriptionActive(orgId)) {
+        // Check organization is active (free tier always active, team needs subscription)
+        if (!tierService.isOrgActive(embedKey.getProject().getOrganization())) {
             throw new SubscriptionRequiredException("Active subscription required");
         }
 

@@ -18,6 +18,7 @@ import { getReps } from "@/lib/api/liveconnect-dashboard";
 import { getOrganizationMembers } from "@/lib/api/organizations";
 import { RepList } from "@/components/liveconnect/rep-list";
 import { AddRepDialog } from "@/components/liveconnect/add-rep-dialog";
+import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import type { LiveConnectRep, OrganizationMember } from "@/lib/types";
 
 /**
@@ -25,6 +26,7 @@ import type { LiveConnectRep, OrganizationMember } from "@/lib/types";
  */
 export default function RepsPage() {
   const { projectId, orgSlug, isAdmin } = useProject();
+  const { limits, refresh: refreshLimits } = useTierLimits(orgSlug);
 
   const [reps, setReps] = useState<LiveConnectRep[]>([]);
   const [teamMembers, setTeamMembers] = useState<OrganizationMember[]>([]);
@@ -85,15 +87,19 @@ export default function RepsPage() {
             <div>
               <CardTitle>Sales Reps</CardTitle>
               <CardDescription>
-                Team members who can handle video calls for this project
+                {limits
+                  ? `${reps.length} / ${limits.maxRepsPerProject} reps`
+                  : "Team members who can handle video calls for this project"}
               </CardDescription>
             </div>
-            <AddRepDialog
-              projectId={projectId}
-              teamMembers={teamMembers}
-              existingReps={reps}
-              onRepAdded={fetchData}
-            />
+            {(!limits || reps.length < limits.maxRepsPerProject) && (
+              <AddRepDialog
+                projectId={projectId}
+                teamMembers={teamMembers}
+                existingReps={reps}
+                onRepAdded={() => { fetchData(); refreshLimits(); }}
+              />
+            )}
           </div>
         </CardHeader>
         <CardContent>
