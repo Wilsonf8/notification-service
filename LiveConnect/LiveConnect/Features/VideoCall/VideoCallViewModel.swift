@@ -317,7 +317,7 @@ final class VideoCallViewModel: RoomDelegate {
         do {
             let _: Message = try await APIClient.shared.post(
                 Endpoints.sendMessage(projectId: projectId, conversationId: conversationId),
-                body: ["content": content]
+                body: ["content": content, "messageId": messageId.uuidString]
             )
         } catch {
             self.error = error

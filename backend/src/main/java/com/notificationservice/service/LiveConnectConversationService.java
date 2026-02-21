@@ -31,6 +31,7 @@ import com.notificationservice.websocket.event.MessageReceivedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.session.VisitorSessionManager;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -56,6 +57,7 @@ public class LiveConnectConversationService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
     private final VisitorSessionManager visitorSessionManager;
+    private final EntityManager entityManager;
 
     /**
      * Gets paginated conversations for a project.
@@ -228,9 +230,10 @@ public class LiveConnectConversationService {
                 .build();
         if (request.messageId() != null) {
             message.setId(UUID.fromString(request.messageId()));
+            entityManager.persist(message);
+        } else {
+            message = messageRepository.save(message);
         }
-
-        message = messageRepository.save(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
@@ -373,9 +376,10 @@ public class LiveConnectConversationService {
                 .build();
         if (messageId != null) {
             message.setId(UUID.fromString(messageId));
+            entityManager.persist(message);
+        } else {
+            message = messageRepository.save(message);
         }
-
-        message = messageRepository.save(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
