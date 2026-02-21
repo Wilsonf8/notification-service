@@ -136,10 +136,16 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                         OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
 
                         Object[] convStats = conversationRepository.getVisitorConversationStats(visitorId, weekAgo);
+                        if (convStats.length > 0 && convStats[0] instanceof Object[]) {
+                            convStats = (Object[]) convStats[0];
+                        }
                         callsThisWeek = convStats[0] != null ? ((Number) convStats[0]).longValue() : 0;
                         boolean hasAnyConversations = convStats[1] != null && (Boolean) convStats[1];
 
                         Object[] reqStats = requestRepository.getVisitorRequestStats(visitorId, weekAgo);
+                        if (reqStats.length > 0 && reqStats[0] instanceof Object[]) {
+                            reqStats = (Object[]) reqStats[0];
+                        }
                         requestsThisWeek = reqStats[0] != null ? ((Number) reqStats[0]).longValue() : 0;
                         declinedPingsThisWeek = reqStats[1] != null ? ((Number) reqStats[1]).longValue() : 0;
                         boolean hasAnyRequests = reqStats[2] != null && (Boolean) reqStats[2];
