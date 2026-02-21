@@ -5,6 +5,7 @@
 
 import { useRef, useState, useEffect, useCallback } from 'preact/hooks';
 import type { RefObject, Ref } from 'preact';
+import { savePanelPosition, getPanelPosition, clearPanelPosition } from '../storage';
 
 /**
  * Options for the useDraggable hook.
@@ -102,6 +103,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
   // Mutable refs to avoid stale closures in pointer event handlers
   const isDraggingRef = useRef(false);
   const offsetRef = useRef({ x: 0, y: 0 });
+  const positionRef = useRef({ x: 0, y: 0 });
 
   // Reset position when disabled changes to true
   useEffect(() => {
@@ -109,6 +111,18 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       setHasDragged(false);
       setIsDragging(false);
       isDraggingRef.current = false;
+      clearPanelPosition();
+    }
+  }, [disabled]);
+
+  // Restore saved position on mount
+  useEffect(() => {
+    if (disabled) return;
+    const saved = getPanelPosition();
+    if (saved) {
+      setPosition(saved);
+      positionRef.current = saved;
+      setHasDragged(true);
     }
   }, [disabled]);
 
@@ -124,6 +138,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       const newY = e.clientY - offsetRef.current.y;
 
       const clamped = clampToViewport(newX, newY, rect.width, rect.height);
+      positionRef.current = clamped;
       setPosition(clamped);
       setHasDragged(true);
     },
@@ -136,6 +151,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
 
       isDraggingRef.current = false;
       setIsDragging(false);
+      savePanelPosition(positionRef.current);
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
     },

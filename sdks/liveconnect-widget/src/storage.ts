@@ -17,6 +17,9 @@ export const STORAGE_KEY_SESSION_TOKEN = 'lc_session_token';
 /** Storage key for active call state (for reconnection on page navigation) */
 export const STORAGE_KEY_ACTIVE_CALL = 'lc_active_call';
 
+/** Storage key for draggable panel position (persisted per tab via sessionStorage) */
+export const STORAGE_KEY_PANEL_POSITION = 'lc_panel_position';
+
 /** Default max age for active call state (60 seconds) */
 const DEFAULT_CALL_MAX_AGE_MS = 60_000;
 
@@ -107,6 +110,76 @@ function safeRemoveItem(key: string): boolean {
       return false;
     }
     window.localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks if sessionStorage is available.
+ * Handles SSR, private browsing, and other edge cases.
+ * @returns True if sessionStorage is available and functional
+ */
+function isSessionStorageAvailable(): boolean {
+  try {
+    if (typeof window === 'undefined' || !window.sessionStorage) {
+      return false;
+    }
+    const testKey = '__lc_session_storage_test__';
+    window.sessionStorage.setItem(testKey, 'test');
+    window.sessionStorage.removeItem(testKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely gets an item from sessionStorage.
+ * @param key - The storage key
+ * @returns The stored value or null if not found or unavailable
+ */
+function safeSessionGetItem(key: string): string | null {
+  try {
+    if (!isSessionStorageAvailable()) {
+      return null;
+    }
+    return window.sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Safely sets an item in sessionStorage.
+ * @param key - The storage key
+ * @param value - The value to store
+ * @returns True if the operation succeeded
+ */
+function safeSessionSetItem(key: string, value: string): boolean {
+  try {
+    if (!isSessionStorageAvailable()) {
+      return false;
+    }
+    window.sessionStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safely removes an item from sessionStorage.
+ * @param key - The storage key
+ * @returns True if the operation succeeded
+ */
+function safeSessionRemoveItem(key: string): boolean {
+  try {
+    if (!isSessionStorageAvailable()) {
+      return false;
+    }
+    window.sessionStorage.removeItem(key);
     return true;
   } catch {
     return false;
@@ -324,4 +397,54 @@ function getActiveCallRaw(): ActiveCallState | null {
   } catch {
     return null;
   }
+}
+
+// ============================================================================
+// Panel Position Persistence (sessionStorage)
+// ============================================================================
+
+/**
+ * Saves the draggable panel position to sessionStorage.
+ * Scoped to the browser tab so position resets when the tab closes.
+ * @param position - The { x, y } coordinates to save
+ * @returns True if the operation succeeded
+ */
+export function savePanelPosition(position: { x: number; y: number }): boolean {
+  return safeSessionSetItem(
+    STORAGE_KEY_PANEL_POSITION,
+    JSON.stringify(position)
+  );
+}
+
+/**
+ * Gets the saved panel position from sessionStorage.
+ * Validates that the stored value contains numeric x and y fields.
+ * @returns The saved position or null if not found or invalid
+ */
+export function getPanelPosition(): { x: number; y: number } | null {
+  const raw = safeSessionGetItem(STORAGE_KEY_PANEL_POSITION);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const pos = JSON.parse(raw) as { x: number; y: number };
+
+    if (typeof pos.x !== 'number' || typeof pos.y !== 'number') {
+      clearPanelPosition();
+      return null;
+    }
+
+    return pos;
+  } catch {
+    clearPanelPosition();
+    return null;
+  }
+}
+
+/**
+ * Clears the saved panel position from sessionStorage.
+ */
+export function clearPanelPosition(): void {
+  safeSessionRemoveItem(STORAGE_KEY_PANEL_POSITION);
 }
