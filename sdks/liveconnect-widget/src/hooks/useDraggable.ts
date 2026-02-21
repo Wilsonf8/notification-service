@@ -90,7 +90,8 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
   const [hasDragged, setHasDragged] = useState(false);
   const [position, setPosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Mutable refs for drag offset to avoid re-renders during drag
+  // Mutable refs to avoid stale closures in pointer event handlers
+  const isDraggingRef = useRef(false);
   const offsetRef = useRef({ x: 0, y: 0 });
 
   // Reset position when disabled changes to true
@@ -98,6 +99,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     if (disabled) {
       setHasDragged(false);
       setIsDragging(false);
+      isDraggingRef.current = false;
     }
   }, [disabled]);
 
@@ -117,6 +119,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       };
 
       handle.setPointerCapture(e.pointerId);
+      isDraggingRef.current = true;
       setIsDragging(true);
     },
     [disabled]
@@ -124,7 +127,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
-      if (!isDragging) return;
+      if (!isDraggingRef.current) return;
 
       const container = containerRef.current;
       if (!container) return;
@@ -137,20 +140,21 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       setPosition(clamped);
       setHasDragged(true);
     },
-    [isDragging]
+    []
   );
 
   const onPointerUp = useCallback(
     (e: PointerEvent) => {
-      if (!isDragging) return;
+      if (!isDraggingRef.current) return;
 
       const handle = handleRef.current;
       if (handle) {
         handle.releasePointerCapture(e.pointerId);
       }
+      isDraggingRef.current = false;
       setIsDragging(false);
     },
-    [isDragging]
+    []
   );
 
   // Attach/detach pointer event listeners on the handle
@@ -167,7 +171,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       handle.removeEventListener('pointermove', onPointerMove);
       handle.removeEventListener('pointerup', onPointerUp);
     };
-  }, [disabled, onPointerDown, onPointerMove, onPointerUp]);
+  }, [disabled]);
 
   const dragStyle: DragStyle | undefined = hasDragged
     ? {
