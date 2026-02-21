@@ -16,11 +16,27 @@ import {
   IconRefresh,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
+import { getToken } from "@/lib/auth";
 import type { Room } from "livekit-client";
 import type { LiveConnectMessage } from "@/lib/types";
 
 /** Backend API base URL */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
+
+/**
+ * Derives WebSocket URL from API URL.
+ */
+function getWebSocketUrl(): string {
+  return API_URL.replace(/^https:\/\//, "wss://").replace(/^http:\/\//, "ws://");
+}
+
+/** WebSocket URL */
+const WS_URL = getWebSocketUrl();
+
+/** Chat message with optional sender name for display */
+interface ChatMessageWithSender extends LiveConnectMessage {
+  senderName?: string;
+}
 
 /** Data channel chat message payload */
 interface DataChannelChatPayload {
@@ -63,7 +79,7 @@ export function CallChat({
   room,
   onClose,
 }: CallChatProps) {
-  const [messages, setMessages] = useState<LiveConnectMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessageWithSender[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -190,7 +206,7 @@ export function CallChat({
       const response = await fetch(url, {
         method: "POST",
         headers,
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, messageId }),
       });
 
       if (!response.ok) {
@@ -243,6 +259,7 @@ export function CallChat({
             conversationId,
             senderType: payload.senderType as "USER" | "REP" | "SYSTEM",
             senderId: null,
+            senderName: payload.senderName,
             content: payload.content,
             createdAt: payload.sentAt,
           },
@@ -260,6 +277,79 @@ export function CallChat({
       }
     };
   }, [room, conversationId]);
+
+  // WebSocket fallback for rep side — delivers messages if data channel misses them
+  useEffect(() => {
+    if (authType !== "jwt" || !projectId) return;
+
+    let ws: WebSocket | null = null;
+    let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    let isMounted = true;
+
+    const connect = async () => {
+      try {
+        const token = await getToken();
+        if (!token || !isMounted) return;
+
+        ws = new WebSocket(
+          `${WS_URL}/api/projects/${projectId}/liveconnect/ws?token=${encodeURIComponent(token)}`
+        );
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "pong") return;
+            if (data.type !== "message_received") return;
+            if (data.conversationId !== conversationId) return;
+
+            // Deduplicate against data channel and optimistic messages
+            if (receivedMessageIds.current.has(data.messageId)) return;
+            receivedMessageIds.current.add(data.messageId);
+
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: data.messageId,
+                conversationId,
+                senderType: data.senderType as "USER" | "REP" | "SYSTEM",
+                senderId: null,
+                senderName: data.senderName,
+                content: data.content,
+                createdAt: data.sentAt,
+              },
+            ]);
+          } catch {
+            // Ignore malformed messages
+          }
+        };
+
+        ws.onopen = () => {
+          heartbeatInterval = setInterval(() => {
+            if (ws?.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "ping" }));
+            }
+          }, 15000);
+        };
+
+        ws.onclose = () => {
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+        };
+      } catch {
+        // Ignore connection errors — data channel is primary
+      }
+    };
+
+    connect();
+
+    return () => {
+      isMounted = false;
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+      if (ws) {
+        ws.onclose = null;
+        ws.close();
+      }
+    };
+  }, [authType, projectId, conversationId]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -316,6 +406,11 @@ export function CallChat({
                   </p>
                 ) : (
                   <>
+                    {message.senderName && (
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {message.senderName}
+                      </span>
+                    )}
                     <div
                       className={cn(
                         "max-w-[85%] px-2.5 py-1.5 text-sm",

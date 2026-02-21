@@ -43,6 +43,8 @@ export interface ContactRequest {
 export interface SendMessageRequest {
   /** Message content */
   content: string;
+  /** Optional client-generated UUID for deduplication with data channel messages */
+  messageId?: string;
 }
 
 // ============================================================================
@@ -391,17 +393,18 @@ export class ApiClient {
    * Sends a message in a conversation.
    * @param conversationId - The conversation ID
    * @param content - Message content
+   * @param messageId - Optional client-generated UUID for deduplication with data channel messages
    * @returns Send message response with message ID and timestamp
    * @throws ApiError on failure or if no session token
    */
-  public async sendMessage(conversationId: string, content: string): Promise<SendMessageResponse> {
+  public async sendMessage(conversationId: string, content: string, messageId?: string): Promise<SendMessageResponse> {
     this.requireSession();
 
     return this.request<SendMessageResponse>(
       'POST',
       `/v1/liveconnect/conversations/${encodeURIComponent(conversationId)}/messages`,
       {
-        body: { content },
+        body: { content, messageId },
         headers: {
           'X-Session-Token': this.sessionToken!,
         },

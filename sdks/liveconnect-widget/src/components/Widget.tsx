@@ -680,7 +680,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Persistence path: send via REST API
     try {
       const api = getApiClient();
-      await api.sendMessage(state.conversationId, content);
+      await api.sendMessage(state.conversationId, content, messageId);
     } catch (err) {
       console.error('[LiveConnect Widget] Failed to persist message:', err);
     }

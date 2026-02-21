@@ -226,6 +226,9 @@ public class LiveConnectConversationService {
                 .senderId(userId)
                 .content(request.content())
                 .build();
+        if (request.messageId() != null) {
+            message.setId(UUID.fromString(request.messageId()));
+        }
 
         message = messageRepository.save(message);
 
@@ -341,13 +344,14 @@ public class LiveConnectConversationService {
      * @param conversationId the conversation ID
      * @param visitorId the visitor's internal ID
      * @param content the message content
+     * @param messageId optional client-generated UUID for deduplication with data channel messages
      * @return the created message response
      * @throws ResourceNotFoundException if conversation not found
      * @throws AccessDeniedException if visitor doesn't own the conversation
      * @throws IllegalArgumentException if conversation is not active
      */
     @Transactional
-    public MessageResponse sendVisitorMessage(UUID conversationId, UUID visitorId, String content) {
+    public MessageResponse sendVisitorMessage(UUID conversationId, UUID visitorId, String content, String messageId) {
         LiveConnectConversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
 
@@ -367,6 +371,9 @@ public class LiveConnectConversationService {
                 .senderId(visitorId)
                 .content(content)
                 .build();
+        if (messageId != null) {
+            message.setId(UUID.fromString(messageId));
+        }
 
         message = messageRepository.save(message);
 

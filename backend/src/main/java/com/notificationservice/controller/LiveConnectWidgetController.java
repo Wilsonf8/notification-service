@@ -284,7 +284,8 @@ public class LiveConnectWidgetController {
         MessageResponse response = conversationService.sendVisitorMessage(
                 conversationId,
                 session.getVisitor().getId(),
-                request.content()
+                request.content(),
+                request.messageId()
         );
 
         return ResponseEntity.ok(response);
