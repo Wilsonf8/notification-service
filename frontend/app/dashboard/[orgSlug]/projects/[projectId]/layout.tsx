@@ -6,7 +6,7 @@
 "use client";
 
 import { use, useEffect, useState, createContext, useContext } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -78,6 +78,7 @@ interface ProjectLayoutProps {
 export default function ProjectLayout({ params, children }: ProjectLayoutProps) {
   const { orgSlug, projectId } = use(params);
   const pathname = usePathname();
+  const router = useRouter();
   const { currentOrg } = useOrganization();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -109,6 +110,13 @@ export default function ProjectLayout({ params, children }: ProjectLayoutProps) 
   useEffect(() => {
     fetchProject();
   }, [projectId]);
+
+  // Redirect if the project doesn't belong to the URL's organization
+  useEffect(() => {
+    if (project && project.organizationSlug !== orgSlug) {
+      router.replace(`/dashboard/${orgSlug}/projects`);
+    }
+  }, [project, orgSlug, router]);
 
   /**
    * Checks if a tab is currently active based on the pathname.

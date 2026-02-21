@@ -23,6 +23,7 @@ export interface Project {
   name: string;
   description: string | null;
   type: ProjectType;
+  organizationSlug: string;
   createdAt: string;
   updatedAt?: string;
 }

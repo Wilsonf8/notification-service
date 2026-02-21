@@ -12,6 +12,7 @@ import java.util.UUID;
  * @param name the project name
  * @param description optional project description
  * @param type the project type
+ * @param organizationSlug the slug of the owning organization
  * @param createdAt when the project was created
  */
 public record ProjectDto(
@@ -19,5 +20,6 @@ public record ProjectDto(
         String name,
         String description,
         ProjectType type,
+        String organizationSlug,
         OffsetDateTime createdAt
 ) {}

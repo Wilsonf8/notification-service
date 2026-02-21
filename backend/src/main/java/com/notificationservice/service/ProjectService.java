@@ -142,6 +142,7 @@ public class ProjectService {
                 project.getName(),
                 project.getDescription(),
                 project.getType(),
+                project.getOrganization().getSlug(),
                 project.getCreatedAt()
         );
     }

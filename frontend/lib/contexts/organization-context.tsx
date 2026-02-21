@@ -126,7 +126,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
         // Only navigate if we're actually changing orgs
         if (currentOrgSlug !== slug) {
-          router.push(`/dashboard/${slug}${restOfPath}`);
+          // Keep only the section segment (e.g. /projects), strip resource IDs
+          const sectionMatch = restOfPath.match(/^(\/[^/]+)/);
+          const sectionPath = sectionMatch ? sectionMatch[1] : "";
+          router.push(`/dashboard/${slug}${sectionPath}`);
         }
       } else if (pathname === "/dashboard") {
         // On the redirect page, navigate to the new org's overview
