@@ -140,7 +140,7 @@ struct VideoCallView: View {
                     // Remote camera PIP (bottom-left)
                     if let visitorParticipant = viewModel.visitorParticipant {
                         ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
-                            .frame(width: 120, height: 160)
+                            .frame(width: 120, height: 120)
                             .clipShape(RoundedRectangle(cornerRadius: 0))
                             .overlay(
                                 Rectangle()
@@ -149,14 +149,16 @@ struct VideoCallView: View {
                             .shadow(radius: 8)
                             .position(
                                 x: 80,
-                                y: geometry.size.height - 160
+                                y: geometry.size.height - 140
                             )
                     }
                 } else {
-                    // Normal layout: remote camera full screen
+                    // Normal layout: remote camera in centered square container
                     if let visitorParticipant = viewModel.visitorParticipant {
                         ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
-                            .ignoresSafeArea()
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .clipped()
                     } else {
                         VStack(spacing: 16) {
                             Image(systemName: "person.fill")
@@ -173,7 +175,7 @@ struct VideoCallView: View {
                 // Local video (picture-in-picture, top-right)
                 if let localParticipant = viewModel.localParticipant {
                     LocalVideoView(participant: localParticipant, trackUpdateCount: viewModel.trackUpdateCount)
-                        .frame(width: 120, height: 160)
+                        .frame(width: 120, height: 120)
                         .clipShape(RoundedRectangle(cornerRadius: 0))
                         .overlay(
                             Rectangle()
@@ -182,7 +184,7 @@ struct VideoCallView: View {
                         .shadow(radius: 8)
                         .position(
                             x: geometry.size.width - 80,
-                            y: geometry.safeAreaInsets.top + 100
+                            y: geometry.safeAreaInsets.top + 80
                         )
                 }
 

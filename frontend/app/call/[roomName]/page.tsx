@@ -688,7 +688,7 @@ function CallPageContent() {
             ref={remoteCameraPipRef}
             autoPlay
             playsInline
-            className="absolute bottom-24 left-4 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover"
+            className="absolute bottom-24 left-4 z-10 size-[120px] border-2 border-border bg-muted object-cover"
             aria-label="Remote participant camera"
           />
         )}
@@ -723,7 +723,7 @@ function CallPageContent() {
           playsInline
           muted
           className={cn(
-            'absolute bottom-24 right-4 z-10 h-[120px] w-[160px] border-2 border-border bg-muted object-cover transition-opacity',
+            'absolute bottom-24 right-4 z-10 size-[120px] border-2 border-border bg-muted object-cover transition-opacity',
             !callState.isCameraEnabled && 'opacity-0'
           )}
           aria-label="Your video"

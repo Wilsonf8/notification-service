@@ -603,7 +603,7 @@
   bottom: 80px;
   right: var(--lc-spacing-lg);
   width: 120px;
-  height: 90px;
+  height: 120px;
   background-color: var(--lc-bg-tertiary);
   border: 2px solid var(--lc-border);
   border-radius: var(--lc-radius);
@@ -649,7 +649,7 @@
   bottom: 80px;
   left: var(--lc-spacing-lg);
   width: 120px;
-  height: 90px;
+  height: 120px;
   background-color: var(--lc-bg-tertiary);
   border: 2px solid var(--lc-border);
   border-radius: var(--lc-radius);
@@ -1469,7 +1469,7 @@
 
   .lc-video__local {
     width: 100px;
-    height: 75px;
+    height: 100px;
     bottom: 72px;
     right: var(--lc-spacing-md);
   }
