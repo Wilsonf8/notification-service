@@ -5,7 +5,7 @@
 
 import { h } from 'preact';
 import { useRef, useEffect, useState } from 'preact/hooks';
-import type { RefObject } from 'preact';
+import type { Ref } from 'preact';
 import {
   micEnabled,
   cameraEnabled,
@@ -53,7 +53,7 @@ interface VideoCallProps {
   /** Optional name of the remote participant */
   participantName?: string;
   /** Ref to attach to the drag handle (info bar) for panel repositioning */
-  dragHandleRef?: RefObject<HTMLDivElement>;
+  dragHandleRef?: Ref<HTMLDivElement>;
 }
 
 // ============================================================================

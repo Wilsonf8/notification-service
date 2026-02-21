@@ -4,7 +4,7 @@
  */
 
 import { useRef, useState, useEffect, useCallback } from 'preact/hooks';
-import type { RefObject } from 'preact';
+import type { RefObject, Ref } from 'preact';
 
 /**
  * Options for the useDraggable hook.
@@ -31,8 +31,8 @@ interface DragStyle {
 interface UseDraggableReturn {
   /** Ref to attach to the draggable container element */
   containerRef: RefObject<HTMLDivElement>;
-  /** Ref to attach to the drag handle element */
-  handleRef: RefObject<HTMLDivElement>;
+  /** Callback ref to attach to the drag handle element */
+  handleRef: Ref<HTMLDivElement>;
   /** Whether the user is currently dragging */
   isDragging: boolean;
   /** Inline style to apply to the container, or undefined if not yet dragged */
@@ -84,7 +84,15 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
   const { disabled = false } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<HTMLDivElement>(null);
+
+  // Callback ref for the drag handle — sets state when the element mounts/unmounts
+  // so the useEffect that attaches listeners re-runs at the right time.
+  const handleElRef = useRef<HTMLDivElement | null>(null);
+  const [handleEl, setHandleEl] = useState<HTMLDivElement | null>(null);
+  const handleRef = useCallback((el: HTMLDivElement | null) => {
+    handleElRef.current = el;
+    setHandleEl(el);
+  }, []);
 
   const [isDragging, setIsDragging] = useState(false);
   const [hasDragged, setHasDragged] = useState(false);
@@ -109,7 +117,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       if (e.button !== 0) return; // Only primary button
 
       const container = containerRef.current;
-      const handle = handleRef.current;
+      const handle = handleElRef.current;
       if (!container || !handle) return;
 
       const rect = container.getBoundingClientRect();
@@ -147,7 +155,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     (e: PointerEvent) => {
       if (!isDraggingRef.current) return;
 
-      const handle = handleRef.current;
+      const handle = handleElRef.current;
       if (handle) {
         handle.releasePointerCapture(e.pointerId);
       }
@@ -157,21 +165,22 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     []
   );
 
-  // Attach/detach pointer event listeners on the handle
+  // Attach/detach pointer event listeners on the handle.
+  // Depends on handleEl (state set by callback ref) so it re-runs when the
+  // handle element mounts — critical because VideoCall renders conditionally.
   useEffect(() => {
-    const handle = handleRef.current;
-    if (!handle || disabled) return;
+    if (!handleEl || disabled) return;
 
-    handle.addEventListener('pointerdown', onPointerDown);
-    handle.addEventListener('pointermove', onPointerMove);
-    handle.addEventListener('pointerup', onPointerUp);
+    handleEl.addEventListener('pointerdown', onPointerDown);
+    handleEl.addEventListener('pointermove', onPointerMove);
+    handleEl.addEventListener('pointerup', onPointerUp);
 
     return () => {
-      handle.removeEventListener('pointerdown', onPointerDown);
-      handle.removeEventListener('pointermove', onPointerMove);
-      handle.removeEventListener('pointerup', onPointerUp);
+      handleEl.removeEventListener('pointerdown', onPointerDown);
+      handleEl.removeEventListener('pointermove', onPointerMove);
+      handleEl.removeEventListener('pointerup', onPointerUp);
     };
-  }, [disabled]);
+  }, [handleEl, disabled]);
 
   const dragStyle: DragStyle | undefined = hasDragged
     ? {
