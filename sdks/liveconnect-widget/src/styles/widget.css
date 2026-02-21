@@ -1425,6 +1425,47 @@
 }
 
 /* ============================================
+   Drag Handle (Video Panel Repositioning)
+   ============================================ */
+.lc-video__drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.lc-video__drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Subtle grip bar indicator */
+.lc-video__drag-handle::before {
+  content: '';
+  width: 16px;
+  height: 4px;
+  background: var(--lc-text-muted);
+  opacity: 0.4;
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 2px;
+}
+
+.lc-video__drag-handle:hover::before {
+  opacity: 0.7;
+}
+
+/* Dragging state — disables transitions and text selection on entire panel */
+.lc-panel--dragging {
+  user-select: none;
+  transition: none !important;
+}
+
+.lc-panel--dragging * {
+  user-select: none;
+}
+
+/* ============================================
    Mobile / Responsive Styles
    ============================================ */
 @media (max-width: 480px) {
@@ -1481,6 +1522,16 @@
 
   .lc-chat__input-area {
     padding: var(--lc-spacing-sm);
+  }
+
+  /* Disable drag handle on mobile (panel is full-width) */
+  .lc-video__drag-handle {
+    cursor: default;
+    touch-action: auto;
+  }
+
+  .lc-video__drag-handle::before {
+    display: none;
   }
 }
 

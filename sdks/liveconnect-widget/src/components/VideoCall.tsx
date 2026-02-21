@@ -5,6 +5,7 @@
 
 import { h } from 'preact';
 import { useRef, useEffect, useState } from 'preact/hooks';
+import type { RefObject } from 'preact';
 import {
   micEnabled,
   cameraEnabled,
@@ -51,6 +52,8 @@ interface VideoCallProps {
   isChatVisible: boolean;
   /** Optional name of the remote participant */
   participantName?: string;
+  /** Ref to attach to the drag handle (info bar) for panel repositioning */
+  dragHandleRef?: RefObject<HTMLDivElement>;
 }
 
 // ============================================================================
@@ -394,6 +397,7 @@ export function VideoCall({
   onToggleChat,
   isChatVisible,
   participantName = 'Representative',
+  dragHandleRef,
 }: VideoCallProps): h.JSX.Element {
   // Video element refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -651,8 +655,8 @@ export function VideoCall({
         </div>
       )}
 
-      {/* Info bar (top) */}
-      <div class="lc-video__info">
+      {/* Info bar (top) — also serves as the drag handle for panel repositioning */}
+      <div ref={dragHandleRef} class="lc-video__info lc-video__drag-handle">
         <div class="lc-video__participant">
           <span class="lc-video__participant-name">{participantName}</span>
         </div>

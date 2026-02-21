@@ -5,6 +5,7 @@
 
 import { h } from 'preact';
 import { useEffect, useState, useCallback, useRef } from 'preact/hooks';
+import { useDraggable } from '../hooks/useDraggable';
 import {
   widgetState,
   WidgetStateType,
@@ -116,6 +117,23 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
   /** Whether the organization's subscription is inactive (402 from backend) */
   const [subscriptionInactive, setSubscriptionInactive] = useState<boolean>(false);
+
+  /** Whether the viewport is mobile-sized (disables panel dragging) */
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 480px)').matches
+  );
+
+  // Mobile detection via matchMedia listener
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 480px)');
+    const onChange = (e: MediaQueryListEvent): void => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  // Draggable panel hook (disabled on mobile where panel is full-width)
+  const { containerRef: dragContainerRef, handleRef: dragHandleRef, isDragging, dragStyle } =
+    useDraggable({ disabled: isMobile });
 
   // ============================================================================
   // Data Channel Chat Setup
@@ -817,7 +835,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     case WidgetStateType.IN_CALL:
       return (
         <div class="lc-widget">
-          <div class={`lc-panel lc-panel--${position}`} style={{ height: '500px' }}>
+          <div
+            ref={dragContainerRef}
+            class={`lc-panel lc-panel--${position}${isDragging ? ' lc-panel--dragging' : ''}`}
+            style={{ height: '500px', ...dragStyle }}
+          >
             <VideoCall
               conversationId={state.conversationId}
               roomName={state.roomName}
@@ -828,6 +850,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
               onPopOut={() => handlePopOut(state.conversationId)}
               onToggleChat={handleToggleChat}
               isChatVisible={isChatVisible}
+              dragHandleRef={dragHandleRef}
             />
             {isChatVisible && (
               <div style={{ height: '250px', borderTop: '1px solid var(--lc-border)' }}>
