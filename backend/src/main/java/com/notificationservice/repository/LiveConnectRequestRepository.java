@@ -78,4 +78,21 @@ public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectR
      */
     @Query("SELECT COUNT(r) > 0 FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId")
     boolean existsAnyByVisitorId(UUID visitorId);
+
+    /**
+     * Returns combined interaction stats for a returning visitor in a single query.
+     * Combines countRequestsSentSince + countDeclinedOrExpiredPingsSince + existsAnyByVisitorId
+     * to reduce 3 DB round-trips to 1.
+     * Returns [requestsSentSince (Long), declinedPingsSince (Long), hasAnyRequests (Boolean)].
+     *
+     * @param visitorId the visitor's internal ID
+     * @param since the start of the time window
+     * @return Object array with [requestsSent, declinedPings, hasAny]
+     */
+    @Query("SELECT " +
+           "SUM(CASE WHEN r.direction = 'USER_TO_REPS' AND r.createdAt >= :since THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN r.direction = 'REP_TO_USER' AND r.status IN ('DECLINED', 'EXPIRED') AND r.createdAt >= :since THEN 1 ELSE 0 END), " +
+           "COUNT(r) > 0 " +
+           "FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId")
+    Object[] getVisitorRequestStats(UUID visitorId, OffsetDateTime since);
 }

@@ -5,6 +5,7 @@ import com.notificationservice.entity.RequestStatus;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.RequestExpiredEvent;
+import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -25,6 +26,7 @@ public class RequestExpirationScheduler {
 
     private final LiveConnectRequestRepository requestRepository;
     private final WebSocketBroadcaster broadcaster;
+    private final VisitorSessionManager visitorSessionManager;
 
     /**
      * Checks for expired pending requests every 5 seconds.
@@ -34,20 +36,24 @@ public class RequestExpirationScheduler {
     @Transactional
     public void checkExpiredRequests() {
         OffsetDateTime now = OffsetDateTime.now();
+
+        // Load expired requests first (need IDs/relationships for broadcasting)
         List<LiveConnectRequest> expiredRequests =
                 requestRepository.findByStatusAndExpiresAtBefore(RequestStatus.PENDING, now);
 
-        for (LiveConnectRequest request : expiredRequests) {
-            // Mark as expired
-            request.setStatus(RequestStatus.EXPIRED);
-            requestRepository.save(request);
+        if (expiredRequests.isEmpty()) {
+            return;
+        }
 
-            // Notify reps that the request expired
+        // Bulk update all expired requests in a single UPDATE statement
+        requestRepository.expirePendingRequests(now);
+
+        // Broadcast and update state for each expired request
+        for (LiveConnectRequest request : expiredRequests) {
             RequestExpiredEvent event = new RequestExpiredEvent(request.getId());
             broadcaster.broadcastToProject(request.getProject().getId(), event);
-
-            // Notify the visitor that their request expired (same event, visitor widget handles it)
             broadcaster.sendToVisitor(request.getVisitor().getId(), event);
+            visitorSessionManager.setVisitorState(request.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.BROWSING);
 
             log.info("Request expired: requestId={}, visitorId={}, projectId={}",
                     request.getId(),
@@ -55,8 +61,6 @@ public class RequestExpirationScheduler {
                     request.getProject().getId());
         }
 
-        if (!expiredRequests.isEmpty()) {
-            log.debug("Processed {} expired requests", expiredRequests.size());
-        }
+        log.debug("Processed {} expired requests", expiredRequests.size());
     }
 }

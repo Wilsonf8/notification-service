@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,4 +58,14 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, UUID> 
     @Modifying
     @Query("DELETE FROM DeviceToken d WHERE d.deviceToken = :deviceToken AND d.user.id = :userId")
     void deleteByDeviceTokenAndUserId(String deviceToken, UUID userId);
+
+    /**
+     * Finds all valid device tokens for multiple users in a single query.
+     * Used to avoid N+1 queries when sending push notifications to multiple reps.
+     *
+     * @param userIds the user IDs
+     * @return list of valid device tokens for the given users
+     */
+    @Query("SELECT d FROM DeviceToken d WHERE d.user.id IN :userIds AND d.isValid = true")
+    List<DeviceToken> findValidByUserIds(Collection<UUID> userIds);
 }

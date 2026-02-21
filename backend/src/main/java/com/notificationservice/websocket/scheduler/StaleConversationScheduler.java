@@ -10,6 +10,7 @@ import com.notificationservice.service.LiveKitRoomService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
+import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,6 +36,7 @@ public class StaleConversationScheduler {
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveConnectRepRepository repRepository;
     private final WebSocketBroadcaster broadcaster;
+    private final VisitorSessionManager visitorSessionManager;
 
     /**
      * Cleans up stale conversations every 5 minutes.
@@ -97,6 +99,11 @@ public class StaleConversationScheduler {
             rep.setPresence(RepPresence.ONLINE);
             rep.setCallStartedAt(null);
             repRepository.save(rep);
+        }
+
+        // Update visitor engagement state back to BROWSING
+        if (conversation.getVisitor() != null) {
+            visitorSessionManager.setVisitorState(conversation.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.BROWSING);
         }
 
         // Broadcast to visitor

@@ -85,4 +85,19 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT COUNT(c) > 0 FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId")
     boolean existsAnyByVisitorId(UUID visitorId);
+
+    /**
+     * Returns combined conversation stats for a returning visitor in a single query.
+     * Combines countCallsByVisitorSince + existsAnyByVisitorId to reduce 2 DB round-trips to 1.
+     * Returns [callsSince (Long), hasAnyConversations (Boolean)].
+     *
+     * @param visitorId the visitor's internal ID
+     * @param since the start of the time window
+     * @return Object array with [callsSince, hasAny]
+     */
+    @Query("SELECT " +
+           "SUM(CASE WHEN c.type = 'VIDEO_CALL' AND c.startedAt >= :since THEN 1 ELSE 0 END), " +
+           "COUNT(c) > 0 " +
+           "FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId")
+    Object[] getVisitorConversationStats(UUID visitorId, OffsetDateTime since);
 }

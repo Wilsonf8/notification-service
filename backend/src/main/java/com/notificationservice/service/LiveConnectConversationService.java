@@ -30,6 +30,7 @@ import com.notificationservice.websocket.event.CallEndedEvent;
 import com.notificationservice.websocket.event.MessageReceivedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
+import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -54,6 +55,7 @@ public class LiveConnectConversationService {
     private final ProjectRepository projectRepository;
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
+    private final VisitorSessionManager visitorSessionManager;
 
     /**
      * Gets paginated conversations for a project.
@@ -289,6 +291,9 @@ public class LiveConnectConversationService {
         rep.setCurrentConversation(null);
         rep.setPresence(RepPresence.ONLINE);
         repRepository.save(rep);
+
+        // Update visitor engagement state back to BROWSING
+        visitorSessionManager.setVisitorState(conversation.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.BROWSING);
 
         // Broadcast rep availability change to visitors
         UUID projectIdForAvailability = conversation.getProject().getId();

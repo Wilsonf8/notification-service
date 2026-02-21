@@ -14,6 +14,7 @@ import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.event.VisitorUpdatedEvent;
+import com.notificationservice.websocket.scheduler.HeartbeatBatchProcessor;
 import com.notificationservice.websocket.session.VisitorConnectionGracePeriodManager;
 import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +51,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final LiveConnectVisitService visitService;
     private final LiveConnectVisitorVisitRepository visitRepository;
     private final ProjectRepository projectRepository;
+    private final HeartbeatBatchProcessor heartbeatBatchProcessor;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -91,19 +93,17 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
 
             // Broadcast visitor_joined only on first connection
             // Skip if visitor has a pending request (waiting) or active conversation (in call)
+            // Uses in-memory state cache instead of DB queries for O(1) check
             if (isFirstConnection) {
-                boolean hasPendingRequest = requestRepository.findPendingByVisitorId(visitorId).isPresent();
-                boolean hasActiveConversation = conversationRepository.findActiveByVisitorId(visitorId).isPresent();
+                boolean isBrowsing = sessionManager.isBrowsing(visitorId);
 
-                if (!hasPendingRequest && !hasActiveConversation) {
+                if (isBrowsing) {
                     String currentPage = extractCurrentPage(visitor);
 
-                    // Compute visit data for the event
-                    long totalVisitCount = visitRepository.countByVisitorId(visitorId);
-                    OffsetDateTime previousVisitEndedAt = visitRepository
-                            .findLatestCompletedByVisitorId(visitorId)
-                            .map(v -> v.getEndedAt())
-                            .orElse(null);
+                    // Combined query: visit count + latest completed endedAt (2 queries → 1)
+                    Object[] visitData = visitRepository.countAndLatestEndedAtByVisitorId(visitorId);
+                    long totalVisitCount = visitData[0] != null ? ((Number) visitData[0]).longValue() : 0;
+                    OffsetDateTime previousVisitEndedAt = (OffsetDateTime) visitData[1];
                     boolean isFirstVisit = totalVisitCount <= 1;
 
                     VisitorJoinedEvent event = new VisitorJoinedEvent(
@@ -123,17 +123,24 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                             .map(Project::getName).orElse(null);
 
                     // Fetch interaction data for returning visitors only
+                    // Combined queries: 4 individual queries → 2 combined queries
                     long callsThisWeek = 0;
                     long requestsThisWeek = 0;
                     long declinedPingsThisWeek = 0;
                     boolean hasAnyInteractions = false;
                     if (!isFirstVisit) {
                         OffsetDateTime weekAgo = OffsetDateTime.now().minusDays(7);
-                        callsThisWeek = conversationRepository.countCallsByVisitorSince(visitorId, weekAgo);
-                        requestsThisWeek = requestRepository.countRequestsSentSince(visitorId, weekAgo);
-                        declinedPingsThisWeek = requestRepository.countDeclinedOrExpiredPingsSince(visitorId, weekAgo);
-                        hasAnyInteractions = conversationRepository.existsAnyByVisitorId(visitorId)
-                                || requestRepository.existsAnyByVisitorId(visitorId);
+
+                        Object[] convStats = conversationRepository.getVisitorConversationStats(visitorId, weekAgo);
+                        callsThisWeek = convStats[0] != null ? ((Number) convStats[0]).longValue() : 0;
+                        boolean hasAnyConversations = convStats[1] != null && (Boolean) convStats[1];
+
+                        Object[] reqStats = requestRepository.getVisitorRequestStats(visitorId, weekAgo);
+                        requestsThisWeek = reqStats[0] != null ? ((Number) reqStats[0]).longValue() : 0;
+                        declinedPingsThisWeek = reqStats[1] != null ? ((Number) reqStats[1]).longValue() : 0;
+                        boolean hasAnyRequests = reqStats[2] != null && (Boolean) reqStats[2];
+
+                        hasAnyInteractions = hasAnyConversations || hasAnyRequests;
                     }
 
                     // Send push notification to reps who are offline
@@ -231,15 +238,13 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * Handles heartbeat messages by updating visitor's lastSeenAt timestamp.
+     * Handles heartbeat messages by queueing a lastSeenAt update.
+     * Actual DB write is batched by HeartbeatBatchProcessor (every 10s).
      *
      * @param visitorId the visitor's internal ID
      */
     private void handleHeartbeat(UUID visitorId) {
-        visitorRepository.findById(visitorId).ifPresent(visitor -> {
-            visitor.setLastSeenAt(OffsetDateTime.now());
-            visitorRepository.save(visitor);
-        });
+        heartbeatBatchProcessor.recordHeartbeat(visitorId);
     }
 
     /**
@@ -270,11 +275,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             visitorRepository.save(visitor);
 
             // Only broadcast page changes for "browsing" visitors
-            // Skip if visitor has a pending request (waiting) or active conversation (in call)
-            boolean hasPendingRequest = requestRepository.findPendingByVisitorId(visitorId).isPresent();
-            boolean hasActiveConversation = conversationRepository.findActiveByVisitorId(visitorId).isPresent();
-
-            if (hasPendingRequest || hasActiveConversation) {
+            // Uses in-memory state cache instead of DB queries for O(1) check
+            if (!sessionManager.isBrowsing(visitorId)) {
                 log.debug("[WidgetWS] Skipping page change broadcast for visitor in waiting/call state: visitorId={}", visitorId);
                 return;
             }

@@ -12,8 +12,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing device tokens for push notifications.
@@ -90,6 +93,19 @@ public class DeviceTokenService {
     @Transactional(readOnly = true)
     public List<DeviceToken> getValidTokensForUser(UUID userId) {
         return deviceTokenRepository.findValidByUserId(userId);
+    }
+
+    /**
+     * Gets all valid device tokens for multiple users in a single query.
+     * Returns a map of userId to their device tokens.
+     *
+     * @param userIds the user IDs
+     * @return map of userId to list of valid device tokens
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, List<DeviceToken>> getValidTokensForUsers(Collection<UUID> userIds) {
+        return deviceTokenRepository.findValidByUserIds(userIds).stream()
+                .collect(Collectors.groupingBy(token -> token.getUser().getId()));
     }
 
     /**

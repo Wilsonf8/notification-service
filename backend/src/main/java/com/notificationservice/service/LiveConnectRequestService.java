@@ -28,6 +28,7 @@ import com.notificationservice.websocket.event.ConversationStartedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
+import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -56,6 +57,7 @@ public class LiveConnectRequestService {
     private final WebSocketBroadcaster broadcaster;
     private final LiveKitTokenService liveKitTokenService;
     private final PushNotificationService pushNotificationService;
+    private final VisitorSessionManager visitorSessionManager;
 
     /**
      * Gets pending requests for a project.
@@ -142,6 +144,9 @@ public class LiveConnectRequestService {
         rep.setPresence(RepPresence.IN_CALL);
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
+
+        // Update visitor engagement state to IN_CALL
+        visitorSessionManager.setVisitorState(request.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.IN_CALL);
 
         // Broadcast rep availability change to visitors
         boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectId);
@@ -264,6 +269,9 @@ public class LiveConnectRequestService {
                 .build();
         request = requestRepository.save(request);
 
+        // Update visitor engagement state to WAITING
+        visitorSessionManager.setVisitorState(visitor.getId(), VisitorSessionManager.VisitorEngagementState.WAITING);
+
         // Broadcast to all reps in the project
         RequestReceivedEvent event = new RequestReceivedEvent(
                 request.getId(),
@@ -306,6 +314,9 @@ public class LiveConnectRequestService {
 
         request.setStatus(RequestStatus.CANCELLED);
         requestRepository.save(request);
+
+        // Update visitor engagement state back to BROWSING
+        visitorSessionManager.setVisitorState(visitorId, VisitorSessionManager.VisitorEngagementState.BROWSING);
 
         // Broadcast to reps so iOS app moves visitor from "waiting" to "browsing"
         RequestCancelledEvent event = new RequestCancelledEvent(requestId);
@@ -382,6 +393,9 @@ public class LiveConnectRequestService {
         rep.setPresence(RepPresence.IN_CALL);
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
+
+        // Update visitor engagement state to IN_CALL
+        visitorSessionManager.setVisitorState(request.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.IN_CALL);
 
         // Broadcast rep availability change to visitors
         UUID projectId = request.getProject().getId();
@@ -468,6 +482,9 @@ public class LiveConnectRequestService {
 
         request.setStatus(RequestStatus.DECLINED);
         requestRepository.save(request);
+
+        // Update visitor engagement state back to BROWSING
+        visitorSessionManager.setVisitorState(visitorId, VisitorSessionManager.VisitorEngagementState.BROWSING);
 
         // Set a cooldown on the visitor to prevent immediate re-pings
         LiveConnectVisitor visitor = request.getVisitor();

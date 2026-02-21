@@ -25,6 +25,21 @@ public class VisitorSessionManager {
     // visitorId -> projectId mapping for broadcasts
     private final Map<UUID, UUID> visitorProjects = new ConcurrentHashMap<>();
 
+    // projectId -> Set<visitorId> reverse index for O(1) project visitor lookups
+    private final Map<UUID, Set<UUID>> projectVisitors = new ConcurrentHashMap<>();
+
+    // visitorId -> engagement state cache (avoids DB queries on page change/broadcast decisions)
+    private final Map<UUID, VisitorEngagementState> visitorStates = new ConcurrentHashMap<>();
+
+    /**
+     * Visitor engagement states for in-memory broadcast filtering.
+     */
+    public enum VisitorEngagementState {
+        BROWSING,
+        WAITING,
+        IN_CALL
+    }
+
     /**
      * Registers a new visitor WebSocket session.
      *
@@ -35,6 +50,7 @@ public class VisitorSessionManager {
     public void addSession(UUID visitorId, UUID projectId, WebSocketSession session) {
         visitorSessions.computeIfAbsent(visitorId, k -> new CopyOnWriteArraySet<>()).add(session);
         visitorProjects.put(visitorId, projectId);
+        projectVisitors.computeIfAbsent(projectId, k -> ConcurrentHashMap.newKeySet()).add(visitorId);
         log.debug("Visitor session added: visitorId={}, projectId={}, sessionId={}", visitorId, projectId, session.getId());
     }
 
@@ -49,8 +65,19 @@ public class VisitorSessionManager {
         if (sessions != null) {
             sessions.remove(session);
             if (sessions.isEmpty()) {
+                UUID projectId = visitorProjects.remove(visitorId);
                 visitorSessions.remove(visitorId);
-                visitorProjects.remove(visitorId);
+                visitorStates.remove(visitorId);
+                // Remove from reverse index
+                if (projectId != null) {
+                    Set<UUID> visitors = projectVisitors.get(projectId);
+                    if (visitors != null) {
+                        visitors.remove(visitorId);
+                        if (visitors.isEmpty()) {
+                            projectVisitors.remove(projectId);
+                        }
+                    }
+                }
             }
         }
         log.debug("Visitor session removed: visitorId={}, sessionId={}", visitorId, session.getId());
@@ -105,12 +132,47 @@ public class VisitorSessionManager {
      * @return set of visitor IDs
      */
     public Set<UUID> getProjectVisitors(UUID projectId) {
-        Set<UUID> visitors = ConcurrentHashMap.newKeySet();
-        visitorProjects.forEach((visitorId, projId) -> {
-            if (projId.equals(projectId)) {
-                visitors.add(visitorId);
-            }
-        });
-        return visitors;
+        return projectVisitors.getOrDefault(projectId, Collections.emptySet());
+    }
+
+    /**
+     * Sets the engagement state for a visitor. Called when requests are
+     * created/expired/accepted and when calls start/end.
+     *
+     * @param visitorId the visitor's internal ID
+     * @param state the new engagement state
+     */
+    public void setVisitorState(UUID visitorId, VisitorEngagementState state) {
+        visitorStates.put(visitorId, state);
+        log.debug("Visitor state changed: visitorId={}, state={}", visitorId, state);
+    }
+
+    /**
+     * Gets the engagement state for a visitor. Defaults to BROWSING if not set.
+     *
+     * @param visitorId the visitor's internal ID
+     * @return the visitor's engagement state
+     */
+    public VisitorEngagementState getVisitorState(UUID visitorId) {
+        return visitorStates.getOrDefault(visitorId, VisitorEngagementState.BROWSING);
+    }
+
+    /**
+     * Checks if a visitor is in BROWSING state (not waiting or in a call).
+     *
+     * @param visitorId the visitor's internal ID
+     * @return true if the visitor is browsing
+     */
+    public boolean isBrowsing(UUID visitorId) {
+        return getVisitorState(visitorId) == VisitorEngagementState.BROWSING;
+    }
+
+    /**
+     * Removes the engagement state for a visitor (on full disconnect).
+     *
+     * @param visitorId the visitor's internal ID
+     */
+    public void removeVisitorState(UUID visitorId) {
+        visitorStates.remove(visitorId);
     }
 }

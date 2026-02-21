@@ -95,4 +95,15 @@ public interface LiveConnectVisitorVisitRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT v.visitor.id, MAX(v.endedAt) FROM LiveConnectVisitorVisit v WHERE v.visitor.id IN :visitorIds AND v.endedAt IS NOT NULL GROUP BY v.visitor.id")
     List<Object[]> findLatestCompletedEndedAtByVisitorIds(Set<UUID> visitorIds);
+
+    /**
+     * Returns total visit count and latest completed endedAt in a single query.
+     * Combines countByVisitorId + findLatestCompletedByVisitorId to avoid 2 DB round-trips.
+     * Returns [totalCount (Long), latestEndedAt (OffsetDateTime or null)].
+     *
+     * @param visitorId the visitor's internal ID
+     * @return Object array with [count, latestEndedAt]
+     */
+    @Query("SELECT COUNT(v), (SELECT MAX(v2.endedAt) FROM LiveConnectVisitorVisit v2 WHERE v2.visitor.id = :visitorId AND v2.endedAt IS NOT NULL) FROM LiveConnectVisitorVisit v WHERE v.visitor.id = :visitorId")
+    Object[] countAndLatestEndedAtByVisitorId(UUID visitorId);
 }
