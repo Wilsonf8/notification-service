@@ -39,6 +39,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   IconCreditCard,
   IconLoader,
@@ -47,6 +49,7 @@ import {
   IconDownload,
   IconReceipt,
   IconCalendarDue,
+  IconRocket,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
@@ -57,6 +60,7 @@ import {
   createSetupIntent,
   getInvoices,
   getUpcomingInvoice,
+  upgradePersonalOrg,
 } from "@/lib/api/billing";
 import type {
   Subscription,
@@ -65,6 +69,7 @@ import type {
   UpcomingInvoice,
 } from "@/lib/types";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { IconCheck } from "@tabler/icons-react";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { stripePromise } from "@/lib/stripe";
@@ -233,7 +238,8 @@ export default function BillingPage({
   params: Promise<{ orgSlug: string }>;
 }) {
   const { orgSlug } = use(params);
-  const { currentOrg } = useOrganization();
+  const { currentOrg, refreshOrgs } = useOrganization();
+  const router = useRouter();
 
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -258,6 +264,14 @@ export default function BillingPage({
   const [updatePaymentOpen, setUpdatePaymentOpen] = useState(false);
   const [updatePaymentClientSecret, setUpdatePaymentClientSecret] = useState<string | null>(null);
   const [updatePaymentLoading, setUpdatePaymentLoading] = useState(false);
+
+  // Upgrade state (personal org -> team org)
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeName, setUpgradeName] = useState("");
+  const [upgradeInterval, setUpgradeInterval] = useState("monthly");
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeClientSecret, setUpgradeClientSecret] = useState<string | null>(null);
+  const [upgradeNameError, setUpgradeNameError] = useState<string | null>(null);
 
   const intervals: BillingInterval[] = [
     {
@@ -422,6 +436,42 @@ export default function BillingPage({
     }
   };
 
+  /**
+   * Handles the upgrade flow: validates name, creates subscription with upgrade metadata,
+   * and transitions to the payment element.
+   */
+  const handleUpgrade = async () => {
+    const trimmedName = upgradeName.trim();
+    if (!trimmedName) {
+      setUpgradeNameError("Organization name is required");
+      return;
+    }
+    if (trimmedName === currentOrg?.name) {
+      setUpgradeNameError("Name must differ from your current organization name");
+      return;
+    }
+    setUpgradeNameError(null);
+
+    const interval = intervals.find((i) => i.value === upgradeInterval);
+    if (!interval) return;
+
+    try {
+      setUpgradeLoading(true);
+      const { clientSecret } = await upgradePersonalOrg(
+        orgSlug,
+        trimmedName,
+        interval.priceId
+      );
+      setUpgradeClientSecret(clientSecret);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start upgrade"
+      );
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
   /** Formats cents to a localized currency string. */
   const formatAmount = (cents: number, currency: string) =>
     new Intl.NumberFormat("en-US", {
@@ -472,7 +522,7 @@ export default function BillingPage({
     );
   }
 
-  // Personal org: show free tier info
+  // Personal org: show free tier info with upgrade option
   if (currentOrg?.isPersonal) {
     const freeFeatures = [
       "3 projects",
@@ -542,12 +592,126 @@ export default function BillingPage({
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-muted-foreground">
-                Create a team organization to subscribe to Pro.
-              </p>
+              <Button
+                className="w-full gap-2"
+                onClick={() => {
+                  setUpgradeName("");
+                  setUpgradeClientSecret(null);
+                  setUpgradeNameError(null);
+                  setUpgradeOpen(true);
+                }}
+              >
+                <IconRocket className="h-4 w-4" />
+                Upgrade to Pro
+              </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Upgrade Dialog */}
+        <Dialog
+          open={upgradeOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setUpgradeClientSecret(null);
+              setUpgradeNameError(null);
+            }
+            setUpgradeOpen(open);
+          }}
+        >
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Upgrade to Pro</DialogTitle>
+              <DialogDescription>
+                Your personal workspace will become a team organization. All
+                existing projects and data will be preserved.
+              </DialogDescription>
+            </DialogHeader>
+
+            {!upgradeClientSecret ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="upgrade-name">New organization name</Label>
+                  <Input
+                    id="upgrade-name"
+                    placeholder="e.g. My Team"
+                    value={upgradeName}
+                    onChange={(e) => {
+                      setUpgradeName(e.target.value);
+                      setUpgradeNameError(null);
+                    }}
+                  />
+                  {upgradeNameError && (
+                    <p className="text-xs text-destructive">
+                      {upgradeNameError}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Must be different from &quot;{currentOrg?.name}&quot;. A new
+                    personal workspace will be created for you automatically.
+                  </p>
+                </div>
+
+                {intervals.length > 1 && (
+                  <div className="space-y-2">
+                    <Label>Billing interval</Label>
+                    <Select
+                      value={upgradeInterval}
+                      onValueChange={(val) => val && setUpgradeInterval(val)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {intervals.map((interval) => (
+                          <SelectItem
+                            key={interval.value}
+                            value={interval.value}
+                          >
+                            {interval.label} — {interval.description}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                <Button
+                  onClick={handleUpgrade}
+                  disabled={upgradeLoading || !intervals.length}
+                  className="w-full gap-2"
+                >
+                  {upgradeLoading ? (
+                    <IconLoader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <IconCreditCard className="h-4 w-4" />
+                  )}
+                  Continue to Payment
+                </Button>
+              </div>
+            ) : (
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret: upgradeClientSecret,
+                  appearance: stripeAppearance,
+                }}
+              >
+                <CheckoutForm
+                  onSuccess={async () => {
+                    setUpgradeOpen(false);
+                    setUpgradeClientSecret(null);
+                    toast.success(
+                      "Upgrade successful! Redirecting to your new organization..."
+                    );
+                    await refreshOrgs();
+                    router.push("/dashboard");
+                  }}
+                />
+              </Elements>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }

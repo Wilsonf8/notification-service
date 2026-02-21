@@ -380,7 +380,7 @@ public class OrganizationService {
      * @param name the organization name
      * @return a unique URL-safe slug
      */
-    private String generateUniqueSlug(String name) {
+    public String generateUniqueSlug(String name) {
         String baseSlug = toSlug(name);
         String slug = baseSlug;
         int counter = 1;

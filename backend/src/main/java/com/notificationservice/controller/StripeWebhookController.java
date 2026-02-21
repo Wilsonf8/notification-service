@@ -1,6 +1,8 @@
 package com.notificationservice.controller;
 
+import com.notificationservice.entity.Organization;
 import com.notificationservice.entity.StripeProcessedEvent;
+import com.notificationservice.repository.OrganizationRepository;
 import com.notificationservice.repository.StripeProcessedEventRepository;
 import com.notificationservice.service.StripeService;
 import com.notificationservice.service.SubscriptionService;
@@ -33,6 +35,7 @@ public class StripeWebhookController {
     private final StripeService stripeService;
     private final SubscriptionService subscriptionService;
     private final StripeProcessedEventRepository processedEventRepository;
+    private final OrganizationRepository organizationRepository;
 
     /**
      * Handles incoming Stripe webhook events.
@@ -110,7 +113,7 @@ public class StripeWebhookController {
             throw new RuntimeException("Checkout session " + session.getId() + " has no subscription");
         }
 
-        // Retrieve the full subscription to get period dates and price
+        // Retrieve the full subscription to get period dates, price, and upgrade metadata
         try {
             Subscription stripeSub = Subscription.retrieve(stripeSubId);
             String priceId = null;
@@ -126,6 +129,17 @@ public class StripeWebhookController {
                     stripeSub.getCurrentPeriodStart(),
                     stripeSub.getCurrentPeriodEnd(),
                     event.getCreated());
+
+            // Check for upgrade metadata (personal org -> team org conversion)
+            String upgradeOrgName = stripeSub.getMetadata().get("upgradeOrgName");
+            String upgradeOrgSlug = stripeSub.getMetadata().get("upgradeOrgSlug");
+
+            if (upgradeOrgName != null && upgradeOrgSlug != null) {
+                Organization org = organizationRepository.findById(orgId).orElse(null);
+                if (org != null && Boolean.TRUE.equals(org.getIsPersonal())) {
+                    subscriptionService.handleUpgradeOnCheckout(orgId, upgradeOrgName, upgradeOrgSlug);
+                }
+            }
         } catch (Exception e) {
             log.error("Failed to retrieve subscription {}: {}", stripeSubId, e.getMessage());
             throw new RuntimeException("Failed to process checkout", e);

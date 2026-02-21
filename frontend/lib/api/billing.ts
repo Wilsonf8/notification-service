@@ -45,6 +45,28 @@ export async function createCheckoutSession(
 }
 
 /**
+ * Upgrades a personal organization to a paid team organization.
+ * Creates a Stripe subscription with upgrade metadata for the webhook to process.
+ * @param slug - The organization slug
+ * @param name - The new organization name (must differ from current)
+ * @param priceId - The Stripe price ID
+ * @returns The PaymentIntent client secret
+ */
+export async function upgradePersonalOrg(
+  slug: string,
+  name: string,
+  priceId: string
+): Promise<CheckoutSessionResponse> {
+  return apiFetch<CheckoutSessionResponse>(
+    `/api/organizations/${slug}/billing/upgrade`,
+    {
+      method: "POST",
+      body: JSON.stringify({ name, priceId }),
+    }
+  );
+}
+
+/**
  * Cancels the subscription at the end of the current billing period.
  * @param slug - The organization slug
  */

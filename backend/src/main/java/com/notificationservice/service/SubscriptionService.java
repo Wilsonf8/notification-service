@@ -1,12 +1,15 @@
 package com.notificationservice.service;
 
+import com.notificationservice.entity.OrgRole;
 import com.notificationservice.entity.Organization;
+import com.notificationservice.entity.OrganizationMember;
 import com.notificationservice.entity.Subscription;
 import com.notificationservice.entity.SubscriptionStatus;
+import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.OrganizationRepository;
 import com.notificationservice.repository.SubscriptionRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +28,6 @@ import java.util.concurrent.TimeUnit;
  * Handles subscription state changes from Stripe webhooks with Redis caching.
  */
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SubscriptionService {
 
@@ -34,7 +36,26 @@ public class SubscriptionService {
 
     private final SubscriptionRepository subscriptionRepository;
     private final OrganizationRepository organizationRepository;
+    private final OrganizationMemberRepository organizationMemberRepository;
+    private final OrganizationService organizationService;
     private final StringRedisTemplate redisTemplate;
+
+    /**
+     * Constructor with lazy-loaded OrganizationService to break circular dependency
+     * (SubscriptionService -> OrganizationService -> TierService -> SubscriptionService).
+     */
+    public SubscriptionService(
+            SubscriptionRepository subscriptionRepository,
+            OrganizationRepository organizationRepository,
+            OrganizationMemberRepository organizationMemberRepository,
+            @Lazy OrganizationService organizationService,
+            StringRedisTemplate redisTemplate) {
+        this.subscriptionRepository = subscriptionRepository;
+        this.organizationRepository = organizationRepository;
+        this.organizationMemberRepository = organizationMemberRepository;
+        this.organizationService = organizationService;
+        this.redisTemplate = redisTemplate;
+    }
 
     /**
      * Checks if an organization has an active subscription. Uses Redis cache with 5min TTL.
@@ -291,6 +312,56 @@ public class SubscriptionService {
         sub.setCanceledAt(null);
         subscriptionRepository.save(sub);
         invalidateCache(orgId);
+    }
+
+    /**
+     * Handles the upgrade of a personal organization to a paid team organization.
+     * Called from the webhook handler when payment succeeds and upgrade metadata is present.
+     * Converts the personal org to a team org with new name/slug, and creates a fresh personal org for the owner.
+     *
+     * @param orgId the organization ID being upgraded
+     * @param newName the new organization name
+     * @param newSlug the new organization slug
+     */
+    @Transactional
+    public void handleUpgradeOnCheckout(UUID orgId, String newName, String newSlug) {
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new ResourceNotFoundException("Organization not found: " + orgId));
+
+        if (!Boolean.TRUE.equals(org.getIsPersonal())) {
+            log.warn("Upgrade called on non-personal org {}, skipping", orgId);
+            return;
+        }
+
+        // Re-generate slug to handle race conditions where it may have been taken
+        String finalSlug = organizationService.generateUniqueSlug(newName);
+
+        // 1. Convert personal org to team org
+        org.setIsPersonal(false);
+        org.setName(newName);
+        org.setSlug(finalSlug);
+        organizationRepository.save(org);
+
+        // 2. Create a new personal org for the owner
+        String ownerUsername = org.getOwner().getUsername();
+        String personalSlug = organizationService.generateUniqueSlug(ownerUsername);
+
+        Organization personalOrg = organizationRepository.save(Organization.builder()
+                .name(ownerUsername + "'s Projects")
+                .slug(personalSlug)
+                .owner(org.getOwner())
+                .isPersonal(true)
+                .build());
+
+        organizationMemberRepository.save(OrganizationMember.builder()
+                .organization(personalOrg)
+                .user(org.getOwner())
+                .role(OrgRole.OWNER)
+                .build());
+
+        invalidateCache(orgId);
+        log.info("Upgraded personal org {} to team org '{}' (slug: {}), created new personal org '{}'",
+                orgId, newName, finalSlug, personalSlug);
     }
 
     /**

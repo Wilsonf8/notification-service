@@ -128,6 +128,45 @@ public class StripeService {
     }
 
     /**
+     * Creates a Stripe Subscription with upgrade metadata for personal-to-team conversion.
+     * The metadata is read by the webhook handler to perform the org conversion on payment success.
+     *
+     * @param org the organization
+     * @param priceId the Stripe price ID to subscribe to
+     * @param upgradeName the new organization name after upgrade
+     * @param upgradeSlug the new organization slug after upgrade
+     * @return the subscription result with client secret and subscription ID
+     * @throws StripeException if the Stripe API call fails
+     */
+    public SubscriptionResult createSubscriptionWithUpgradeMetadata(
+            Organization org, String priceId, String upgradeName, String upgradeSlug) throws StripeException {
+        String customerId = getOrCreateCustomer(org);
+
+        SubscriptionCreateParams params = SubscriptionCreateParams.builder()
+                .setCustomer(customerId)
+                .addItem(SubscriptionCreateParams.Item.builder()
+                        .setPrice(priceId)
+                        .build())
+                .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
+                .setPaymentSettings(SubscriptionCreateParams.PaymentSettings.builder()
+                        .setSaveDefaultPaymentMethod(
+                                SubscriptionCreateParams.PaymentSettings.SaveDefaultPaymentMethod.ON_SUBSCRIPTION)
+                        .build())
+                .putMetadata("organizationId", org.getId().toString())
+                .putMetadata("upgradeOrgName", upgradeName)
+                .putMetadata("upgradeOrgSlug", upgradeSlug)
+                .addExpand("latest_invoice.payment_intent")
+                .build();
+
+        Subscription stripeSub = Subscription.create(params);
+        Invoice invoice = stripeSub.getLatestInvoiceObject();
+        PaymentIntent paymentIntent = invoice.getPaymentIntentObject();
+
+        log.info("Created upgrade subscription {} for personal org {}", stripeSub.getId(), org.getSlug());
+        return new SubscriptionResult(paymentIntent.getClientSecret(), stripeSub.getId());
+    }
+
+    /**
      * Cancels a Stripe subscription immediately.
      *
      * @param stripeSubscriptionId the Stripe subscription ID

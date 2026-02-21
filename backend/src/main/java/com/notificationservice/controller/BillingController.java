@@ -6,6 +6,7 @@ import com.notificationservice.dto.InvoiceListResponse;
 import com.notificationservice.dto.SetupIntentResponse;
 import com.notificationservice.dto.SubscriptionDto;
 import com.notificationservice.dto.UpcomingInvoiceDto;
+import com.notificationservice.dto.UpgradeOrganizationRequest;
 import com.notificationservice.entity.Organization;
 import com.notificationservice.entity.SubscriptionStatus;
 import com.notificationservice.service.OrganizationService;
@@ -93,6 +94,55 @@ public class BillingController {
         subscriptionService.cancelIncompleteSubscription(org.getId(), stripeService);
 
         StripeService.SubscriptionResult result = stripeService.createSubscription(org, request.priceId());
+        subscriptionService.createPendingSubscription(org.getId(), result.subscriptionId(), request.priceId());
+
+        return ResponseEntity.ok(new CheckoutSessionResponse(result.clientSecret()));
+    }
+
+    /**
+     * Upgrades a personal organization to a paid team organization.
+     * Creates a Stripe subscription with upgrade metadata; the actual org conversion
+     * happens in the webhook handler after payment succeeds.
+     * Restricted to OWNER role on personal orgs only.
+     *
+     * @param slug the organization's URL slug
+     * @param request the upgrade request with new org name and price ID
+     * @param userId the authenticated user's ID
+     * @return the PaymentIntent client secret
+     * @throws StripeException if the Stripe API call fails
+     */
+    @PostMapping("/upgrade")
+    public ResponseEntity<CheckoutSessionResponse> upgradePersonalOrg(
+            @PathVariable String slug,
+            @Valid @RequestBody UpgradeOrganizationRequest request,
+            @AuthenticationPrincipal UUID userId) throws StripeException {
+        Organization org = organizationService.getOrganizationForBilling(slug, userId);
+
+        if (!Boolean.TRUE.equals(org.getIsPersonal())) {
+            throw new IllegalArgumentException("Only personal organizations can be upgraded");
+        }
+
+        if (subscriptionService.isOrganizationSubscriptionActive(org.getId())) {
+            throw new IllegalArgumentException("Organization already has an active subscription");
+        }
+
+        if (org.getName().equals(request.name())) {
+            throw new IllegalArgumentException("New organization name must differ from current name");
+        }
+
+        if (!stripeService.getValidPriceIds().contains(request.priceId())) {
+            throw new IllegalArgumentException("Invalid price ID");
+        }
+
+        // Generate slug for the new name (validated now, re-checked at webhook time)
+        String upgradeSlug = organizationService.generateUniqueSlug(request.name());
+
+        // Clean up any stale incomplete subscription
+        subscriptionService.cancelIncompleteSubscription(org.getId(), stripeService);
+
+        // Create subscription with upgrade metadata
+        StripeService.SubscriptionResult result = stripeService.createSubscriptionWithUpgradeMetadata(
+                org, request.priceId(), request.name(), upgradeSlug);
         subscriptionService.createPendingSubscription(org.getId(), result.subscriptionId(), request.priceId());
 
         return ResponseEntity.ok(new CheckoutSessionResponse(result.clientSecret()));

@@ -53,7 +53,7 @@ export function getNavItems(orgSlug: string, userRole?: string, isPersonal?: boo
     },
   ];
 
-  if (userRole === "OWNER" && !isPersonal) {
+  if (userRole === "OWNER") {
     items.push({
       label: "Billing",
       href: `/dashboard/${orgSlug}/billing`,
