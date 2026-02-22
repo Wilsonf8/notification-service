@@ -141,10 +141,10 @@ struct VideoCallView: View {
                     if let visitorParticipant = viewModel.visitorParticipant {
                         ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
                             .frame(width: 120, height: 120)
-                            .clipShape(RoundedRectangle(cornerRadius: 0))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                             .overlay(
-                                Rectangle()
-                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
                             )
                             .shadow(radius: 8)
                             .position(
@@ -157,8 +157,12 @@ struct VideoCallView: View {
                     if let visitorParticipant = viewModel.visitorParticipant {
                         ParticipantVideoView(participant: visitorParticipant, trackUpdateCount: viewModel.trackUpdateCount)
                             .aspectRatio(1, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
+                            )
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .clipped()
                     } else {
                         VStack(spacing: 16) {
                             Image(systemName: "person.fill")
@@ -176,10 +180,10 @@ struct VideoCallView: View {
                 if let localParticipant = viewModel.localParticipant {
                     LocalVideoView(participant: localParticipant, trackUpdateCount: viewModel.trackUpdateCount)
                         .frame(width: 120, height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 0))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                         .overlay(
-                            Rectangle()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1.5)
                         )
                         .shadow(radius: 8)
                         .position(
@@ -220,7 +224,7 @@ struct VideoCallView: View {
     // MARK: - Controls Bar
 
     private var controlsBar: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 16) {
             // Mute button
             ControlButton(
                 icon: viewModel.isMicrophoneMuted ? "mic.slash.fill" : "mic.fill",
@@ -244,7 +248,7 @@ struct VideoCallView: View {
             // Blur button (only shown when supported)
             if viewModel.isBlurSupported {
                 ControlButton(
-                    icon: viewModel.isBlurEnabled ? "person.fill.viewfinder" : "person.viewfinder",
+                    icon: viewModel.isBlurEnabled ? "wand.and.stars" : "wand.and.stars",
                     isActive: viewModel.isBlurEnabled
                 ) {
                     Task {
@@ -271,15 +275,15 @@ struct VideoCallView: View {
                 }
             } label: {
                 Image(systemName: "phone.down.fill")
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(.white)
-                    .frame(width: 60, height: 60)
+                    .frame(width: 48, height: 48)
                     .background(.red)
                     .clipShape(Circle())
             }
         }
-        .padding(.horizontal, 32)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 10)
         .glassBackground()
     }
 }
@@ -294,9 +298,9 @@ private struct ControlButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.title3)
                 .foregroundStyle(isActive ? .white : .secondary)
-                .frame(width: 50, height: 50)
+                .frame(width: 40, height: 40)
                 .background(isActive ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
                 .clipShape(Circle())
         }

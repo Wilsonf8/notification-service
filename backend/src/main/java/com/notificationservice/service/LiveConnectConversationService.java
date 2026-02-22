@@ -399,6 +399,29 @@ public class LiveConnectConversationService {
         return new MessageResponse(message.getId(), message.getCreatedAt());
     }
 
+    /**
+     * Retrieves all messages for a conversation, ordered chronologically.
+     * Used by the visitor widget when loading chat history (e.g., pop-out tab).
+     *
+     * @param conversationId the conversation ID
+     * @param visitorId the visitor's internal ID
+     * @return list of messages in chronological order
+     * @throws ResourceNotFoundException if conversation not found
+     * @throws AccessDeniedException if visitor doesn't own the conversation
+     */
+    @Transactional(readOnly = true)
+    public List<LiveConnectMessageDto> getVisitorMessages(UUID conversationId, UUID visitorId) {
+        LiveConnectConversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Conversation not found"));
+
+        if (!conversation.getVisitor().getId().equals(visitorId)) {
+            throw new AccessDeniedException("You do not own this conversation");
+        }
+
+        List<LiveConnectMessage> messages = messageRepository.findByConversationIdOrderByCreatedAtAsc(conversationId);
+        return messages.stream().map(msg -> toMessageDto(msg, conversation)).toList();
+    }
+
     private Project getAndValidateProject(UUID projectId, UUID userId) {
         Project project = projectRepository.findByIdAndNotDeleted(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));

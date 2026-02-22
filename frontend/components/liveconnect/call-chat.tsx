@@ -125,9 +125,11 @@ export function CallChat({
       }
 
       const data = await response.json();
+      // Dashboard returns { messages: [...] }, widget returns flat array
+      const messageList: LiveConnectMessage[] = Array.isArray(data) ? data : data.messages;
       // Seed dedup set with existing message IDs
-      data.forEach((msg: LiveConnectMessage) => receivedMessageIds.current.add(msg.id));
-      setMessages(data);
+      messageList.forEach((msg: LiveConnectMessage) => receivedMessageIds.current.add(msg.id));
+      setMessages(messageList);
       setError(null);
     } catch (err) {
       console.error("[CallChat] Failed to fetch messages:", err);

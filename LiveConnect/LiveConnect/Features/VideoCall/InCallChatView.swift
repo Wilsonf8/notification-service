@@ -14,6 +14,7 @@ struct InCallChatView: View {
     var onClose: () -> Void
 
     @State private var messageText = ""
+    @State private var dragOffset: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
@@ -80,6 +81,20 @@ struct InCallChatView: View {
         .frame(maxHeight: .infinity)
         .background(.ultraThinMaterial.opacity(0.9))
         .frame(maxWidth: .infinity, alignment: .trailing)
+        .offset(x: max(0, dragOffset))
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    dragOffset = max(0, value.translation.width)
+                }
+                .onEnded { value in
+                    if value.translation.width > 100 || value.predictedEndTranslation.width > 200 {
+                        withAnimation { onClose() }
+                    } else {
+                        withAnimation { dragOffset = 0 }
+                    }
+                }
+        )
     }
 }
 

@@ -2,6 +2,7 @@ package com.notificationservice.controller;
 
 import com.notificationservice.dto.AcceptPingResponse;
 import com.notificationservice.dto.ContactFormRequest;
+import com.notificationservice.dto.LiveConnectMessageDto;
 import com.notificationservice.dto.MessageResponse;
 import com.notificationservice.dto.RequestResponse;
 import com.notificationservice.dto.SendMessageRequest;
@@ -31,6 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -258,6 +260,30 @@ public class LiveConnectWidgetController {
         contactService.submitContactForm(session, request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Retrieves chat messages for a conversation.
+     * Used by the visitor widget when loading chat history (e.g., pop-out tab).
+     *
+     * @param sessionToken the session token from X-Session-Token header
+     * @param conversationId the conversation ID
+     * @param httpRequest the HTTP request for IP extraction
+     * @return list of messages in chronological order
+     */
+    @GetMapping("/conversations/{conversationId}/messages")
+    public ResponseEntity<List<LiveConnectMessageDto>> getMessages(
+            @RequestHeader("X-Session-Token") String sessionToken,
+            @PathVariable UUID conversationId,
+            HttpServletRequest httpRequest) {
+
+        String clientIp = extractClientIp(httpRequest);
+        LiveConnectSession session = sessionService.validateSession(sessionToken);
+        rateLimitService.checkInCallMessage(session.getVisitor().getVisitorId(), clientIp);
+
+        List<LiveConnectMessageDto> messages = conversationService.getVisitorMessages(
+                conversationId, session.getVisitor().getId());
+        return ResponseEntity.ok(messages);
     }
 
     /**
