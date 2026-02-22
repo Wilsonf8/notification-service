@@ -69,6 +69,9 @@ final class VideoCallViewModel: RoomDelegate {
     /// Chat messages.
     private(set) var messages: [Message] = []
 
+    /// Whether there are unread chat messages (from visitors).
+    private(set) var hasUnreadChat = false
+
     /// Whether the call is connecting.
     private(set) var isConnecting = true
 
@@ -90,6 +93,11 @@ final class VideoCallViewModel: RoomDelegate {
     init(conversationId: UUID, projectId: UUID) {
         self.conversationId = conversationId
         self.projectId = projectId
+    }
+
+    /// Clears the unread chat indicator.
+    func markChatAsRead() {
+        hasUnreadChat = false
     }
 
     // MARK: - RoomDelegate
@@ -194,6 +202,9 @@ final class VideoCallViewModel: RoomDelegate {
                             createdAt: ISO8601DateFormatter().date(from: payload.sentAt)
                         )
                         viewModel.messages.append(message)
+                        if message.senderType != .rep {
+                            viewModel.hasUnreadChat = true
+                        }
                     }
                 } catch {
                     print("[VideoCall] Failed to parse data channel chat: \(error)")
@@ -350,6 +361,9 @@ final class VideoCallViewModel: RoomDelegate {
 
         if !messages.contains(where: { $0.id == message.id }) {
             messages.append(message)
+            if message.senderType != .rep {
+                hasUnreadChat = true
+            }
         }
     }
 }

@@ -100,6 +100,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   /** Whether the chat panel is visible during a call */
   const [isChatVisible, setIsChatVisible] = useState<boolean>(false);
 
+  /** Whether there are unread chat messages while chat is closed */
+  const [hasUnreadChat, setHasUnreadChat] = useState<boolean>(false);
+
   /** Loading state for various operations */
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -114,6 +117,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
   /** Set of received message IDs for deduplication */
   const receivedMessageIds = useRef(new Set<string>());
+
+  /** Ref tracking chat visibility for use in event handlers (avoids stale closures) */
+  const isChatVisibleRef = useRef<boolean>(false);
 
   /** Whether the organization's subscription is inactive (402 from backend) */
   const [subscriptionInactive, setSubscriptionInactive] = useState<boolean>(false);
@@ -130,6 +136,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     mql.addEventListener('change', onChange);
     return () => mql.removeEventListener('change', onChange);
   }, []);
+
+  // Sync chat visibility ref for use in event handler closures
+  useEffect(() => {
+    isChatVisibleRef.current = isChatVisible;
+  }, [isChatVisible]);
 
   // Draggable panel hook (disabled on mobile where panel is full-width)
   const { containerRef: dragContainerRef, handleRef: dragHandleRef, isDragging, dragStyle } =
@@ -199,6 +210,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
       // Data channel is instant but non-authoritative; only insert if missing
       upsertChatMessage(chatMessage, { authoritative: false });
+
+      // Track unread messages when chat is closed and sender is not the visitor
+      if (!isChatVisibleRef.current && chatMessage.senderType !== 'VISITOR') {
+        setHasUnreadChat(true);
+      }
     });
 
     return () => {
@@ -497,6 +513,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
     // WebSocket is authoritative; update or insert
     upsertChatMessage(newMessage, { authoritative: true });
+
+    // Track unread messages when chat is closed and sender is a rep
+    if (!isChatVisibleRef.current && event.senderType === 'REP') {
+      setHasUnreadChat(true);
+    }
   }, [upsertChatMessage]);
 
   /**
@@ -671,7 +692,12 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
    * Handles chat toggle button click.
    */
   const handleToggleChat = useCallback((): void => {
-    setIsChatVisible((prev) => !prev);
+    setIsChatVisible((prev) => {
+      if (!prev) {
+        setHasUnreadChat(false);
+      }
+      return !prev;
+    });
   }, []);
 
   /**
@@ -885,6 +911,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
               onPopOut={() => handlePopOut(state.conversationId)}
               onToggleChat={handleToggleChat}
               isChatVisible={isChatVisible}
+              hasUnreadChat={hasUnreadChat}
               dragHandleRef={dragHandleRef}
             />
             {isChatVisible && (

@@ -61,6 +61,11 @@ struct VideoCallView: View {
                 viewModel.addReceivedMessage(message)
             }
         }
+        .onChange(of: showChat) { _, isOpen in
+            if isOpen {
+                viewModel.markChatAsRead()
+            }
+        }
         .onDisappear {
             // Clear the message handler when leaving
             webSocketManager.onMessageReceived = nil
@@ -260,7 +265,8 @@ struct VideoCallView: View {
             // Chat button
             ControlButton(
                 icon: "bubble.left.fill",
-                isActive: showChat
+                isActive: showChat,
+                showBadge: viewModel.hasUnreadChat && !showChat
             ) {
                 withAnimation {
                     showChat.toggle()
@@ -293,6 +299,7 @@ struct VideoCallView: View {
 private struct ControlButton: View {
     let icon: String
     let isActive: Bool
+    var showBadge: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -303,6 +310,14 @@ private struct ControlButton: View {
                 .frame(width: 40, height: 40)
                 .background(isActive ? Color.white.opacity(0.2) : Color.white.opacity(0.1))
                 .clipShape(Circle())
+                .overlay(alignment: .topTrailing) {
+                    if showBadge {
+                        Circle()
+                            .fill(.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 2, y: -2)
+                    }
+                }
         }
     }
 }

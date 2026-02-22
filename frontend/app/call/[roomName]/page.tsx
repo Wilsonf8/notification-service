@@ -186,6 +186,8 @@ function CallPageContent() {
     callDuration: 0,
   });
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [hasUnreadChat, setHasUnreadChat] = useState(false);
+  const isChatOpenRef = useRef(isChatOpen);
 
   /**
    * Attaches a track to a video element.
@@ -620,6 +622,24 @@ function CallPageContent() {
     });
   }, []);
 
+  /**
+   * Handles new incoming message notification from CallChat.
+   * Sets unread indicator if chat is closed.
+   */
+  const handleNewMessage = useCallback(() => {
+    if (!isChatOpenRef.current) {
+      setHasUnreadChat(true);
+    }
+  }, []);
+
+  // Sync chat open ref and clear unread when chat opens
+  useEffect(() => {
+    isChatOpenRef.current = isChatOpen;
+    if (isChatOpen) {
+      setHasUnreadChat(false);
+    }
+  }, [isChatOpen]);
+
   // Attach local video track when video element becomes available
   useEffect(() => {
     if (callState.status === 'connected' && localVideoTrackRef.current && localVideoRef.current) {
@@ -848,7 +868,7 @@ function CallPageContent() {
             type="button"
             onClick={() => setIsChatOpen(!isChatOpen)}
             className={cn(
-              'flex size-12 items-center justify-center border transition-colors',
+              'relative flex size-12 items-center justify-center border transition-colors',
               isChatOpen
                 ? 'border-primary bg-primary/20 text-primary'
                 : 'border-border bg-card text-foreground hover:bg-muted'
@@ -858,6 +878,9 @@ function CallPageContent() {
             title={isChatOpen ? 'Close Chat' : 'Open Chat'}
           >
             <IconMessage className="size-6" />
+            {hasUnreadChat && !isChatOpen && (
+              <span className="absolute top-1 right-1 size-2 rounded-full bg-destructive" aria-label="Unread messages" />
+            )}
           </button>
 
           {/* End call */}
@@ -873,8 +896,8 @@ function CallPageContent() {
         </div>
       </div>
 
-      {/* Chat sidebar */}
-      {isChatOpen && conversationId && (
+      {/* Chat sidebar — always mounted to receive messages, visibility controlled by CSS */}
+      {conversationId && (
         <div className={cn(
           'h-full w-full sm:w-80',
           isChatOpen ? 'block' : 'hidden'
@@ -886,6 +909,7 @@ function CallPageContent() {
             authType={authType}
             room={roomRef.current}
             onClose={() => setIsChatOpen(false)}
+            onNewMessage={handleNewMessage}
           />
         </div>
       )}

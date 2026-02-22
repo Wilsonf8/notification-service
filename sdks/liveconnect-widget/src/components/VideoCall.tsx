@@ -50,6 +50,8 @@ interface VideoCallProps {
   onToggleChat: () => void;
   /** Whether the chat panel is currently visible */
   isChatVisible: boolean;
+  /** Whether there are unread chat messages */
+  hasUnreadChat?: boolean;
   /** Optional name of the remote participant */
   participantName?: string;
   /** Ref to attach to the drag handle (info bar) for panel repositioning */
@@ -422,6 +424,7 @@ export function VideoCall({
   onToggleChat,
   isChatVisible,
   participantName = 'Representative',
+  hasUnreadChat,
   dragHandleRef,
 }: VideoCallProps): h.JSX.Element {
   // Video element refs
@@ -865,8 +868,12 @@ export function VideoCall({
           aria-label={isChatVisible ? 'Hide chat' : 'Show chat'}
           aria-pressed={isChatVisible}
           title={isChatVisible ? 'Hide Chat' : 'Show Chat'}
+          style={{ position: 'relative' }}
         >
           <MessageIcon />
+          {hasUnreadChat && !isChatVisible && (
+            <span class="lc-video__unread-dot" aria-label="Unread messages" />
+          )}
         </button>
 
         {/* Overflow menu trigger */}

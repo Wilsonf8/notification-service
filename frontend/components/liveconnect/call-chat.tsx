@@ -55,6 +55,8 @@ interface CallChatProps {
   authType: "session" | "jwt";
   room: Room | null;
   onClose: () => void;
+  /** Callback fired when a new message arrives from the other party */
+  onNewMessage?: () => void;
 }
 
 /**
@@ -78,6 +80,7 @@ export function CallChat({
   authType,
   room,
   onClose,
+  onNewMessage,
 }: CallChatProps) {
   const [messages, setMessages] = useState<ChatMessageWithSender[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -266,6 +269,12 @@ export function CallChat({
             createdAt: payload.sentAt,
           },
         ]);
+
+        // Notify parent of incoming message from the other party
+        const ownSenderType = authType === "jwt" ? "REP" : "USER";
+        if (payload.senderType !== ownSenderType) {
+          onNewMessage?.();
+        }
       } catch (err) {
         console.error("[CallChat] Failed to parse data channel message:", err);
       }
@@ -278,7 +287,7 @@ export function CallChat({
         // Ignore if not registered
       }
     };
-  }, [room, conversationId]);
+  }, [room, conversationId, authType, onNewMessage]);
 
   // WebSocket fallback for rep side — delivers messages if data channel misses them
   useEffect(() => {
@@ -320,6 +329,11 @@ export function CallChat({
                 createdAt: data.sentAt,
               },
             ]);
+
+            // Notify parent of incoming message from the other party
+            if (data.senderType !== "REP") {
+              onNewMessage?.();
+            }
           } catch {
             // Ignore malformed messages
           }
@@ -351,7 +365,7 @@ export function CallChat({
         ws.close();
       }
     };
-  }, [authType, projectId, conversationId]);
+  }, [authType, projectId, conversationId, onNewMessage]);
 
   // Scroll to bottom when messages change
   useEffect(() => {

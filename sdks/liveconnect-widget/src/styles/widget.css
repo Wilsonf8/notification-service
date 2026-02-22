@@ -753,6 +753,18 @@
   height: 24px;
 }
 
+/* Unread chat indicator dot */
+.lc-video__unread-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background-color: var(--lc-error);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
 /* Overflow menu (popover above "..." button) */
 .lc-video__overflow-wrapper {
   position: relative;
