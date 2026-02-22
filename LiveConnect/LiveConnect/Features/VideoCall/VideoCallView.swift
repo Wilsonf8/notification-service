@@ -62,12 +62,8 @@ struct VideoCallView: View {
             }
         }
         .onChange(of: showChat) { _, isOpen in
+            viewModel.isChatOpen = isOpen
             if isOpen {
-                viewModel.markChatAsRead()
-            }
-        }
-        .onChange(of: viewModel.messages.count) { _, _ in
-            if showChat {
                 viewModel.markChatAsRead()
             }
         }

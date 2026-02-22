@@ -322,9 +322,10 @@ public class SubscriptionService {
      * @param orgId the organization ID being upgraded
      * @param newName the new organization name
      * @param newSlug the new organization slug
+     * @param stripeService the Stripe service for updating customer name
      */
     @Transactional
-    public void handleUpgradeOnCheckout(UUID orgId, String newName, String newSlug) {
+    public void handleUpgradeOnCheckout(UUID orgId, String newName, String newSlug, StripeService stripeService) {
         Organization org = organizationRepository.findById(orgId)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization not found: " + orgId));
 
@@ -341,6 +342,15 @@ public class SubscriptionService {
         org.setName(newName);
         org.setSlug(finalSlug);
         organizationRepository.save(org);
+
+        // Update Stripe customer name to reflect new team name
+        if (org.getStripeCustomerId() != null) {
+            try {
+                stripeService.updateCustomerName(org.getStripeCustomerId(), newName);
+            } catch (StripeException e) {
+                log.warn("Failed to update Stripe customer name for org {}: {}", orgId, e.getMessage());
+            }
+        }
 
         // 2. Create a new personal org for the owner
         String ownerUsername = org.getOwner().getUsername();

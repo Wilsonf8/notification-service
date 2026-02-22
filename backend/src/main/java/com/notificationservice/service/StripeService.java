@@ -20,6 +20,7 @@ import com.stripe.model.Subscription;
 import com.stripe.net.Webhook;
 import com.stripe.param.CustomerCreateParams;
 import com.stripe.param.CustomerRetrieveParams;
+import com.stripe.param.CustomerUpdateParams;
 import com.stripe.param.InvoiceListParams;
 import com.stripe.param.InvoiceUpcomingParams;
 import com.stripe.param.SetupIntentCreateParams;
@@ -203,6 +204,22 @@ public class StripeService {
                 .setCancelAtPeriodEnd(false)
                 .build();
         sub.update(params);
+    }
+
+    /**
+     * Updates the name of a Stripe customer.
+     *
+     * @param customerId the Stripe customer ID
+     * @param newName the new customer name
+     * @throws StripeException if the Stripe API call fails
+     */
+    public void updateCustomerName(String customerId, String newName) throws StripeException {
+        Customer customer = Customer.retrieve(customerId);
+        CustomerUpdateParams params = CustomerUpdateParams.builder()
+                .setName(newName)
+                .build();
+        customer.update(params);
+        log.info("Updated Stripe customer {} name to '{}'", customerId, newName);
     }
 
     /**

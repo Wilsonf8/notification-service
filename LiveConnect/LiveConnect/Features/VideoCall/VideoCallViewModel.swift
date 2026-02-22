@@ -72,6 +72,9 @@ final class VideoCallViewModel: RoomDelegate {
     /// Whether there are unread chat messages (from visitors).
     private(set) var hasUnreadChat = false
 
+    /// Whether the chat panel is currently open (set by the View).
+    var isChatOpen = false
+
     /// Whether the call is connecting.
     private(set) var isConnecting = true
 
@@ -202,7 +205,7 @@ final class VideoCallViewModel: RoomDelegate {
                             createdAt: ISO8601DateFormatter().date(from: payload.sentAt)
                         )
                         viewModel.messages.append(message)
-                        if message.senderType != .rep {
+                        if message.senderType != .rep && !viewModel.isChatOpen {
                             viewModel.hasUnreadChat = true
                         }
                     }
@@ -361,7 +364,7 @@ final class VideoCallViewModel: RoomDelegate {
 
         if !messages.contains(where: { $0.id == message.id }) {
             messages.append(message)
-            if message.senderType != .rep {
+            if message.senderType != .rep && !isChatOpen {
                 hasUnreadChat = true
             }
         }

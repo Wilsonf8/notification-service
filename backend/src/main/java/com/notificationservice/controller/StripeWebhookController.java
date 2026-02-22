@@ -137,7 +137,7 @@ public class StripeWebhookController {
             if (upgradeOrgName != null && upgradeOrgSlug != null) {
                 Organization org = organizationRepository.findById(orgId).orElse(null);
                 if (org != null && Boolean.TRUE.equals(org.getIsPersonal())) {
-                    subscriptionService.handleUpgradeOnCheckout(orgId, upgradeOrgName, upgradeOrgSlug);
+                    subscriptionService.handleUpgradeOnCheckout(orgId, upgradeOrgName, upgradeOrgSlug, stripeService);
                 }
             }
         } catch (Exception e) {
@@ -166,6 +166,25 @@ public class StripeWebhookController {
                 Boolean.TRUE.equals(sub.getCancelAtPeriodEnd()),
                 sub.getCanceledAt(),
                 event.getCreated());
+
+        // Check for upgrade metadata when subscription becomes active (personal -> team conversion)
+        if ("active".equals(sub.getStatus()) && sub.getMetadata() != null) {
+            String upgradeOrgName = sub.getMetadata().get("upgradeOrgName");
+            String upgradeOrgSlug = sub.getMetadata().get("upgradeOrgSlug");
+            String organizationId = sub.getMetadata().get("organizationId");
+
+            if (upgradeOrgName != null && upgradeOrgSlug != null && organizationId != null) {
+                try {
+                    UUID orgId = UUID.fromString(organizationId);
+                    Organization org = organizationRepository.findById(orgId).orElse(null);
+                    if (org != null && Boolean.TRUE.equals(org.getIsPersonal())) {
+                        subscriptionService.handleUpgradeOnCheckout(orgId, upgradeOrgName, upgradeOrgSlug, stripeService);
+                    }
+                } catch (IllegalArgumentException e) {
+                    log.error("Invalid organizationId in subscription metadata: {}", organizationId);
+                }
+            }
+        }
     }
 
     private void handleSubscriptionDeleted(Event event) {
