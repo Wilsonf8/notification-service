@@ -239,6 +239,15 @@ public class LiveConnectRequestService {
         // In the future, this could be per-rep dismissal tracking
         request.setStatus(RequestStatus.EXPIRED);
         requestRepository.save(request);
+
+        // Reset visitor state to BROWSING so they remain visible on dashboards
+        visitorSessionManager.setVisitorState(
+                request.getVisitor().getId(),
+                VisitorSessionManager.VisitorEngagementState.BROWSING);
+
+        // Broadcast cancellation so reps remove from queue and add to browsing
+        RequestCancelledEvent event = new RequestCancelledEvent(requestId);
+        broadcaster.broadcastToProject(projectId, event);
     }
 
     // ==================== Visitor-facing methods ====================
@@ -307,8 +316,10 @@ public class LiveConnectRequestService {
             throw new AccessDeniedException("You do not own this request");
         }
 
-        // Verify request is still pending
-        if (request.getStatus() != RequestStatus.PENDING) {
+        // Reject cancellation only for truly terminal states (already accepted or already cancelled)
+        // Allow PENDING, EXPIRED (rep dismissed), and DECLINED through
+        if (request.getStatus() == RequestStatus.ACCEPTED
+                || request.getStatus() == RequestStatus.CANCELLED) {
             throw new IllegalArgumentException("Request is no longer pending");
         }
 

@@ -251,9 +251,37 @@ final class ProjectDashboardViewModel {
         }
 
         webSocketManager.onRequestReceived = { [weak self] request in
-            // Remove visitor from browsing if they're now in queue
-            self?.browsingVisitors.removeAll { $0.id == request.visitor.id }
-            self?.queuedRequests.append(request)
+            guard let self else { return }
+            // Capture browsing data before removing the visitor
+            let browsingVisitor = self.browsingVisitors.first(where: { $0.id == request.visitor.id })
+            // Remove visitor from browsing since they're now in queue
+            self.browsingVisitors.removeAll { $0.id == request.visitor.id }
+            // Enrich request visitor with browsing metadata so it's preserved if the request is cancelled
+            if let browsingVisitor {
+                let enrichedVisitor = Visitor(
+                    id: request.visitor.id,
+                    visitorId: request.visitor.visitorId,
+                    name: request.visitor.name,
+                    email: browsingVisitor.email,
+                    currentPage: browsingVisitor.currentPage,
+                    isConnected: request.visitor.isConnected,
+                    isPingable: request.visitor.isPingable,
+                    hasActiveRequest: request.visitor.hasActiveRequest,
+                    isFirstVisit: browsingVisitor.isFirstVisit,
+                    previousVisitEndedAt: browsingVisitor.previousVisitEndedAt,
+                    totalVisitCount: browsingVisitor.totalVisitCount
+                )
+                let enrichedRequest = Request(
+                    id: request.id,
+                    visitor: enrichedVisitor,
+                    direction: request.direction,
+                    status: request.status,
+                    expiresAt: request.expiresAt
+                )
+                self.queuedRequests.append(enrichedRequest)
+            } else {
+                self.queuedRequests.append(request)
+            }
         }
 
         webSocketManager.onRequestExpired = { [weak self] requestId in
@@ -262,9 +290,22 @@ final class ProjectDashboardViewModel {
 
         webSocketManager.onRequestCancelled = { [weak self] requestId in
             guard let self else { return }
-            // Find the request and move visitor back to browsing
+            // Find the request and move visitor back to browsing with corrected state
             if let request = self.queuedRequests.first(where: { $0.id == requestId }) {
-                self.browsingVisitors.append(request.visitor)
+                let visitor = Visitor(
+                    id: request.visitor.id,
+                    visitorId: request.visitor.visitorId,
+                    name: request.visitor.name,
+                    email: request.visitor.email,
+                    currentPage: request.visitor.currentPage,
+                    isConnected: true,
+                    isPingable: true,
+                    hasActiveRequest: false,
+                    isFirstVisit: request.visitor.isFirstVisit,
+                    previousVisitEndedAt: request.visitor.previousVisitEndedAt,
+                    totalVisitCount: request.visitor.totalVisitCount
+                )
+                self.browsingVisitors.append(visitor)
             }
             self.queuedRequests.removeAll { $0.id == requestId }
         }
