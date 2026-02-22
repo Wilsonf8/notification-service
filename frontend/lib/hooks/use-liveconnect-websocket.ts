@@ -42,6 +42,7 @@ type WebSocketEventType =
   | "request_received"
   | "request_expired"
   | "request_cancelled"
+  | "request_dismissed"
   | "request_accepted_by_other"
   | "message_received"
   | "call_ended"
@@ -110,6 +111,12 @@ interface RequestExpiredEvent extends BaseWebSocketEvent {
 /** Request cancelled event from backend */
 interface RequestCancelledEvent extends BaseWebSocketEvent {
   type: "request_cancelled";
+  requestId: string;
+}
+
+/** Request dismissed event from backend (sent only to dismissing rep) */
+interface RequestDismissedEvent extends BaseWebSocketEvent {
+  type: "request_dismissed";
   requestId: string;
 }
 
@@ -192,6 +199,7 @@ type WebSocketEvent =
   | RequestReceivedEvent
   | RequestExpiredEvent
   | RequestCancelledEvent
+  | RequestDismissedEvent
   | RequestAcceptedByOtherEvent
   | MessageReceivedWebSocketEvent
   | CallEndedWebSocketEvent
@@ -386,6 +394,13 @@ export function useLiveConnectWebSocket(
           }
           return prev.filter((r) => r.id !== event.requestId);
         });
+        break;
+      }
+
+      case "request_dismissed": {
+        // Only removes from this rep's queue — does NOT move visitor to browsing
+        // (visitor still has an active request visible to other reps)
+        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
         break;
       }
 

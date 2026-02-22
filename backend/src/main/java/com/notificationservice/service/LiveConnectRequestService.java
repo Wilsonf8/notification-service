@@ -15,8 +15,10 @@ import com.notificationservice.entity.RepAvailability;
 import com.notificationservice.entity.RepPresence;
 import com.notificationservice.entity.RequestDirection;
 import com.notificationservice.entity.RequestStatus;
+import com.notificationservice.entity.LiveConnectRequestDismissal;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
+import com.notificationservice.repository.LiveConnectRequestDismissalRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.OrganizationMemberRepository;
@@ -27,6 +29,7 @@ import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
+import com.notificationservice.websocket.event.RequestDismissedEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
 import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -49,6 +53,7 @@ public class LiveConnectRequestService {
     private static final int PING_COOLDOWN_SECONDS = 30;
 
     private final LiveConnectRequestRepository requestRepository;
+    private final LiveConnectRequestDismissalRepository dismissalRepository;
     private final LiveConnectRepRepository repRepository;
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveConnectVisitorRepository visitorRepository;
@@ -71,9 +76,12 @@ public class LiveConnectRequestService {
     @Transactional(readOnly = true)
     public List<LiveConnectRequestDto> getPendingRequests(UUID projectId, UUID userId) {
         getAndValidateProject(projectId, userId);
-        verifyRepAccess(projectId, userId);
+        LiveConnectRep rep = verifyRepAccess(projectId, userId);
+
+        Set<UUID> dismissedRequestIds = dismissalRepository.findDismissedRequestIdsByRepId(rep.getId());
 
         return requestRepository.findPendingByProjectId(projectId).stream()
+                .filter(r -> !dismissedRequestIds.contains(r.getId()))
                 .map(this::toRequestDto)
                 .toList();
     }
@@ -209,7 +217,8 @@ public class LiveConnectRequestService {
     }
 
     /**
-     * Dismisses a request (expires it for now).
+     * Dismisses a request for a specific rep. The request stays PENDING so other
+     * reps can still see and accept it. Only the dismissing rep loses visibility.
      *
      * @param projectId the project ID
      * @param requestId the request ID
@@ -220,7 +229,7 @@ public class LiveConnectRequestService {
     @Transactional
     public void dismissRequest(UUID projectId, UUID requestId, UUID userId) {
         getAndValidateProject(projectId, userId);
-        verifyRepAccess(projectId, userId);
+        LiveConnectRep rep = verifyRepAccess(projectId, userId);
 
         LiveConnectRequest request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
@@ -235,19 +244,21 @@ public class LiveConnectRequestService {
             throw new IllegalArgumentException("Request is no longer pending");
         }
 
-        // For now, dismissing just expires the request
-        // In the future, this could be per-rep dismissal tracking
-        request.setStatus(RequestStatus.EXPIRED);
-        requestRepository.save(request);
+        // Idempotent: if already dismissed by this rep, return silently
+        if (dismissalRepository.existsByRequestIdAndRepId(requestId, rep.getId())) {
+            return;
+        }
 
-        // Reset visitor state to BROWSING so they remain visible on dashboards
-        visitorSessionManager.setVisitorState(
-                request.getVisitor().getId(),
-                VisitorSessionManager.VisitorEngagementState.BROWSING);
+        // Record the per-rep dismissal — request stays PENDING for other reps
+        LiveConnectRequestDismissal dismissal = LiveConnectRequestDismissal.builder()
+                .request(request)
+                .rep(rep)
+                .build();
+        dismissalRepository.save(dismissal);
 
-        // Broadcast cancellation so reps remove from queue and add to browsing
-        RequestCancelledEvent event = new RequestCancelledEvent(requestId);
-        broadcaster.broadcastToProject(projectId, event);
+        // Notify only the dismissing rep (not broadcast)
+        RequestDismissedEvent event = new RequestDismissedEvent(requestId);
+        broadcaster.sendToRep(userId, event);
     }
 
     // ==================== Visitor-facing methods ====================

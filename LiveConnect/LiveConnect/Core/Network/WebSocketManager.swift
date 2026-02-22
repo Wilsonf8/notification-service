@@ -16,6 +16,7 @@ enum WebSocketEvent: String, Sendable {
     case requestReceived = "request_received"
     case requestExpired = "request_expired"
     case requestCancelled = "request_cancelled"
+    case requestDismissed = "request_dismissed"
     case callStartedBroadcast = "call_started_broadcast"
     case callEndedBroadcast = "call_ended_broadcast"
     case messageReceived = "message_received"
@@ -73,6 +74,11 @@ private struct RequestExpiredDTO: Codable {
 
 /// DTO for request_cancelled event from backend.
 private struct RequestCancelledDTO: Codable {
+    let requestId: UUID
+}
+
+/// DTO for request_dismissed event from backend.
+private struct RequestDismissedDTO: Codable {
     let requestId: UUID
 }
 
@@ -180,6 +186,7 @@ final class WebSocketManager: WebSocketDelegate {
     var onRequestReceived: ((Request) -> Void)?
     var onRequestExpired: ((UUID) -> Void)?
     var onRequestCancelled: ((UUID) -> Void)?
+    var onRequestDismissed: ((UUID) -> Void)?
     var onCallStarted: ((ActiveCall) -> Void)?
     var onCallEnded: ((UUID) -> Void)?
     var onMessageReceived: ((Message) -> Void)?
@@ -346,6 +353,10 @@ final class WebSocketManager: WebSocketDelegate {
             case .requestCancelled:
                 let dto = try decoder.decode(RequestCancelledDTO.self, from: data)
                 onRequestCancelled?(dto.requestId)
+
+            case .requestDismissed:
+                let dto = try decoder.decode(RequestDismissedDTO.self, from: data)
+                onRequestDismissed?(dto.requestId)
 
             case .callStartedBroadcast:
                 let call = try decoder.decode(ActiveCall.self, from: data)

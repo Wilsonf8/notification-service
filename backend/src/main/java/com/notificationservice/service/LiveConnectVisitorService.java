@@ -15,6 +15,7 @@ import com.notificationservice.entity.RequestDirection;
 import com.notificationservice.entity.RequestStatus;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.repository.LiveConnectRepRepository;
+import com.notificationservice.repository.LiveConnectRequestDismissalRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
@@ -49,6 +50,7 @@ public class LiveConnectVisitorService {
     private final LiveConnectVisitorRepository visitorRepository;
     private final LiveConnectVisitorVisitRepository visitRepository;
     private final LiveConnectRequestRepository requestRepository;
+    private final LiveConnectRequestDismissalRepository dismissalRepository;
     private final LiveConnectRepRepository repRepository;
     private final LiveConnectConversationRepository conversationRepository;
     private final ProjectRepository projectRepository;
@@ -68,16 +70,21 @@ public class LiveConnectVisitorService {
     @Transactional(readOnly = true)
     public VisitorListResponse getVisitors(UUID projectId, UUID userId) {
         getAndValidateProject(projectId, userId);
-        verifyRepAccess(projectId, userId);
+        LiveConnectRep rep = verifyRepAccess(projectId, userId);
 
         OffsetDateTime threshold = OffsetDateTime.now().minusMinutes(ONLINE_THRESHOLD_MINUTES);
         List<LiveConnectVisitor> onlineVisitors = visitorRepository.findOnlineByProjectId(projectId, threshold);
 
         // Get pending requests for the queue
         List<LiveConnectRequest> pendingRequests = requestRepository.findPendingByProjectId(projectId);
+
+        // Visitors with ANY pending request should NOT appear in browsing (for all reps)
         Set<UUID> visitorIdsWithRequests = pendingRequests.stream()
                 .map(r -> r.getVisitor().getId())
                 .collect(Collectors.toSet());
+
+        // Get dismissed request IDs for this rep (queue filtering only)
+        Set<UUID> dismissedRequestIds = dismissalRepository.findDismissedRequestIdsByRepId(rep.getId());
 
         // Get active calls
         List<LiveConnectConversation> activeConversations = conversationRepository.findActiveByProjectId(projectId);
@@ -120,8 +127,9 @@ public class LiveConnectVisitorService {
                         previousVisitEndedAtMap.get(v.getId())))
                 .toList();
 
-        // Queue: pending requests
+        // Queue: pending requests, filtered to exclude this rep's dismissed requests
         List<LiveConnectRequestDto> queue = pendingRequests.stream()
+                .filter(r -> !dismissedRequestIds.contains(r.getId()))
                 .map(this::toRequestDto)
                 .toList();
 
