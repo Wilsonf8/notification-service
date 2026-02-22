@@ -228,7 +228,7 @@ public class LiveConnectConversationService {
                 .senderId(userId)
                 .content(request.content())
                 .build();
-        message = messageRepository.save(message);
+        message = messageRepository.saveAndFlush(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
@@ -372,7 +372,7 @@ public class LiveConnectConversationService {
                 .senderId(visitorId)
                 .content(content)
                 .build();
-        message = messageRepository.save(message);
+        message = messageRepository.saveAndFlush(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
