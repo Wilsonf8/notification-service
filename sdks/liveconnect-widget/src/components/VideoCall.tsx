@@ -612,20 +612,17 @@ export function VideoCall({
   }, [isOverflowOpen]);
 
   /**
-   * Effect to close overflow menu on outside click.
+   * Handles click on the video container to close overflow menu
+   * when clicking outside the overflow wrapper.
+   * Uses container-level handler instead of document listener for shadow DOM compatibility.
+   * @param event - Mouse event
    */
-  useEffect(() => {
+  const handleContainerClick = useCallback((event: MouseEvent): void => {
     if (!isOverflowOpen) return;
-
-    const handleClickOutside = (event: Event): void => {
-      const target = event.target as HTMLElement;
-      if (overflowRef.current && !overflowRef.current.contains(target)) {
-        setIsOverflowOpen(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside, true);
-    return () => document.removeEventListener('click', handleClickOutside, true);
+    const target = event.target as HTMLElement;
+    if (overflowRef.current && !overflowRef.current.contains(target)) {
+      setIsOverflowOpen(false);
+    }
   }, [isOverflowOpen]);
 
   /**
@@ -746,6 +743,7 @@ export function VideoCall({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onTouchStart={handleTouchStart}
+      onClick={handleContainerClick}
     >
       {/* Remote screen share (fills main area when active) */}
       {hasRemoteScreenShare && (
