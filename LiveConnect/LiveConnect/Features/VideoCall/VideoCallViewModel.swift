@@ -281,6 +281,8 @@ final class VideoCallViewModel: RoomDelegate {
         guard !content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
         let messageId = UUID()
+        let messageIdString = messageId.uuidString.lowercased()
+        let repDisplayName = AuthManager.shared.currentUser?.displayName ?? "Rep"
 
         // Track this message ID to prevent dedup with WebSocket echo
         receivedMessageIds.insert(messageId)
@@ -299,10 +301,10 @@ final class VideoCallViewModel: RoomDelegate {
         if let room {
             do {
                 let payload = DataChannelChatMessage(
-                    id: messageId.uuidString,
+                    id: messageIdString,
                     content: content,
                     senderType: "REP",
-                    senderName: "Rep",
+                    senderName: repDisplayName,
                     sentAt: ISO8601DateFormatter().string(from: Date())
                 )
                 let jsonData = try JSONEncoder().encode(payload)
@@ -317,7 +319,7 @@ final class VideoCallViewModel: RoomDelegate {
         do {
             let _: Message = try await APIClient.shared.post(
                 Endpoints.sendMessage(projectId: projectId, conversationId: conversationId),
-                body: ["content": content, "messageId": messageId.uuidString]
+                body: ["content": content, "messageId": messageIdString]
             )
         } catch {
             self.error = error

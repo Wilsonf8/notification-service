@@ -140,17 +140,55 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   // ============================================================================
 
   /**
+   * Normalizes message IDs to ensure case-insensitive deduplication across
+   * data channel (client) and WebSocket (server) sources.
+   * @param id - Raw message ID string
+   * @returns Normalized message ID
+   */
+  const normalizeMessageId = useCallback((id: string): string => {
+    return id.trim().toLowerCase();
+  }, []);
+
+  /**
+   * Inserts or updates a chat message by ID.
+   * Data channel messages insert only; WebSocket messages are authoritative updates.
+   * @param incoming - Incoming chat message payload
+   * @param options - Upsert options
+   * @returns Nothing
+   */
+  const upsertChatMessage = useCallback(
+    (incoming: ChatMessage, options?: { authoritative?: boolean }): void => {
+      const normalizedId = normalizeMessageId(incoming.id);
+
+      setChatMessages((prev) => {
+        const index = prev.findIndex(
+          (message) => normalizeMessageId(message.id) === normalizedId
+        );
+
+        if (index === -1) {
+          receivedMessageIds.current.add(normalizedId);
+          return [...prev, { ...incoming, id: normalizedId }];
+        }
+
+        if (!options?.authoritative) {
+          return prev;
+        }
+
+        const existing = prev[index];
+        const next = [...prev];
+        next[index] = { ...existing, ...incoming, id: existing.id };
+        return next;
+      });
+    },
+    [normalizeMessageId]
+  );
+
+  /**
    * Registers the data channel chat handler on mount.
    * Incoming messages are deduplicated against WebSocket messages by ID.
    */
   useEffect(() => {
     onChatMessage((message: DataChannelChatMessage) => {
-      // Deduplicate against already-received messages
-      if (receivedMessageIds.current.has(message.id)) {
-        return;
-      }
-      receivedMessageIds.current.add(message.id);
-
       const chatMessage: ChatMessage = {
         id: message.id,
         content: message.content,
@@ -159,13 +197,14 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         sentAt: message.sentAt,
       };
 
-      setChatMessages((prev) => [...prev, chatMessage]);
+      // Data channel is instant but non-authoritative; only insert if missing
+      upsertChatMessage(chatMessage, { authoritative: false });
     });
 
     return () => {
       offChatMessage();
     };
-  }, []);
+  }, [upsertChatMessage]);
 
   // ============================================================================
   // CSS Injection
@@ -448,12 +487,6 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
    * @param event - Message received event data
    */
   const handleMessageReceived = useCallback((event: MessageReceivedEvent): void => {
-    // Deduplicate against data channel messages
-    if (receivedMessageIds.current.has(event.messageId)) {
-      return;
-    }
-    receivedMessageIds.current.add(event.messageId);
-
     const newMessage: ChatMessage = {
       id: event.messageId,
       content: event.content,
@@ -462,8 +495,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       sentAt: event.sentAt,
     };
 
-    setChatMessages((prev) => [...prev, newMessage]);
-  }, []);
+    // WebSocket is authoritative; update or insert
+    upsertChatMessage(newMessage, { authoritative: true });
+  }, [upsertChatMessage]);
 
   /**
    * Handles request expired event.
@@ -650,12 +684,13 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
     // Generate client-side UUID for deduplication
     const messageId = crypto.randomUUID();
+    const normalizedMessageId = normalizeMessageId(messageId);
     const sentAt = new Date().toISOString();
 
     // Add to dedup set and show optimistically
-    receivedMessageIds.current.add(messageId);
+    receivedMessageIds.current.add(normalizedMessageId);
     const optimisticMessage: ChatMessage = {
-      id: messageId,
+      id: normalizedMessageId,
       content,
       senderType: 'VISITOR',
       senderName: 'You',
@@ -666,7 +701,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Instant path: send via data channel
     try {
       const dcPayload: DataChannelChatMessage = {
-        id: messageId,
+        id: normalizedMessageId,
         content,
         senderType: 'USER',
         senderName: 'Visitor',
@@ -680,11 +715,11 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Persistence path: send via REST API
     try {
       const api = getApiClient();
-      await api.sendMessage(state.conversationId, content, messageId);
+      await api.sendMessage(state.conversationId, content, normalizedMessageId);
     } catch (err) {
       console.error('[LiveConnect Widget] Failed to persist message:', err);
     }
-  }, []);
+  }, [normalizeMessageId]);
 
   /**
    * Handles contact form submission.

@@ -240,7 +240,7 @@ public class LiveConnectConversationService {
                 conversationId,
                 broadcastId,
                 MessageSenderType.REP.name(),
-                rep.getUser().getUsername(),
+                getUserDisplayName(rep.getUser()),
                 request.content(),
                 message.getCreatedAt()
         );
@@ -474,11 +474,39 @@ public class LiveConnectConversationService {
         );
     }
 
+    /**
+     * Builds a display name for a user.
+     *
+     * @param user the user entity
+     * @return display name based on first/last name with username fallback
+     */
+    private String getUserDisplayName(User user) {
+        if (user == null) {
+            return "Rep";
+        }
+        String firstName = user.getFirstName();
+        String lastName = user.getLastName();
+        if (firstName != null && !firstName.isBlank() && lastName != null && !lastName.isBlank()) {
+            return firstName + " " + lastName;
+        }
+        if (firstName != null && !firstName.isBlank()) {
+            return firstName;
+        }
+        if (lastName != null && !lastName.isBlank()) {
+            return lastName;
+        }
+        String username = user.getUsername();
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        return "Rep";
+    }
+
     private LiveConnectMessageDto toMessageDto(LiveConnectMessage message, LiveConnectConversation conversation) {
         String senderName;
         if (message.getSenderType() == MessageSenderType.REP) {
             LiveConnectRep rep = conversation.getRep();
-            senderName = rep != null ? rep.getUser().getUsername() : "Rep";
+            senderName = rep != null ? getUserDisplayName(rep.getUser()) : "Rep";
         } else if (message.getSenderType() == MessageSenderType.USER) {
             LiveConnectVisitor visitor = conversation.getVisitor();
             senderName = visitor.getName() != null ? visitor.getName() : "Visitor";
