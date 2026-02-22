@@ -225,8 +225,19 @@ function handleLocalTrackPublished(
 ): void {
   console.log('[LiveKit] Local track published:', {
     kind: publication.kind,
+    source: publication.source,
     trackSid: publication.trackSid,
   });
+
+  if (publication.kind === Track.Kind.Video &&
+      publication.source === Track.Source.Camera &&
+      publication.track) {
+    localVideoTrackSignal.value = publication.track as LocalTrack;
+    if (isBlurEnabledSignal.value) {
+      reapplyBlur(publication.track as LocalTrack);
+    }
+    notifyStateChange();
+  }
 }
 
 /**
@@ -304,6 +315,11 @@ function handleLocalTrackUnpublished(publication: TrackPublication): void {
   if (publication.source === Track.Source.ScreenShare) {
     console.log('[LiveKit] Local screen share ended');
     isScreenSharingSignal.value = false;
+    notifyStateChange();
+  } else if (publication.kind === Track.Kind.Video &&
+             publication.source === Track.Source.Camera) {
+    console.log('[LiveKit] Local camera track unpublished');
+    localVideoTrackSignal.value = null;
     notifyStateChange();
   }
 }
@@ -636,6 +652,23 @@ export async function checkBlurSupport(): Promise<boolean> {
 }
 
 /**
+ * Re-applies background blur to a new video track (e.g., after camera toggle).
+ * @param track - The new local video track to apply blur to
+ */
+async function reapplyBlur(track: LocalTrack): Promise<void> {
+  try {
+    const { BackgroundBlur } = await import('@livekit/track-processors');
+    const blurProcessor = BackgroundBlur(10);
+    await track.setProcessor(blurProcessor);
+    console.log('[LiveKit] Background blur re-applied to new track');
+  } catch (err) {
+    console.error('[LiveKit] Failed to re-apply background blur:', err);
+    isBlurEnabledSignal.value = false;
+    notifyStateChange();
+  }
+}
+
+/**
  * Toggles background blur on the local video track.
  * Lazy-loads @livekit/track-processors to minimize bundle size.
  * @returns The new blur enabled state
@@ -660,11 +693,12 @@ export async function toggleBlur(): Promise<boolean> {
       isBlurEnabledSignal.value = true;
       console.log('[LiveKit] Background blur enabled');
     }
-    notifyStateChange();
   } catch (err) {
     console.error('[LiveKit] Failed to toggle background blur:', err);
+    isBlurEnabledSignal.value = false;
   }
 
+  notifyStateChange();
   return isBlurEnabledSignal.value;
 }
 

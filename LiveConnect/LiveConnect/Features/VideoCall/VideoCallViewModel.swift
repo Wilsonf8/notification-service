@@ -63,6 +63,9 @@ final class VideoCallViewModel: RoomDelegate {
     /// Whether the device supports background blur.
     private(set) var isBlurSupported = false
 
+    /// Strong reference to the blur processor (LiveKit's weak var would deallocate it otherwise).
+    private var blurProcessor: BackgroundBlurVideoProcessor?
+
     /// Chat messages.
     private(set) var messages: [Message] = []
 
@@ -212,6 +215,7 @@ final class VideoCallViewModel: RoomDelegate {
         remoteParticipants = []
         remoteScreenShareTrack = nil
         isBlurEnabled = false
+        blurProcessor = nil
     }
 
     /// Toggles the microphone mute state.
@@ -247,16 +251,15 @@ final class VideoCallViewModel: RoomDelegate {
                   .first(where: { $0.source == .camera }) as? LocalTrackPublication,
               let videoTrack = cameraPublication.track as? LocalVideoTrack else { return }
 
-        do {
-            if isBlurEnabled {
-                videoTrack.processor = nil
-                isBlurEnabled = false
-            } else {
-                videoTrack.processor = BackgroundBlurVideoProcessor()
-                isBlurEnabled = true
-            }
-        } catch {
-            print("[VideoCall] Failed to toggle blur: \(error)")
+        if isBlurEnabled {
+            videoTrack.processor = nil
+            blurProcessor = nil
+            isBlurEnabled = false
+        } else {
+            let processor = BackgroundBlurVideoProcessor()
+            blurProcessor = processor
+            videoTrack.processor = processor
+            isBlurEnabled = true
         }
     }
 

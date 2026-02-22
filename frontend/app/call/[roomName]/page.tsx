@@ -171,6 +171,7 @@ function CallPageContent() {
   const callStartTimeRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasEndedConversationRef = useRef<boolean>(false);
+  const isBlurEnabledRef = useRef<boolean>(false);
 
   // State
   const [callState, setCallState] = useState<CallState>({
@@ -403,6 +404,31 @@ function CallPageContent() {
       room.on(RoomEvent.LocalTrackUnpublished, (publication: LocalTrackPublication) => {
         if (publication.source === Track.Source.ScreenShare) {
           setCallState((prev) => ({ ...prev, isScreenSharing: false }));
+        } else if (publication.kind === Track.Kind.Video &&
+                   publication.source === Track.Source.Camera) {
+          localVideoTrackRef.current = null;
+        }
+      });
+
+      room.on(RoomEvent.LocalTrackPublished, (publication: LocalTrackPublication) => {
+        if (publication.kind === Track.Kind.Video &&
+            publication.source === Track.Source.Camera &&
+            publication.track) {
+          const newTrack = publication.track as LocalTrack;
+          localVideoTrackRef.current = newTrack;
+          if (localVideoRef.current) {
+            attachTrack(newTrack, localVideoRef.current);
+          }
+          if (isBlurEnabledRef.current) {
+            import('@livekit/track-processors').then(({ BackgroundBlur }) => {
+              const blurProcessor = BackgroundBlur(10);
+              newTrack.setProcessor(blurProcessor).catch((err) => {
+                console.error('[CallPage] Failed to re-apply blur:', err);
+                isBlurEnabledRef.current = false;
+                setCallState((prev) => ({ ...prev, isBlurEnabled: false }));
+              });
+            });
+          }
         }
       });
 
@@ -543,15 +569,19 @@ function CallPageContent() {
     try {
       if (callState.isBlurEnabled) {
         await videoTrack.stopProcessor();
+        isBlurEnabledRef.current = false;
         setCallState((prev) => ({ ...prev, isBlurEnabled: false }));
       } else {
         const { BackgroundBlur } = await import('@livekit/track-processors');
         const blurProcessor = BackgroundBlur(10);
         await videoTrack.setProcessor(blurProcessor);
+        isBlurEnabledRef.current = true;
         setCallState((prev) => ({ ...prev, isBlurEnabled: true }));
       }
     } catch (error) {
       console.error('[CallPage] Failed to toggle background blur:', error);
+      isBlurEnabledRef.current = false;
+      setCallState((prev) => ({ ...prev, isBlurEnabled: false }));
     }
   }, [callState.isBlurEnabled]);
 
