@@ -16,6 +16,29 @@ struct InCallChatView: View {
     @State private var messageText = ""
     @State private var dragOffset: CGFloat = 0
 
+    /// Compact drag tab on the left edge for dismissing the chat panel.
+    private var dragHandle: some View {
+        Capsule()
+            .fill(Color.white.opacity(0.35))
+            .frame(width: 5, height: 44)
+            .frame(width: 24, height: 80)
+            .contentShape(Rectangle())
+            .offset(x: -12)
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 8)
+                    .onChanged { value in
+                        dragOffset = max(0, value.translation.width)
+                    }
+                    .onEnded { value in
+                        if value.translation.width > 100 || value.predictedEndTranslation.width > 200 {
+                            withAnimation { onClose() }
+                        } else {
+                            withAnimation(.spring(response: 0.3)) { dragOffset = 0 }
+                        }
+                    }
+            )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -80,21 +103,11 @@ struct InCallChatView: View {
         .frame(width: 300)
         .frame(maxHeight: .infinity)
         .background(.ultraThinMaterial.opacity(0.9))
+        .overlay(alignment: .leading) {
+            dragHandle
+        }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .offset(x: max(0, dragOffset))
-        .gesture(
-            DragGesture()
-                .onChanged { value in
-                    dragOffset = max(0, value.translation.width)
-                }
-                .onEnded { value in
-                    if value.translation.width > 100 || value.predictedEndTranslation.width > 200 {
-                        withAnimation { onClose() }
-                    } else {
-                        withAnimation { dragOffset = 0 }
-                    }
-                }
-        )
     }
 }
 
