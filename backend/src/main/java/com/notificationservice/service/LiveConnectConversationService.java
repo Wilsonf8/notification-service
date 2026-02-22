@@ -31,7 +31,7 @@ import com.notificationservice.websocket.event.MessageReceivedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.session.VisitorSessionManager;
-import jakarta.persistence.EntityManager;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -57,7 +57,6 @@ public class LiveConnectConversationService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final WebSocketBroadcaster broadcaster;
     private final VisitorSessionManager visitorSessionManager;
-    private final EntityManager entityManager;
 
     /**
      * Gets paginated conversations for a project.
@@ -228,20 +227,18 @@ public class LiveConnectConversationService {
                 .senderId(userId)
                 .content(request.content())
                 .build();
-        if (request.messageId() != null) {
-            message.setId(UUID.fromString(request.messageId()));
-            entityManager.persist(message);
-        } else {
-            message = messageRepository.save(message);
-        }
+        message = messageRepository.save(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
 
-        // Broadcast message to visitor
+        // Use client's messageId for broadcast when provided (for dedup with data channel)
+        UUID broadcastId = request.messageId() != null
+                ? UUID.fromString(request.messageId())
+                : message.getId();
         MessageReceivedEvent event = new MessageReceivedEvent(
                 conversationId,
-                message.getId(),
+                broadcastId,
                 MessageSenderType.REP.name(),
                 rep.getUser().getUsername(),
                 request.content(),
@@ -374,15 +371,15 @@ public class LiveConnectConversationService {
                 .senderId(visitorId)
                 .content(content)
                 .build();
-        if (messageId != null) {
-            message.setId(UUID.fromString(messageId));
-            entityManager.persist(message);
-        } else {
-            message = messageRepository.save(message);
-        }
+        message = messageRepository.save(message);
 
         conversation.setLastActivityAt(OffsetDateTime.now());
         conversationRepository.save(conversation);
+
+        // Use client's messageId for broadcast when provided (for dedup with data channel)
+        UUID broadcastId = messageId != null
+                ? UUID.fromString(messageId)
+                : message.getId();
 
         // Broadcast message to rep
         LiveConnectVisitor visitor = conversation.getVisitor();
@@ -390,7 +387,7 @@ public class LiveConnectConversationService {
         if (rep != null) {
             MessageReceivedEvent event = new MessageReceivedEvent(
                     conversationId,
-                    message.getId(),
+                    broadcastId,
                     MessageSenderType.USER.name(),
                     visitor.getName() != null ? visitor.getName() : "Visitor",
                     content,
