@@ -691,6 +691,13 @@
   padding: var(--lc-spacing-lg);
   background: linear-gradient(transparent, rgba(12, 10, 9, 0.9));
   z-index: 30;
+  transition: opacity var(--lc-transition-normal), visibility var(--lc-transition-normal);
+}
+
+.lc-video__controls--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .lc-video__control {
@@ -744,6 +751,23 @@
 .lc-video__control-icon {
   width: 24px;
   height: 24px;
+}
+
+/* Overflow menu (popover above "..." button) */
+.lc-video__overflow-wrapper {
+  position: relative;
+}
+
+.lc-video__overflow-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  gap: var(--lc-spacing-sm);
+  padding: var(--lc-spacing-sm);
+  background-color: var(--lc-bg-secondary);
+  border: 1px solid var(--lc-border);
+  z-index: 31;
 }
 
 /* Video info bar */
@@ -1516,6 +1540,11 @@
   }
 
   .lc-video__control {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lc-video__overflow-menu .lc-video__control {
     width: 44px;
     height: 44px;
   }

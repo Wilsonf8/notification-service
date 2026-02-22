@@ -4,7 +4,7 @@
  */
 
 import { h } from 'preact';
-import { useRef, useEffect, useState } from 'preact/hooks';
+import { useRef, useEffect, useState, useCallback } from 'preact/hooks';
 import type { Ref } from 'preact';
 import {
   micEnabled,
@@ -324,6 +324,31 @@ function BlurIcon(): h.JSX.Element {
 }
 
 /**
+ * Dots icon (overflow menu trigger).
+ * @returns SVG element
+ */
+function DotsIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="5" cy="12" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="19" cy="12" r="1" />
+    </svg>
+  );
+}
+
+/**
  * User icon (placeholder for remote video).
  * @returns SVG element
  */
@@ -412,6 +437,12 @@ export function VideoCall({
   // Track if remote video is available
   const [hasRemoteVideo, setHasRemoteVideo] = useState<boolean>(false);
   const [hasRemoteScreenShare, setHasRemoteScreenShare] = useState<boolean>(false);
+
+  // Toolbar auto-hide state
+  const [isToolbarVisible, setIsToolbarVisible] = useState<boolean>(true);
+  const [isOverflowOpen, setIsOverflowOpen] = useState<boolean>(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const overflowRef = useRef<HTMLDivElement>(null);
 
   // Local state copies of signals (for rendering)
   const [isMicOn, setIsMicOn] = useState<boolean>(micEnabled.value);
@@ -505,6 +536,103 @@ export function VideoCall({
    */
   useEffect(() => {
     checkBlurSupport().then((supported) => setIsBlurAvailable(supported));
+  }, []);
+
+  /**
+   * Clears the toolbar hide timer.
+   */
+  const clearHideTimer = useCallback((): void => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Starts a 3-second timer to hide the toolbar.
+   * Skips if the overflow menu is open.
+   */
+  const startHideTimer = useCallback((): void => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      if (!isOverflowOpen) {
+        setIsToolbarVisible(false);
+      }
+    }, 3000);
+  }, [isOverflowOpen, clearHideTimer]);
+
+  /**
+   * Shows the toolbar and resets the hide timer.
+   */
+  const showToolbar = useCallback((): void => {
+    setIsToolbarVisible(true);
+    startHideTimer();
+  }, [startHideTimer]);
+
+  /**
+   * Handles mouse movement over the video container (desktop).
+   */
+  const handleMouseMove = useCallback((): void => {
+    showToolbar();
+  }, [showToolbar]);
+
+  /**
+   * Handles mouse leaving the video container (desktop).
+   */
+  const handleMouseLeave = useCallback((): void => {
+    startHideTimer();
+  }, [startHideTimer]);
+
+  /**
+   * Handles touch on the video container (touch/iOS).
+   * Taps on the video area toggle toolbar visibility.
+   * @param event - Touch event
+   */
+  const handleTouchStart = useCallback((event: TouchEvent): void => {
+    const target = event.target as HTMLElement;
+    // Don't toggle if tapping on a button or control
+    if (target.closest('.lc-video__controls') || target.closest('.lc-video__overflow-menu')) {
+      return;
+    }
+    if (isToolbarVisible) {
+      clearHideTimer();
+      setIsToolbarVisible(false);
+    } else {
+      showToolbar();
+    }
+  }, [isToolbarVisible, clearHideTimer, showToolbar]);
+
+  /**
+   * Effect to restart hide timer when overflow menu closes.
+   */
+  useEffect(() => {
+    if (!isOverflowOpen) {
+      startHideTimer();
+    }
+  }, [isOverflowOpen]);
+
+  /**
+   * Effect to close overflow menu on outside click.
+   */
+  useEffect(() => {
+    if (!isOverflowOpen) return;
+
+    const handleClickOutside = (event: Event): void => {
+      const target = event.target as HTMLElement;
+      if (overflowRef.current && !overflowRef.current.contains(target)) {
+        setIsOverflowOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside, true);
+    return () => document.removeEventListener('click', handleClickOutside, true);
+  }, [isOverflowOpen]);
+
+  /**
+   * Effect to clear hide timer on unmount.
+   */
+  useEffect(() => {
+    return () => clearHideTimer();
   }, []);
 
   /**
@@ -611,7 +739,14 @@ export function VideoCall({
   };
 
   return (
-    <div class="lc-video" role="region" aria-label="Video call">
+    <div
+      class="lc-video"
+      role="region"
+      aria-label="Video call"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+    >
       {/* Remote screen share (fills main area when active) */}
       {hasRemoteScreenShare && (
         <div class="lc-video__screen-share">
@@ -679,8 +814,12 @@ export function VideoCall({
         aria-label="Your video"
       />
 
-      {/* Control bar (bottom) */}
-      <div class="lc-video__controls" role="toolbar" aria-label="Call controls">
+      {/* Control bar (bottom) — auto-hides after inactivity */}
+      <div
+        class={`lc-video__controls ${isToolbarVisible ? '' : 'lc-video__controls--hidden'}`}
+        role="toolbar"
+        aria-label="Call controls"
+      >
         {/* Microphone toggle */}
         <button
           type="button"
@@ -707,34 +846,6 @@ export function VideoCall({
           {isCameraOn ? <VideoIcon /> : <VideoOffIcon />}
         </button>
 
-        {/* Screen share toggle */}
-        <button
-          type="button"
-          class={`lc-video__control ${isScreenShareOn ? 'lc-video__control--active' : ''}`}
-          onClick={() => handleToggleScreenShare()}
-          onKeyDown={(e) => handleKeyDown(e, handleToggleScreenShare)}
-          aria-label={isScreenShareOn ? 'Stop screen sharing' : 'Share screen'}
-          aria-pressed={isScreenShareOn}
-          title={isScreenShareOn ? 'Stop Sharing' : 'Share Screen'}
-        >
-          {isScreenShareOn ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
-        </button>
-
-        {/* Background blur toggle (only shown if supported) */}
-        {isBlurAvailable && (
-          <button
-            type="button"
-            class={`lc-video__control ${isBlurOn ? 'lc-video__control--active' : ''}`}
-            onClick={() => handleToggleBlur()}
-            onKeyDown={(e) => handleKeyDown(e, handleToggleBlur)}
-            aria-label={isBlurOn ? 'Disable background blur' : 'Enable background blur'}
-            aria-pressed={isBlurOn}
-            title={isBlurOn ? 'Blur Off' : 'Blur On'}
-          >
-            <BlurIcon />
-          </button>
-        )}
-
         {/* End call */}
         <button
           type="button"
@@ -745,22 +856,6 @@ export function VideoCall({
           title="End Call"
         >
           <PhoneHangUpIcon />
-        </button>
-
-        {/* Pop out */}
-        <button
-          type="button"
-          class="lc-video__control"
-          onClick={handlePopOut}
-          onKeyDown={(e) => handleKeyDown(e, () => {
-            const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}&liveKitUrl=${encodeURIComponent(liveKitUrl)}`;
-            const popup = window.open(popupUrl, 'liveconnect-call', 'width=450,height=600,resizable=yes');
-            if (popup) onPopOut();
-          })}
-          aria-label="Pop out to separate window"
-          title="Pop Out"
-        >
-          <ExternalLinkIcon />
         </button>
 
         {/* Chat toggle */}
@@ -775,6 +870,74 @@ export function VideoCall({
         >
           <MessageIcon />
         </button>
+
+        {/* Overflow menu trigger */}
+        <div class="lc-video__overflow-wrapper" ref={overflowRef}>
+          <button
+            type="button"
+            class={`lc-video__control ${isOverflowOpen ? 'lc-video__control--active' : ''}`}
+            onClick={() => setIsOverflowOpen(!isOverflowOpen)}
+            onKeyDown={(e) => handleKeyDown(e, () => setIsOverflowOpen(!isOverflowOpen))}
+            aria-label="More options"
+            aria-expanded={isOverflowOpen}
+            aria-haspopup="true"
+            title="More"
+          >
+            <DotsIcon />
+          </button>
+
+          {/* Overflow menu popover */}
+          {isOverflowOpen && (
+            <div class="lc-video__overflow-menu" role="menu" aria-label="More call options">
+              {/* Screen share toggle */}
+              <button
+                type="button"
+                class={`lc-video__control ${isScreenShareOn ? 'lc-video__control--active' : ''}`}
+                onClick={() => handleToggleScreenShare()}
+                onKeyDown={(e) => handleKeyDown(e, handleToggleScreenShare)}
+                aria-label={isScreenShareOn ? 'Stop screen sharing' : 'Share screen'}
+                aria-pressed={isScreenShareOn}
+                title={isScreenShareOn ? 'Stop Sharing' : 'Share Screen'}
+                role="menuitem"
+              >
+                {isScreenShareOn ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
+              </button>
+
+              {/* Background blur toggle (only shown if supported) */}
+              {isBlurAvailable && (
+                <button
+                  type="button"
+                  class={`lc-video__control ${isBlurOn ? 'lc-video__control--active' : ''}`}
+                  onClick={() => handleToggleBlur()}
+                  onKeyDown={(e) => handleKeyDown(e, handleToggleBlur)}
+                  aria-label={isBlurOn ? 'Disable background blur' : 'Enable background blur'}
+                  aria-pressed={isBlurOn}
+                  title={isBlurOn ? 'Blur Off' : 'Blur On'}
+                  role="menuitem"
+                >
+                  <BlurIcon />
+                </button>
+              )}
+
+              {/* Pop out */}
+              <button
+                type="button"
+                class="lc-video__control"
+                onClick={handlePopOut}
+                onKeyDown={(e) => handleKeyDown(e, () => {
+                  const popupUrl = `${appUrl}/call/${roomName}?session=${encodeURIComponent(sessionToken)}&conversation=${encodeURIComponent(conversationId)}&liveKitUrl=${encodeURIComponent(liveKitUrl)}`;
+                  const popup = window.open(popupUrl, 'liveconnect-call', 'width=450,height=600,resizable=yes');
+                  if (popup) onPopOut();
+                })}
+                aria-label="Pop out to separate window"
+                title="Pop Out"
+                role="menuitem"
+              >
+                <ExternalLinkIcon />
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Screen reader announcement for call status */}
