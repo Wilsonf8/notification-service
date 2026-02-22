@@ -66,6 +66,11 @@ struct VideoCallView: View {
                 viewModel.markChatAsRead()
             }
         }
+        .onChange(of: viewModel.messages.count) { _, _ in
+            if showChat {
+                viewModel.markChatAsRead()
+            }
+        }
         .onDisappear {
             // Clear the message handler when leaving
             webSocketManager.onMessageReceived = nil
