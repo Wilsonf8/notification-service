@@ -45,6 +45,10 @@ final class ProjectDashboardViewModel {
     /// Incoming call from WebSocket (when visitor accepts rep's ping).
     private(set) var incomingCall: AcceptedCallResponse?
 
+    /// Visitors from dismissed requests, keyed by requestId.
+    /// Used to restore visitors to browsing when cancel/expire arrives after dismiss.
+    private var dismissedRequestVisitors: [UUID: Visitor] = [:]
+
     /// Current project ID.
     private var projectId: UUID?
 
@@ -114,6 +118,7 @@ final class ProjectDashboardViewModel {
             self.queuedRequests = visitors.queue
             self.activeCalls = visitors.inCall
             self.reps = reps
+            self.dismissedRequestVisitors.removeAll()
 
             // Update current rep
             if let currentUser = AuthManager.shared.currentUser {
@@ -194,7 +199,10 @@ final class ProjectDashboardViewModel {
                 Endpoints.dismissRequest(projectId: projectId, requestId: requestId),
                 body: Optional<String>.none
             )
-            // Remove from local queue
+            // Save visitor data before removing so cancel/expire can restore to browsing
+            if let request = queuedRequests.first(where: { $0.id == requestId }) {
+                dismissedRequestVisitors[requestId] = request.visitor
+            }
             queuedRequests.removeAll { $0.id == requestId }
         } catch {
             self.error = error
@@ -285,12 +293,7 @@ final class ProjectDashboardViewModel {
         }
 
         webSocketManager.onRequestExpired = { [weak self] requestId in
-            self?.queuedRequests.removeAll { $0.id == requestId }
-        }
-
-        webSocketManager.onRequestCancelled = { [weak self] requestId in
             guard let self else { return }
-            // Find the request and move visitor back to browsing with corrected state
             if let request = self.queuedRequests.first(where: { $0.id == requestId }) {
                 let visitor = Visitor(
                     id: request.visitor.id,
@@ -306,14 +309,72 @@ final class ProjectDashboardViewModel {
                     totalVisitCount: request.visitor.totalVisitCount
                 )
                 self.browsingVisitors.append(visitor)
+            } else if let visitor = self.dismissedRequestVisitors.removeValue(forKey: requestId) {
+                let restoredVisitor = Visitor(
+                    id: visitor.id,
+                    visitorId: visitor.visitorId,
+                    name: visitor.name,
+                    email: visitor.email,
+                    currentPage: visitor.currentPage,
+                    isConnected: true,
+                    isPingable: true,
+                    hasActiveRequest: false,
+                    isFirstVisit: visitor.isFirstVisit,
+                    previousVisitEndedAt: visitor.previousVisitEndedAt,
+                    totalVisitCount: visitor.totalVisitCount
+                )
+                self.browsingVisitors.append(restoredVisitor)
+            }
+            self.queuedRequests.removeAll { $0.id == requestId }
+        }
+
+        webSocketManager.onRequestCancelled = { [weak self] requestId in
+            guard let self else { return }
+            if let request = self.queuedRequests.first(where: { $0.id == requestId }) {
+                // Normal path: request in queue, move visitor to browsing
+                let visitor = Visitor(
+                    id: request.visitor.id,
+                    visitorId: request.visitor.visitorId,
+                    name: request.visitor.name,
+                    email: request.visitor.email,
+                    currentPage: request.visitor.currentPage,
+                    isConnected: true,
+                    isPingable: true,
+                    hasActiveRequest: false,
+                    isFirstVisit: request.visitor.isFirstVisit,
+                    previousVisitEndedAt: request.visitor.previousVisitEndedAt,
+                    totalVisitCount: request.visitor.totalVisitCount
+                )
+                self.browsingVisitors.append(visitor)
+            } else if let visitor = self.dismissedRequestVisitors.removeValue(forKey: requestId) {
+                // Dismissed path: request was already removed, use saved visitor
+                let restoredVisitor = Visitor(
+                    id: visitor.id,
+                    visitorId: visitor.visitorId,
+                    name: visitor.name,
+                    email: visitor.email,
+                    currentPage: visitor.currentPage,
+                    isConnected: true,
+                    isPingable: true,
+                    hasActiveRequest: false,
+                    isFirstVisit: visitor.isFirstVisit,
+                    previousVisitEndedAt: visitor.previousVisitEndedAt,
+                    totalVisitCount: visitor.totalVisitCount
+                )
+                self.browsingVisitors.append(restoredVisitor)
             }
             self.queuedRequests.removeAll { $0.id == requestId }
         }
 
         webSocketManager.onRequestDismissed = { [weak self] requestId in
+            guard let self else { return }
+            // Save visitor data before removing so cancel/expire can restore to browsing
+            if let request = self.queuedRequests.first(where: { $0.id == requestId }) {
+                self.dismissedRequestVisitors[requestId] = request.visitor
+            }
             // Just remove from queue — do NOT move visitor to browsing
             // (visitor still has an active request visible to other reps)
-            self?.queuedRequests.removeAll { $0.id == requestId }
+            self.queuedRequests.removeAll { $0.id == requestId }
         }
 
         webSocketManager.onCallStarted = { [weak self] call in
