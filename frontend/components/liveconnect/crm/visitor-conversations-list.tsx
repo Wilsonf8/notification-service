@@ -154,7 +154,7 @@ export function VisitorConversationsList({
                     <div className="flex items-center gap-2">
                       {hasMessages && (
                         <span className="text-xs text-muted-foreground">
-                          {conv.messageCount} msgs
+                          {conv.messageCount} {conv.messageCount === 1 ? "message" : "messages"}
                         </span>
                       )}
                       {conv.callDurationSeconds !== null && (
