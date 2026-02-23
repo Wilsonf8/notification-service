@@ -145,20 +145,26 @@ export default function CrmVisitorDetailPage({ params }: PageProps) {
             projectId={projectId}
             visitorId={visitorId}
             currentStage={visitor.pipelineStage}
-            onUpdate={fetchData}
+            onStageChange={(stage) => {
+              setVisitor((prev) => prev ? { ...prev, pipelineStage: stage } : prev);
+            }}
           />
           <RepAssignmentSelect
             projectId={projectId}
             visitorId={visitorId}
             currentRep={visitor.assignedRep}
             reps={reps}
-            onUpdate={fetchData}
+            onRepChange={(rep) => {
+              setVisitor((prev) => prev ? { ...prev, assignedRep: rep } : prev);
+            }}
           />
           <VisitorTags
             projectId={projectId}
             visitorId={visitorId}
             tags={visitor.tags}
-            onUpdate={fetchData}
+            onTagsChange={(tags) => {
+              setVisitor((prev) => prev ? { ...prev, tags } : prev);
+            }}
           />
           <VisitorNotes projectId={projectId} visitorId={visitorId} />
         </div>

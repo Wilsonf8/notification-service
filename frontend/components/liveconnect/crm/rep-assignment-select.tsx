@@ -23,7 +23,8 @@ interface RepAssignmentSelectProps {
   visitorId: string;
   currentRep: LiveConnectRep | null;
   reps: LiveConnectRep[];
-  onUpdate: () => void;
+  /** Called with the new rep (or null on unassign) after a successful update. */
+  onRepChange: (rep: LiveConnectRep | null) => void;
 }
 
 /**
@@ -34,7 +35,7 @@ export function RepAssignmentSelect({
   visitorId,
   currentRep,
   reps,
-  onUpdate,
+  onRepChange,
 }: RepAssignmentSelectProps) {
   const [updating, setUpdating] = useState(false);
 
@@ -43,7 +44,8 @@ export function RepAssignmentSelect({
     try {
       setUpdating(true);
       await assignRepToVisitor(projectId, visitorId, repId);
-      onUpdate();
+      const matchedRep = reps.find((r) => r.id === repId) ?? null;
+      onRepChange(matchedRep);
     } catch {
       // silently handled
     } finally {
@@ -56,7 +58,7 @@ export function RepAssignmentSelect({
     try {
       setUpdating(true);
       await unassignRepFromVisitor(projectId, visitorId);
-      onUpdate();
+      onRepChange(null);
     } catch {
       // silently handled
     } finally {

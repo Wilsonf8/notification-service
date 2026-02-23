@@ -25,7 +25,8 @@ interface VisitorTagsProps {
   projectId: string;
   visitorId: string;
   tags: Tag[];
-  onUpdate: () => void;
+  /** Called with the updated tags array after a successful add/remove. */
+  onTagsChange: (tags: Tag[]) => void;
 }
 
 /**
@@ -35,7 +36,7 @@ export function VisitorTags({
   projectId,
   visitorId,
   tags,
-  onUpdate,
+  onTagsChange,
 }: VisitorTagsProps) {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,10 @@ export function VisitorTags({
     try {
       setLoading(true);
       await addTagToVisitor(projectId, visitorId, tagId);
-      onUpdate();
+      const addedTag = allTags.find((t) => t.id === tagId);
+      if (addedTag) {
+        onTagsChange([...tags, addedTag]);
+      }
     } catch {
       // silently handled
     } finally {
@@ -64,7 +68,7 @@ export function VisitorTags({
     try {
       setLoading(true);
       await removeTagFromVisitor(projectId, visitorId, tagId);
-      onUpdate();
+      onTagsChange(tags.filter((t) => t.id !== tagId));
     } catch {
       // silently handled
     } finally {

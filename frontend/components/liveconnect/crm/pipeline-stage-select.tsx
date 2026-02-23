@@ -25,7 +25,8 @@ interface PipelineStageSelectProps {
   projectId: string;
   visitorId: string;
   currentStage: PipelineStage;
-  onUpdate: () => void;
+  /** Called with the new stage after a successful update. */
+  onStageChange: (stage: PipelineStage) => void;
 }
 
 /**
@@ -35,7 +36,7 @@ export function PipelineStageSelect({
   projectId,
   visitorId,
   currentStage,
-  onUpdate,
+  onStageChange,
 }: PipelineStageSelectProps) {
   const [updating, setUpdating] = useState(false);
 
@@ -44,9 +45,9 @@ export function PipelineStageSelect({
     try {
       setUpdating(true);
       await updateVisitorStage(projectId, visitorId, stage);
-      onUpdate();
+      onStageChange(stage);
     } catch {
-      // Error handled by parent refresh
+      // Error handled by parent
     } finally {
       setUpdating(false);
     }
