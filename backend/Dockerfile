@@ -28,6 +28,9 @@ WORKDIR /app
 # Copy the built jar from build stage
 COPY --from=build /app/target/*.jar app.jar
 
+# Copy GeoIP database
+COPY data/GeoLite2-City.mmdb data/GeoLite2-City.mmdb
+
 # Railway sets PORT environment variable
 ENV SPRING_PROFILES_ACTIVE=prod
 
