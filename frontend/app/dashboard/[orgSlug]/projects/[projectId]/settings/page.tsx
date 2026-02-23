@@ -1,6 +1,6 @@
 /**
  * Project settings page.
- * Allows editing project name and deleting the project.
+ * Allows editing project name, managing tags, and deleting the project.
  * @module app/dashboard/[orgSlug]/projects/[projectId]/settings/page
  */
 "use client";
@@ -20,13 +20,14 @@ import { Label } from "@/components/ui/label";
 import { IconTrash } from "@tabler/icons-react";
 import { useProject } from "../layout";
 import { updateProject, deleteProject } from "@/lib/api";
+import { TagManagement } from "@/components/liveconnect/crm/tag-management";
 
 /**
  * Project settings page component.
  */
 export default function SettingsPage() {
   const router = useRouter();
-  const { project, orgSlug, projectId, refreshProject } = useProject();
+  const { project, orgSlug, projectId, isAdmin, refreshProject } = useProject();
 
   const [projectName, setProjectName] = useState(project.name);
   const [saving, setSaving] = useState(false);
@@ -99,6 +100,20 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {isAdmin && (
+        <Card>
+          <CardHeader>
+            <CardTitle>CRM Tags</CardTitle>
+            <CardDescription>
+              Define tags to categorize and organize visitors in your CRM
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TagManagement projectId={projectId} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-destructive">
         <CardHeader>

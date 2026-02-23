@@ -100,4 +100,14 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
            "COUNT(c) > 0 " +
            "FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId")
     Object[] getVisitorConversationStats(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Finds conversations for a specific visitor, paginated and ordered by most recent first.
+     *
+     * @param visitorId the visitor's internal ID
+     * @param pageable  pagination parameters
+     * @return paginated list of conversations
+     */
+    @Query("SELECT c FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId ORDER BY c.startedAt DESC")
+    Page<LiveConnectConversation> findByVisitorIdPaged(UUID visitorId, Pageable pageable);
 }

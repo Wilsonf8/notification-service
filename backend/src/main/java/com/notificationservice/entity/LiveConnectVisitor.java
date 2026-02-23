@@ -103,6 +103,20 @@ public class LiveConnectVisitor {
     @Column(name = "ip_address", length = 45)
     private String ipAddress;
 
+    // CRM fields
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pipeline_stage")
+    @Builder.Default
+    private PipelineStage pipelineStage = PipelineStage.NEW;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_rep_id")
+    private LiveConnectRep assignedRep;
+
+    @Column(name = "lead_score")
+    @Builder.Default
+    private Integer leadScore = 0;
+
     @Column(name = "first_seen_at")
     private OffsetDateTime firstSeenAt;
 

@@ -473,6 +473,113 @@ export interface ConversationFilters {
 }
 
 // ============================================================================
+// CRM Types
+// ============================================================================
+
+/** Pipeline stage enum */
+export type PipelineStage =
+  | "NEW"
+  | "ENGAGED"
+  | "CONTACTED"
+  | "QUALIFIED"
+  | "PROPOSAL"
+  | "WON"
+  | "LOST";
+
+/** Tag definition */
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+/** CRM visitor list item (lightweight) */
+export interface CrmVisitorListItem {
+  id: string;
+  name: string | null;
+  email: string | null;
+  countryCode: string | null;
+  country: string | null;
+  city: string | null;
+  lastSeenAt: string;
+  visitCount: number;
+  leadScore: number;
+  pipelineStage: PipelineStage;
+  assignedRep: LiveConnectRep | null;
+  tags: Tag[];
+}
+
+/** CRM visitor list response (paginated) */
+export interface CrmVisitorListResponse {
+  visitors: CrmVisitorListItem[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+}
+
+/** CRM visitor list query parameters */
+export interface CrmVisitorListParams {
+  page?: number;
+  size?: number;
+  days?: number;
+  search?: string;
+  sort?: string;
+  direction?: string;
+}
+
+/** CRM visitor detail (full profile) */
+export interface CrmVisitorDetail {
+  id: string;
+  visitorId: string;
+  name: string | null;
+  email: string | null;
+  countryCode: string | null;
+  country: string | null;
+  region: string | null;
+  city: string | null;
+  browserName: string | null;
+  browserVersion: string | null;
+  osName: string | null;
+  osVersion: string | null;
+  deviceType: string | null;
+  ipAddress: string | null;
+  firstSeenAt: string | null;
+  lastSeenAt: string;
+  pipelineStage: PipelineStage;
+  leadScore: number;
+  assignedRep: LiveConnectRep | null;
+  tags: Tag[];
+  visitStats: VisitorVisitStats;
+  engagementStats: VisitorEngagementStats;
+}
+
+/** Visitor CRM note */
+export interface VisitorNote {
+  id: string;
+  content: string;
+  authorName: string;
+  authorRepId: string;
+  createdAt: string;
+}
+
+/** Timeline event in the unified feed */
+export interface TimelineEvent {
+  type: "VISIT" | "PAGE_VIEW" | "CALL" | "CONTACT_FORM" | "NOTE" | "REQUEST";
+  id: string;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+/** Paginated timeline response */
+export interface TimelineResponse {
+  events: TimelineEvent[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+}
+
+// ============================================================================
 // Billing & Subscription Types
 // ============================================================================
 

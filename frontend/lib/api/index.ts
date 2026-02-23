@@ -13,3 +13,4 @@ export * from "./liveconnect";
 export * from "./liveconnect-dashboard";
 export * from "./billing";
 export * from "./tier";
+export * from "./liveconnect-crm";

@@ -18,6 +18,7 @@ import {
   IconPalette,
   IconSettings,
   IconChevronLeft,
+  IconAddressBook,
 } from "@tabler/icons-react";
 import { getProject } from "@/lib/api";
 import { useOrganization } from "@/lib/contexts/organization-context";
@@ -59,6 +60,7 @@ interface NavTab {
 const liveConnectTabs: NavTab[] = [
   { label: "Live Users", href: "", icon: IconUsers },
   { label: "Conversations", href: "/conversations", icon: IconMessageCircle },
+  { label: "CRM", href: "/crm", icon: IconAddressBook },
   { label: "Reps", href: "/reps", icon: IconUserCog, adminOnly: true },
   { label: "Embed", href: "/embed", icon: IconCode },
   { label: "Widget", href: "/widget", icon: IconPalette },

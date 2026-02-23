@@ -56,4 +56,23 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
     @Modifying
     @Query("UPDATE LiveConnectVisitor v SET v.lastSeenAt = :now WHERE v.id IN :visitorIds")
     void batchUpdateLastSeenAt(Collection<UUID> visitorIds, OffsetDateTime now);
+
+    /**
+     * Finds visitors for CRM list view with time-range filter and optional search.
+     * Searches across name, email, city, and country fields.
+     *
+     * @param projectId the project ID
+     * @param since     the earliest lastSeenAt threshold
+     * @param search    optional search term (null or empty to skip)
+     * @param pageable  pagination and sorting parameters
+     * @return paginated list of visitors matching the criteria
+     */
+    @Query("SELECT v FROM LiveConnectVisitor v WHERE v.project.id = :projectId " +
+           "AND v.lastSeenAt >= :since " +
+           "AND (:search IS NULL OR :search = '' OR " +
+           "LOWER(v.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(v.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(v.city) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "LOWER(v.country) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<LiveConnectVisitor> findForCrm(UUID projectId, OffsetDateTime since, String search, Pageable pageable);
 }
