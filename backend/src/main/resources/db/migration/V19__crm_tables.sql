@@ -40,6 +40,5 @@ CREATE TABLE liveconnect_visitor_notes (
 CREATE INDEX idx_visitors_pipeline_stage ON liveconnect_visitors (pipeline_stage);
 CREATE INDEX idx_visitors_assigned_rep ON liveconnect_visitors (assigned_rep_id);
 CREATE INDEX idx_visitors_lead_score ON liveconnect_visitors (lead_score DESC);
-CREATE INDEX idx_visitors_last_seen ON liveconnect_visitors (last_seen_at DESC);
 CREATE INDEX idx_visitor_notes_visitor ON liveconnect_visitor_notes (visitor_id, created_at DESC);
 CREATE INDEX idx_tags_project ON liveconnect_tags (project_id);
