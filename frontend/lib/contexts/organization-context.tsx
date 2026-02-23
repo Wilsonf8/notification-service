@@ -103,9 +103,10 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
 
   /**
    * Switches to a different organization by slug.
-   * Navigates to the equivalent page in the new org's context.
+   * Updates state and localStorage. Only navigates when on old-style org routes.
    *
    * @param slug - The organization slug to switch to
+   * @param navigate - Whether to navigate (default: true for old routes, false for new routes)
    */
   const switchOrg = useCallback(
     (slug: string) => {
@@ -116,8 +117,17 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
       setCurrentOrg(org);
       localStorage.setItem(CURRENT_ORG_KEY, slug);
 
-      // Extract the current path after the org slug
-      // Pattern: /dashboard/[orgSlug]/... -> extract the part after orgSlug
+      // New project-scoped routes (/dashboard/p/...) — don't navigate
+      if (pathname.startsWith("/dashboard/p/")) {
+        return;
+      }
+
+      // New org-scoped routes (/dashboard/o/...) — don't navigate (layout handles it)
+      if (pathname.startsWith("/dashboard/o/")) {
+        return;
+      }
+
+      // Old-style org routes (/dashboard/[orgSlug]/...)
       const orgPathMatch = pathname.match(/^\/dashboard\/([^/]+)(\/.*)?$/);
 
       if (orgPathMatch) {
@@ -132,8 +142,8 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
           router.push(`/dashboard/${slug}${sectionPath}`);
         }
       } else if (pathname === "/dashboard") {
-        // On the redirect page, navigate to the new org's overview
-        router.push(`/dashboard/${slug}`);
+        // On the redirect page — don't navigate (redirect page handles it)
+        return;
       }
     },
     [organizations, pathname, router]

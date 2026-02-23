@@ -8,6 +8,7 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { OrganizationProvider } from "@/lib/contexts/organization-context";
+import { ProjectProvider } from "@/lib/contexts/project-context";
 
 /** Props for the dashboard layout */
 interface DashboardLayoutProps {
@@ -18,7 +19,7 @@ interface DashboardLayoutProps {
 /**
  * Root layout for all dashboard pages.
  * Provides a consistent sidebar, header, and main content area.
- * Wraps content with OrganizationProvider for org switching.
+ * Wraps content with OrganizationProvider and ProjectProvider.
  *
  * @param props - Component props
  * @param props.children - The page content to render
@@ -26,13 +27,15 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <OrganizationProvider>
-      <div className="flex min-h-screen">
-        <DashboardSidebar />
-        <div className="flex flex-1 flex-col">
-          <DashboardHeader />
-          <main className="flex-1 p-3 md:p-6">{children}</main>
+      <ProjectProvider>
+        <div className="flex min-h-screen">
+          <DashboardSidebar />
+          <div className="flex flex-1 flex-col">
+            <DashboardHeader />
+            <main className="flex-1 p-3 md:p-6">{children}</main>
+          </div>
         </div>
-      </div>
+      </ProjectProvider>
     </OrganizationProvider>
   );
 }

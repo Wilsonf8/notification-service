@@ -323,7 +323,7 @@ export default function TeamPage({ params }: TeamPageProps) {
                 Your team needs an active subscription to invite members.
               </p>
             </div>
-            <a href={`/dashboard/${orgSlug}/billing`}>
+            <a href={`/dashboard/o/${orgSlug}/billing`}>
               <Button size="sm">Set Up Billing</Button>
             </a>
           </CardContent>

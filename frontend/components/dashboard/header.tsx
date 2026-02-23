@@ -28,11 +28,16 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { IconLogout, IconUser, IconMenu2 } from "@tabler/icons-react";
-import { getNavItems, isNavItemActive } from "@/components/dashboard/sidebar";
-import { OrgSwitcher } from "@/components/dashboard/org-switcher";
+import { IconLogout, IconUser, IconMenu2, IconChevronLeft } from "@tabler/icons-react";
+import {
+  getProjectNavItems,
+  getOrgNavItems,
+  isNavItemActive,
+} from "@/components/dashboard/sidebar";
+import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
 import { useOrganization } from "@/lib/contexts/organization-context";
+import { useProjectContext } from "@/lib/contexts/project-context";
 import type { User } from "@/lib/types";
 
 /**
@@ -43,11 +48,34 @@ export function DashboardHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { currentOrg } = useOrganization();
+  const { currentOrg, organizations } = useOrganization();
+  const { currentProject } = useProjectContext();
   const [user, setUser] = useState<User | null>(null);
 
-  // Get nav items based on current org
-  const navItems = getNavItems(currentOrg?.slug || "", currentOrg?.userRole, currentOrg?.isPersonal);
+  // Close mobile sheet on navigation
+  useEffect(() => {
+    setSheetOpen(false);
+  }, [pathname]);
+
+  // Detect sidebar mode from pathname
+  const isOrgMode = pathname.startsWith("/dashboard/o/");
+  const isProjectMode = pathname.startsWith("/dashboard/p/");
+
+  // Determine admin status
+  const isAdmin = currentOrg?.userRole === "OWNER" || currentOrg?.userRole === "ADMIN";
+
+  // Get nav items based on mode
+  let navItems: { label: string; href: string; icon: React.ComponentType<{ className?: string }> }[] = [];
+  if (isProjectMode && currentProject) {
+    navItems = getProjectNavItems(currentProject.id, isAdmin);
+  } else if (isOrgMode) {
+    const orgSlugMatch = pathname.match(/^\/dashboard\/o\/([^/]+)/);
+    const orgSlug = orgSlugMatch ? orgSlugMatch[1] : "";
+    const org = organizations.find((o) => o.slug === orgSlug);
+    navItems = getOrgNavItems(orgSlug, org?.userRole || currentOrg?.userRole);
+  } else if (currentProject) {
+    navItems = getProjectNavItems(currentProject.id, isAdmin);
+  }
 
   useEffect(() => {
     getCurrentUser().then(setUser).catch(() => {});
@@ -101,9 +129,28 @@ export function DashboardHeader() {
                 </Link>
               </SheetTitle>
             </SheetHeader>
-            <div className="border-b border-border py-2">
-              <OrgSwitcher />
-            </div>
+
+            {/* Mode-specific header for mobile */}
+            {isOrgMode ? (
+              <div className="border-b border-border py-2">
+                <Link
+                  href={currentProject ? `/dashboard/p/${currentProject.id}` : "/dashboard"}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 text-sm transition-colors",
+                    "text-sidebar-foreground hover:bg-sidebar-accent"
+                  )}
+                  onClick={() => setSheetOpen(false)}
+                >
+                  <IconChevronLeft className="h-4 w-4" />
+                  <span>Back to Project</span>
+                </Link>
+              </div>
+            ) : (
+              <div className="border-b border-border py-2">
+                <ProjectSwitcher />
+              </div>
+            )}
+
             <nav className="flex-1 p-4">
               <ul className="space-y-1">
                 {navItems.map((item) => {
@@ -131,7 +178,6 @@ export function DashboardHeader() {
             </nav>
           </SheetContent>
         </Sheet>
-        {/* Breadcrumbs or page title can go here */}
       </div>
       <div className="flex items-center gap-2">
         <NotificationBell />

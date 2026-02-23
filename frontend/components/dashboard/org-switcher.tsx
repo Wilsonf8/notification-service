@@ -65,7 +65,7 @@ export function OrgSwitcher() {
       const newOrg = await createOrganization({ name: teamName.trim() });
       await refreshOrgs();
       // Navigate to billing page for subscription setup
-      router.push(`/dashboard/${newOrg.slug}/billing`);
+      router.push(`/dashboard/o/${newOrg.slug}/billing`);
       setTeamName("");
       setIsCreateOpen(false);
     } catch (err) {

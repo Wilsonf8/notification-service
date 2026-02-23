@@ -1,6 +1,6 @@
 /**
  * Embed keys management page for LiveConnect projects.
- * @module app/dashboard/[orgSlug]/projects/[projectId]/embed/page
+ * @module app/dashboard/p/[projectId]/embed/page
  */
 "use client";
 
@@ -78,30 +78,24 @@ export default function EmbedPage() {
   const { currentOrg } = useOrganization();
   const { limits, refresh: refreshLimits } = useTierLimits(orgSlug);
 
-  // Subscription state
   const [subscription, setSubscription] = useState<Subscription | null>(null);
 
-  // Embed keys state
   const [embedKeys, setEmbedKeys] = useState<LiveConnectEmbedKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Create dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [embedKeyName, setEmbedKeyName] = useState("");
   const [embedKeyDomains, setEmbedKeyDomains] = useState("");
   const [creating, setCreating] = useState(false);
 
-  // Edit dialog state
   const [editingKey, setEditingKey] = useState<LiveConnectEmbedKey | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [updating, setUpdating] = useState(false);
 
-  // Success dialog state (shows full key)
   const [newEmbedKey, setNewEmbedKey] = useState<LiveConnectEmbedKeyCreated | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  // Delete state
   const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
 
   /**
@@ -125,7 +119,7 @@ export default function EmbedPage() {
     if (currentOrg?.slug) {
       getSubscriptionStatus(currentOrg.slug)
         .then(setSubscription)
-        .catch(() => {}); // Non-critical, don't block page
+        .catch(() => {});
     }
   }, [projectId, currentOrg?.slug]);
 
@@ -252,7 +246,6 @@ export default function EmbedPage() {
         </Card>
       )}
 
-      {/* Embed Keys Card */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -417,7 +410,6 @@ export default function EmbedPage() {
         </CardContent>
       </Card>
 
-      {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent>
           <DialogHeader>
@@ -459,7 +451,6 @@ export default function EmbedPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Success Dialog - Shows Full Key */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
@@ -500,7 +491,6 @@ export default function EmbedPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Code Snippet Card */}
       <Card>
         <CardHeader>
           <CardTitle>Embed Code</CardTitle>

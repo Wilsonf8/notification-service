@@ -96,7 +96,7 @@ export default function OverviewPage({ params }: OverviewPageProps) {
                 Your team needs an active subscription to create projects, invite members, and more.
               </p>
             </div>
-            <Link href={`/dashboard/${orgSlug}/billing`}>
+            <Link href={`/dashboard/o/${orgSlug}/billing`}>
               <Button size="sm">Set Up Billing</Button>
             </Link>
           </CardContent>

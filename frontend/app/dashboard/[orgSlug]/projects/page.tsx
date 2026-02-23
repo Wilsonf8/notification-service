@@ -141,7 +141,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
                 Your team needs an active subscription to create projects.
               </p>
             </div>
-            <Link href={`/dashboard/${orgSlug}/billing`}>
+            <Link href={`/dashboard/o/${orgSlug}/billing`}>
               <Button size="sm">Set Up Billing</Button>
             </Link>
           </CardContent>
