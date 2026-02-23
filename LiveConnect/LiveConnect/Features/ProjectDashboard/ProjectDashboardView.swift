@@ -38,9 +38,15 @@ struct ProjectDashboardView: View {
     @State private var activeCall: AcceptedCallResponse?
 
     var body: some View {
-        dashboardTabView
-            .tabBarMinimizeBehavior(.onScrollDown)
-            .tint(.yellow)
+        Group {
+            if viewModel.currentRep == nil && !viewModel.isLoading && viewModel.project != nil {
+                notRepView
+            } else {
+                dashboardTabView
+                    .tabBarMinimizeBehavior(.onScrollDown)
+            }
+        }
+        .tint(.yellow)
             .sheet(isPresented: $showSidebar) {
                 OrganizationSidebarView(
                     viewModel: sidebarViewModel,
@@ -186,6 +192,29 @@ struct ProjectDashboardView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+    }
+
+    // MARK: - Not a Rep View
+
+    /// Shown when the user is an org member but not a rep in this project.
+    private var notRepView: some View {
+        VStack(spacing: 0) {
+            headerView
+            Spacer()
+            VStack(spacing: 16) {
+                Image(systemName: "person.badge.key.fill")
+                    .font(.system(size: 48))
+                    .foregroundStyle(.secondary)
+                Text("You're not a rep in this project")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                Text("Ask a project admin to add you as a rep.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .background(Color.black)
     }
 
     // MARK: - Connection Status Bar

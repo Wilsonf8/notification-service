@@ -23,6 +23,7 @@ enum WebSocketEvent: String, Sendable {
     case repAvailabilityChanged = "rep_availability_changed"
     case repPresenceChanged = "rep_presence_changed"
     case conversationStarted = "conversation_started"
+    case requestAcceptedByOther = "request_accepted_by_other"
 }
 
 // MARK: - WebSocket Event DTOs (match backend flat event structure)
@@ -80,6 +81,13 @@ private struct RequestCancelledDTO: Codable {
 /// DTO for request_dismissed event from backend.
 private struct RequestDismissedDTO: Codable {
     let requestId: UUID
+}
+
+/// DTO for request_accepted_by_other event from backend.
+private struct RequestAcceptedByOtherDTO: Codable {
+    let requestId: UUID
+    let repId: UUID
+    let repName: String
 }
 
 /// DTO for call_ended_broadcast event from backend.
@@ -192,6 +200,7 @@ final class WebSocketManager: WebSocketDelegate {
     var onMessageReceived: ((Message) -> Void)?
     var onRepUpdated: ((Rep) -> Void)?
     var onConversationStarted: ((AcceptedCallResponse) -> Void)?
+    var onRequestAcceptedByOther: ((UUID) -> Void)?
 
     // MARK: - Public Methods
 
@@ -357,6 +366,10 @@ final class WebSocketManager: WebSocketDelegate {
             case .requestDismissed:
                 let dto = try decoder.decode(RequestDismissedDTO.self, from: data)
                 onRequestDismissed?(dto.requestId)
+
+            case .requestAcceptedByOther:
+                let dto = try decoder.decode(RequestAcceptedByOtherDTO.self, from: data)
+                onRequestAcceptedByOther?(dto.requestId)
 
             case .callStartedBroadcast:
                 let call = try decoder.decode(ActiveCall.self, from: data)

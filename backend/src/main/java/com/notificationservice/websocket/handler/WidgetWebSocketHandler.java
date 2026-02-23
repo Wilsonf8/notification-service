@@ -11,6 +11,7 @@ import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
 import com.notificationservice.repository.ProjectRepository;
+import com.notificationservice.service.LiveConnectCrmService;
 import com.notificationservice.service.LiveConnectVisitService;
 import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
@@ -53,6 +54,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final ObjectMapper objectMapper;
     private final VisitorConnectionGracePeriodManager gracePeriodManager;
     private final PushNotificationService pushNotificationService;
+    private final LiveConnectCrmService crmService;
     private final LiveConnectVisitService visitService;
     private final LiveConnectVisitorVisitRepository visitRepository;
     private final ProjectRepository projectRepository;
@@ -103,6 +105,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             // Record visit on first connection
             if (isFirstConnection) {
                 visitService.recordConnection(visitor);
+                crmService.calculateLeadScore(visitor.getId());
             }
 
             // Broadcast visitor_joined only on first connection

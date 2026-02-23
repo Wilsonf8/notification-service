@@ -2,7 +2,9 @@ package com.notificationservice.repository;
 
 import com.notificationservice.entity.LiveConnectRequest;
 import com.notificationservice.entity.RequestStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
@@ -15,6 +17,18 @@ import java.util.UUID;
  * Repository for LiveConnect requests.
  */
 public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectRequest, UUID> {
+
+    /**
+     * Finds a request by ID with a pessimistic write lock (SELECT ... FOR UPDATE).
+     * Blocks concurrent transactions until the lock holder commits, preventing
+     * race conditions when two reps accept the same request simultaneously.
+     *
+     * @param id the request ID
+     * @return the locked request, if found
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT r FROM LiveConnectRequest r WHERE r.id = :id")
+    Optional<LiveConnectRequest> findByIdForUpdate(UUID id);
 
     @Query("SELECT r FROM LiveConnectRequest r WHERE r.project.id = :projectId AND r.status = 'PENDING' ORDER BY r.createdAt ASC")
     List<LiveConnectRequest> findPendingByProjectId(UUID projectId);

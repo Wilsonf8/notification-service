@@ -42,6 +42,9 @@ final class ProjectDashboardViewModel {
     /// The last error that occurred.
     private(set) var error: Error?
 
+    /// Error message when accepting a request fails (e.g., another rep accepted first).
+    private(set) var acceptError: String?
+
     /// Incoming call from WebSocket (when visitor accepts rep's ping).
     private(set) var incomingCall: AcceptedCallResponse?
 
@@ -75,17 +78,13 @@ final class ProjectDashboardViewModel {
         error = nil
 
         do {
-            // Load project details, visitors, and reps in parallel
+            // Load project details and reps first (both work for org members)
             async let projectTask: Project = APIClient.shared.get(Endpoints.project(projectId: projectId))
-            async let visitorsTask: VisitorListResponse = APIClient.shared.get(Endpoints.visitors(projectId: projectId))
             async let repsTask: [Rep] = APIClient.shared.get(Endpoints.reps(projectId: projectId))
 
-            let (project, visitors, reps) = try await (projectTask, visitorsTask, repsTask)
+            let (project, reps) = try await (projectTask, repsTask)
 
             self.project = project
-            self.browsingVisitors = visitors.browsing
-            self.queuedRequests = visitors.queue
-            self.activeCalls = visitors.inCall
             self.reps = reps
 
             // Find current rep by matching user ID
@@ -93,9 +92,18 @@ final class ProjectDashboardViewModel {
                 self.currentRep = reps.first { $0.userId == currentUser.id }
             }
 
-            // Connect WebSocket and set up handlers
-            setupWebSocketHandlers()
-            webSocketManager.connect(projectId: projectId)
+            // Only load visitors and connect WebSocket if user is a rep
+            if currentRep != nil {
+                let visitors: VisitorListResponse = try await APIClient.shared.get(
+                    Endpoints.visitors(projectId: projectId)
+                )
+                self.browsingVisitors = visitors.browsing
+                self.queuedRequests = visitors.queue
+                self.activeCalls = visitors.inCall
+
+                setupWebSocketHandlers()
+                webSocketManager.connect(projectId: projectId)
+            }
         } catch {
             self.error = error
         }
@@ -108,21 +116,24 @@ final class ProjectDashboardViewModel {
         guard let projectId else { return }
 
         do {
-            // Reload visitors and reps in parallel
-            async let visitorsTask: VisitorListResponse = APIClient.shared.get(Endpoints.visitors(projectId: projectId))
-            async let repsTask: [Rep] = APIClient.shared.get(Endpoints.reps(projectId: projectId))
-
-            let (visitors, reps) = try await (visitorsTask, repsTask)
-
-            self.browsingVisitors = visitors.browsing
-            self.queuedRequests = visitors.queue
-            self.activeCalls = visitors.inCall
+            // Always reload reps
+            let reps: [Rep] = try await APIClient.shared.get(Endpoints.reps(projectId: projectId))
             self.reps = reps
-            self.dismissedRequestVisitors.removeAll()
 
             // Update current rep
             if let currentUser = AuthManager.shared.currentUser {
                 self.currentRep = reps.first { $0.userId == currentUser.id }
+            }
+
+            // Only reload visitors if user is a rep
+            if currentRep != nil {
+                let visitors: VisitorListResponse = try await APIClient.shared.get(
+                    Endpoints.visitors(projectId: projectId)
+                )
+                self.browsingVisitors = visitors.browsing
+                self.queuedRequests = visitors.queue
+                self.activeCalls = visitors.inCall
+                self.dismissedRequestVisitors.removeAll()
             }
         } catch {
             self.error = error
@@ -184,9 +195,17 @@ final class ProjectDashboardViewModel {
             )
             return response
         } catch {
-            self.error = error
+            // If accept fails (e.g., another rep accepted first), remove request from queue
+            // and show a specific error message
+            queuedRequests.removeAll { $0.id == requestId }
+            acceptError = "Another rep already accepted this call"
             return nil
         }
+    }
+
+    /// Clears the accept error after it's been shown.
+    func clearAcceptError() {
+        acceptError = nil
     }
 
     /// Dismisses a request.
@@ -375,6 +394,10 @@ final class ProjectDashboardViewModel {
             // Just remove from queue — do NOT move visitor to browsing
             // (visitor still has an active request visible to other reps)
             self.queuedRequests.removeAll { $0.id == requestId }
+        }
+
+        webSocketManager.onRequestAcceptedByOther = { [weak self] requestId in
+            self?.queuedRequests.removeAll { $0.id == requestId }
         }
 
         webSocketManager.onCallStarted = { [weak self] call in

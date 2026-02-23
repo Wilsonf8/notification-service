@@ -96,7 +96,7 @@ struct ContentView: View {
                 sidebarViewModel: sidebarViewModel
             )
             .id(projectId)
-        } else {
+        } else if !sidebarViewModel.hasFinishedInitialLoad {
             // Loading organizations and projects
             VStack(spacing: 24) {
                 ProgressView()
@@ -109,7 +109,67 @@ struct ContentView: View {
             .task {
                 await sidebarViewModel.loadOrganizations()
             }
+        } else if let error = sidebarViewModel.error {
+            // Error loading organizations
+            loadingErrorView(error)
+        } else {
+            // No projects available
+            noProjectsView
         }
+    }
+
+    /// Displayed when organizations failed to load.
+    private func loadingErrorView(_ error: Error) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.yellow)
+
+            Text("Failed to load projects")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text(error.localizedDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Retry") {
+                Task {
+                    await sidebarViewModel.loadOrganizations()
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(.yellow)
+        }
+        .padding()
+    }
+
+    /// Displayed when loading succeeded but no projects exist.
+    private var noProjectsView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "folder")
+                .font(.largeTitle)
+                .foregroundStyle(.yellow)
+
+            Text("No projects available")
+                .font(.headline)
+                .foregroundStyle(.white)
+
+            Text("There are no projects in your organizations yet.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            Button("Retry") {
+                Task {
+                    await sidebarViewModel.loadOrganizations()
+                }
+            }
+            .buttonStyle(.bordered)
+            .tint(.yellow)
+        }
+        .padding()
     }
 
     // MARK: - Authentication

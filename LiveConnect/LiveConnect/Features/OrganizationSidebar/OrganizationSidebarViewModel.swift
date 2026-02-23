@@ -17,6 +17,9 @@ final class OrganizationSidebarViewModel {
     /// Whether data is loading.
     private(set) var isLoading = false
 
+    /// Whether the initial load has completed (success or failure).
+    private(set) var hasFinishedInitialLoad = false
+
     /// The last error that occurred.
     private(set) var error: Error?
 
@@ -58,6 +61,7 @@ final class OrganizationSidebarViewModel {
                             )
                             return (org, projects)
                         } catch {
+                            print("OrganizationSidebarViewModel: Failed to load projects for org '\(org.name)' (slug: \(org.slug)): \(error)")
                             return nil
                         }
                     }
@@ -81,9 +85,18 @@ final class OrganizationSidebarViewModel {
                 return lhs.organization.name < rhs.organization.name
             }
 
+            // Log project counts per organization
+            for org in organizations {
+                print("OrganizationSidebarViewModel: Org '\(org.organization.name)' has \(org.projects.count) projects")
+            }
+
             // Restore last visited project or select first available
             if selectedProjectId == nil {
-                selectedProjectId = loadLastVisitedProject() ?? organizations.first?.projects.first?.id
+                let allProjectIds = Set(organizations.flatMap { $0.projects.map(\.id) })
+                let lastVisited = loadLastVisitedProject().flatMap { allProjectIds.contains($0) ? $0 : nil }
+                let firstAvailable = organizations.first(where: { !$0.projects.isEmpty })?.projects.first?.id
+                selectedProjectId = lastVisited ?? firstAvailable
+                print("OrganizationSidebarViewModel: lastVisitedProject=\(String(describing: lastVisited)), firstAvailable=\(String(describing: firstAvailable)), selectedProjectId=\(String(describing: selectedProjectId))")
             }
         } catch {
             print("OrganizationSidebarViewModel: Error loading organizations: \(error)")
@@ -93,6 +106,7 @@ final class OrganizationSidebarViewModel {
             self.error = error
         }
 
+        hasFinishedInitialLoad = true
         isLoading = false
         print("OrganizationSidebarViewModel: Finished loading, isLoading=\(isLoading)")
     }
@@ -108,6 +122,7 @@ final class OrganizationSidebarViewModel {
         organizations = []
         selectedProjectId = nil
         error = nil
+        hasFinishedInitialLoad = false
         UserDefaults.standard.removeObject(forKey: lastVisitedProjectKey)
     }
 

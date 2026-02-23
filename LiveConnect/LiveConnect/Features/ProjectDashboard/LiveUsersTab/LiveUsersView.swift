@@ -21,6 +21,7 @@ struct LiveUsersView: View {
 
     @State private var selectedSection: LiveUsersSection = .browsing
     @State private var selectedVisitor: Visitor?
+    @State private var showAcceptError = false
 
     var body: some View {
         NavigationStack {
@@ -82,6 +83,17 @@ struct LiveUsersView: View {
             }
             .onChange(of: viewModel.browsingVisitors.count) { _, _ in
                 handlePendingVisitorNavigation()
+            }
+            .alert("Request Unavailable", isPresented: $showAcceptError) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel.acceptError ?? "Another rep already accepted this call")
+            }
+            .onChange(of: viewModel.acceptError) { _, newValue in
+                if newValue != nil {
+                    showAcceptError = true
+                    viewModel.clearAcceptError()
+                }
             }
             .sheet(item: $selectedVisitor) { visitor in
                 VisitorDetailPanel(

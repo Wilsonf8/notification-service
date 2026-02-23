@@ -27,6 +27,7 @@ import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.CallStartedBroadcastEvent;
 import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
+import com.notificationservice.websocket.event.RequestAcceptedByOtherEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestDismissedEvent;
@@ -102,7 +103,8 @@ public class LiveConnectRequestService {
         getAndValidateProject(projectId, userId);
         LiveConnectRep rep = verifyRepAccess(projectId, userId);
 
-        LiveConnectRequest request = requestRepository.findById(requestId)
+        // Use pessimistic lock to prevent two reps from accepting the same request
+        LiveConnectRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Request not found"));
 
         // Verify request belongs to this project
@@ -207,6 +209,14 @@ public class LiveConnectRequestService {
                 conversation.getStartedAt()
         );
         broadcaster.broadcastToProject(projectId, callStartedBroadcast);
+
+        // Notify other reps that this request was accepted so they can remove it from their queue
+        RequestAcceptedByOtherEvent acceptedEvent = new RequestAcceptedByOtherEvent(
+                requestId,
+                rep.getId(),
+                rep.getUser().getUsername()
+        );
+        broadcaster.broadcastToProject(projectId, acceptedEvent);
 
         return new AcceptRequestResponse(
                 conversation.getId(),
