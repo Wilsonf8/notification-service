@@ -8,6 +8,7 @@ import com.notificationservice.dto.LiveConnectMessageDto;
 import com.notificationservice.dto.LiveConnectRepDto;
 import com.notificationservice.dto.LiveConnectRequestDto;
 import com.notificationservice.dto.MessageListResponse;
+import com.notificationservice.dto.PageViewDto;
 import com.notificationservice.dto.PingVisitorResponse;
 import com.notificationservice.dto.SendMessageRequest;
 import com.notificationservice.dto.TokenResponse;
@@ -17,7 +18,9 @@ import com.notificationservice.dto.VisitorListResponse;
 import com.notificationservice.dto.VisitorVisitDto;
 import com.notificationservice.entity.ConversationStatus;
 import com.notificationservice.entity.LiveConnectConversation;
+import com.notificationservice.entity.LiveConnectPageView;
 import com.notificationservice.entity.LiveConnectRep;
+import com.notificationservice.repository.LiveConnectPageViewRepository;
 import com.notificationservice.service.LiveKitTokenService;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.service.AccessDeniedException;
@@ -29,6 +32,7 @@ import com.notificationservice.service.LiveConnectVisitorService;
 import com.notificationservice.service.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -52,6 +56,7 @@ public class LiveConnectDashboardController {
     private final LiveConnectConversationService conversationService;
     private final LiveConnectConversationRepository conversationRepository;
     private final LiveKitTokenService liveKitTokenService;
+    private final LiveConnectPageViewRepository pageViewRepository;
 
     // Rep Management Endpoints
 
@@ -195,6 +200,30 @@ public class LiveConnectDashboardController {
                 stats.total(),
                 visits.getTotalPages()
         ));
+    }
+
+    /**
+     * Gets recent page views (browsing history) for a visitor.
+     *
+     * @param projectId the project ID
+     * @param visitorId the visitor's internal ID
+     * @param limit the maximum number of page views to return
+     * @param userId the authenticated user's ID (must be a rep)
+     * @return list of recent page views
+     */
+    @GetMapping("/visitors/{visitorId}/page-views")
+    public ResponseEntity<List<PageViewDto>> getPageViews(
+            @PathVariable UUID projectId,
+            @PathVariable UUID visitorId,
+            @RequestParam(defaultValue = "50") int limit,
+            @AuthenticationPrincipal UUID userId) {
+        visitorService.validateProjectAndRepAccess(projectId, userId);
+        List<LiveConnectPageView> pageViews = pageViewRepository.findByVisitorIdOrderByVisitedAtDesc(
+                visitorId, PageRequest.of(0, limit));
+        List<PageViewDto> dtos = pageViews.stream()
+                .map(pv -> new PageViewDto(pv.getUrl(), pv.getTitle(), pv.getVisitedAt(), pv.getDurationMs()))
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     // Request Endpoints

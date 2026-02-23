@@ -106,8 +106,11 @@ public class LiveConnectWidgetController {
         // Validate embed key and domain
         LiveConnectEmbedKey embedKey = embedKeyService.validateEmbedKey(embedKeyHeader, domain);
 
-        // Initialize session
-        WidgetInitResponse response = sessionService.initializeSession(request, embedKey);
+        // Extract User-Agent for device detection
+        String userAgent = httpRequest.getHeader("User-Agent");
+
+        // Initialize session with IP and User-Agent for geo/device resolution
+        WidgetInitResponse response = sessionService.initializeSession(request, embedKey, clientIp, userAgent);
 
         return ResponseEntity.ok(response);
     }

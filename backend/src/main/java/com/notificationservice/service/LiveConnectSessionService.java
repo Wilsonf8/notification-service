@@ -14,6 +14,8 @@ import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectSessionRepository;
 import com.notificationservice.repository.LiveConnectSettingsRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
+import com.notificationservice.service.GeoIpService.GeoLocation;
+import com.notificationservice.service.UserAgentService.DeviceInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,6 +47,8 @@ public class LiveConnectSessionService {
     private final LiveConnectRequestRepository requestRepository;
     private final LiveConnectRepRepository repRepository;
     private final StringRedisTemplate redisTemplate;
+    private final GeoIpService geoIpService;
+    private final UserAgentService userAgentService;
 
     @Value("${app.liveconnect.session.ttl-hours}")
     private int sessionTtlHours;
@@ -52,12 +56,15 @@ public class LiveConnectSessionService {
     /**
      * Initializes a new session for a widget visitor.
      *
-     * @param request the init request containing visitor ID
+     * @param request the init request containing visitor ID and client info
      * @param embedKey the validated embed key
+     * @param clientIp the client's IP address
+     * @param userAgent the client's User-Agent header
      * @return the init response with session token and widget settings
      */
     @Transactional
-    public WidgetInitResponse initializeSession(WidgetInitRequest request, LiveConnectEmbedKey embedKey) {
+    public WidgetInitResponse initializeSession(WidgetInitRequest request, LiveConnectEmbedKey embedKey,
+                                                 String clientIp, String userAgent) {
         var project = embedKey.getProject();
 
         // Get or create visitor
@@ -73,6 +80,49 @@ public class LiveConnectSessionService {
 
         // Update last seen
         visitor.setLastSeenAt(OffsetDateTime.now());
+
+        // Resolve GeoIP — only if IP changed or geo fields are empty
+        boolean ipChanged = clientIp != null && !clientIp.equals(visitor.getIpAddress());
+        if (ipChanged || visitor.getCountryCode() == null) {
+            visitor.setIpAddress(clientIp);
+            GeoLocation geo = geoIpService.resolve(clientIp);
+            if (geo != null) {
+                visitor.setCountry(geo.country());
+                visitor.setCountryCode(geo.countryCode());
+                visitor.setRegion(geo.region());
+                visitor.setCity(geo.city());
+                visitor.setLatitude(geo.latitude());
+                visitor.setLongitude(geo.longitude());
+                visitor.setTimezone(geo.timezone());
+            }
+        }
+
+        // Parse User-Agent — only if browser info is empty
+        if (visitor.getBrowserName() == null && userAgent != null) {
+            DeviceInfo device = userAgentService.parse(userAgent);
+            if (device != null) {
+                visitor.setBrowserName(device.browserName());
+                visitor.setBrowserVersion(device.browserVersion());
+                visitor.setOsName(device.osName());
+                visitor.setOsVersion(device.osVersion());
+                visitor.setDeviceType(device.deviceType());
+            }
+        }
+
+        // Set client-provided fields
+        if (request.screenWidth() != null) {
+            visitor.setScreenWidth(request.screenWidth().shortValue());
+        }
+        if (request.screenHeight() != null) {
+            visitor.setScreenHeight(request.screenHeight().shortValue());
+        }
+        if (request.language() != null) {
+            visitor.setLanguage(request.language());
+        }
+        if (request.timezone() != null && visitor.getTimezone() == null) {
+            visitor.setTimezone(request.timezone());
+        }
+
         visitorRepository.save(visitor);
 
         // Generate session token

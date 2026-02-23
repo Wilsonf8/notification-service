@@ -5,7 +5,13 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IconUser, IconCircleFilled } from "@tabler/icons-react";
+import {
+  IconUser,
+  IconCircleFilled,
+  IconDeviceDesktop,
+  IconDeviceMobile,
+  IconDeviceTablet,
+} from "@tabler/icons-react";
 import type { LiveConnectVisitor } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -113,9 +119,46 @@ function formatPreviousVisit(previousVisitEndedAt: string): string {
 }
 
 /**
+ * Returns a country flag emoji from a 2-letter country code.
+ * @param countryCode - ISO 3166-1 alpha-2 country code
+ * @returns Flag emoji string
+ */
+function countryFlag(countryCode: string): string {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((c) => 0x1f1e6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...codePoints);
+}
+
+/**
+ * Returns a device type icon component.
+ * @param deviceType - "desktop", "mobile", or "tablet"
+ * @returns Icon component
+ */
+function DeviceIcon({ deviceType }: { deviceType: string | null }) {
+  const cls = "h-3 w-3 text-muted-foreground";
+  switch (deviceType) {
+    case "mobile":
+      return <IconDeviceMobile className={cls} />;
+    case "tablet":
+      return <IconDeviceTablet className={cls} />;
+    default:
+      return <IconDeviceDesktop className={cls} />;
+  }
+}
+
+/**
  * Individual visitor item.
  */
 function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
+  const locationText = [visitor.city, visitor.country]
+    .filter(Boolean)
+    .join(", ");
+  const browserText = [visitor.browserName, visitor.osName]
+    .filter(Boolean)
+    .join(" / ");
+
   return (
     <button
       type="button"
@@ -134,12 +177,27 @@ function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">
-          {visitor.name || "Anonymous"}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-sm font-medium">
+            {visitor.name || "Anonymous"}
+          </p>
+          {visitor.countryCode && (
+            <span className="flex-shrink-0 text-xs" title={visitor.country || undefined}>
+              {countryFlag(visitor.countryCode)}
+            </span>
+          )}
+          {visitor.deviceType && (
+            <DeviceIcon deviceType={visitor.deviceType} />
+          )}
+        </div>
         <p className="truncate text-xs text-muted-foreground">
           {visitor.currentPageTitle || visitor.currentPage || "Unknown page"}
         </p>
+        {(locationText || browserText) && (
+          <p className="truncate text-[10px] text-muted-foreground/70">
+            {[locationText, browserText].filter(Boolean).join(" \u00B7 ")}
+          </p>
+        )}
       </div>
       {visitor.isFirstVisit ? (
         <span className="flex-shrink-0 bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-1.5 py-0.5 uppercase font-mono">

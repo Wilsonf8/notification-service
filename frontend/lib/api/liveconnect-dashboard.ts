@@ -10,6 +10,7 @@ import type {
   LiveConnectRequest,
   LiveConnectConversation,
   LiveConnectMessage,
+  PageView,
   VisitorsResponse,
   AcceptRequestResponse,
   ConversationTokenResponse,
@@ -149,6 +150,23 @@ export async function getVisitorVisits(
 ): Promise<VisitorDetailResponse> {
   return apiFetch<VisitorDetailResponse>(
     `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/visits?page=${page}&size=${size}`
+  );
+}
+
+/**
+ * Fetches page view history for a visitor.
+ * @param projectId - The project ID
+ * @param visitorId - The visitor's internal ID
+ * @param limit - Maximum number of page views to return
+ * @returns Array of page views
+ */
+export async function getPageViews(
+  projectId: string,
+  visitorId: string,
+  limit: number = 50
+): Promise<PageView[]> {
+  return apiFetch<PageView[]>(
+    `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/page-views?limit=${limit}`
   );
 }
 

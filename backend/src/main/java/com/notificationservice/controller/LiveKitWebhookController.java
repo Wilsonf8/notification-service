@@ -188,7 +188,13 @@ public class LiveKitWebhookController {
                     OffsetDateTime.now(),
                     false,
                     null,
-                    0
+                    0,
+                    visitor.getCountryCode(),
+                    visitor.getCountry(),
+                    visitor.getCity(),
+                    visitor.getBrowserName(),
+                    visitor.getOsName(),
+                    visitor.getDeviceType()
             );
             broadcaster.broadcastToProject(
                     conversation.getProject().getId(),

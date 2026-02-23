@@ -72,6 +72,12 @@ interface VisitorJoinedEvent extends BaseWebSocketEvent {
   isFirstVisit?: boolean;
   previousVisitEndedAt?: string | null;
   totalVisitCount?: number;
+  countryCode?: string | null;
+  country?: string | null;
+  city?: string | null;
+  browserName?: string | null;
+  osName?: string | null;
+  deviceType?: string | null;
 }
 
 /** Visitor left event from backend */
@@ -90,6 +96,12 @@ interface VisitorUpdatedEvent extends BaseWebSocketEvent {
   currentPage: string | null;
   currentPageTitle: string | null;
   isConnected: boolean | null;
+  countryCode?: string | null;
+  country?: string | null;
+  city?: string | null;
+  browserName?: string | null;
+  osName?: string | null;
+  deviceType?: string | null;
 }
 
 /** Request received event from backend */
@@ -305,6 +317,12 @@ export function useLiveConnectWebSocket(
           isFirstVisit: event.isFirstVisit ?? true,
           previousVisitEndedAt: event.previousVisitEndedAt ?? null,
           totalVisitCount: event.totalVisitCount ?? 0,
+          countryCode: event.countryCode ?? null,
+          country: event.country ?? null,
+          city: event.city ?? null,
+          browserName: event.browserName ?? null,
+          osName: event.osName ?? null,
+          deviceType: event.deviceType ?? null,
         };
         setVisitors?.((prev) => {
           const existingIndex = prev.findIndex((v) => v.id === event.visitorId);
@@ -340,6 +358,12 @@ export function useLiveConnectWebSocket(
                   currentPage: event.currentPage ?? v.currentPage,
                   currentPageTitle: event.currentPageTitle ?? v.currentPageTitle,
                   isConnected: event.isConnected ?? v.isConnected,
+                  countryCode: event.countryCode ?? v.countryCode,
+                  country: event.country ?? v.country,
+                  city: event.city ?? v.city,
+                  browserName: event.browserName ?? v.browserName,
+                  osName: event.osName ?? v.osName,
+                  deviceType: event.deviceType ?? v.deviceType,
                 }
               : v
           )
@@ -389,6 +413,12 @@ export function useLiveConnectWebSocket(
               isFirstVisit: false,
               previousVisitEndedAt: null,
               totalVisitCount: 0,
+              countryCode: null,
+              country: null,
+              city: null,
+              browserName: null,
+              osName: null,
+              deviceType: null,
             };
             setVisitors?.((prevVisitors) => [...prevVisitors, visitor]);
           }

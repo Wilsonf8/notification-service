@@ -567,7 +567,13 @@ public class LiveConnectRequestService {
                 isPingable,
                 false,
                 null,
-                0
+                0,
+                visitor.getCountryCode(),
+                visitor.getCountry(),
+                visitor.getCity(),
+                visitor.getBrowserName(),
+                visitor.getOsName(),
+                visitor.getDeviceType()
         );
     }
 

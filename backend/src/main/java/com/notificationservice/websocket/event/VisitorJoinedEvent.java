@@ -14,7 +14,13 @@ public record VisitorJoinedEvent(
         OffsetDateTime joinedAt,
         boolean isFirstVisit,
         OffsetDateTime previousVisitEndedAt,
-        int totalVisitCount
+        int totalVisitCount,
+        String countryCode,
+        String country,
+        String city,
+        String browserName,
+        String osName,
+        String deviceType
 ) {
     /**
      * Returns the event type identifier.

@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.entity.Project;
+import com.notificationservice.entity.LiveConnectPageView;
 import com.notificationservice.repository.LiveConnectConversationRepository;
+import com.notificationservice.repository.LiveConnectPageViewRepository;
 import com.notificationservice.repository.LiveConnectRequestRepository;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
 import com.notificationservice.repository.LiveConnectVisitorVisitRepository;
@@ -19,6 +21,7 @@ import com.notificationservice.websocket.session.VisitorConnectionGracePeriodMan
 import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -27,9 +30,11 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * WebSocket handler for widget visitor connections.
@@ -52,6 +57,15 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final LiveConnectVisitorVisitRepository visitRepository;
     private final ProjectRepository projectRepository;
     private final HeartbeatBatchProcessor heartbeatBatchProcessor;
+    private final LiveConnectPageViewRepository pageViewRepository;
+
+    /** Tracks current page start time per visitor for duration calculation. */
+    private final ConcurrentHashMap<UUID, PageTrackingState> pageTrackingState = new ConcurrentHashMap<>();
+
+    /**
+     * Holds the current page URL, title, and timestamp for duration tracking.
+     */
+    private record PageTrackingState(String url, String title, UUID projectId, OffsetDateTime startedAt) {}
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -118,7 +132,13 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                             OffsetDateTime.now(),
                             isFirstVisit,
                             previousVisitEndedAt,
-                            (int) totalVisitCount
+                            (int) totalVisitCount,
+                            visitor.getCountryCode(),
+                            visitor.getCountry(),
+                            visitor.getCity(),
+                            visitor.getBrowserName(),
+                            visitor.getOsName(),
+                            visitor.getDeviceType()
                     );
                     broadcaster.broadcastToProject(projectId, event);
 
@@ -161,6 +181,13 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                 } else {
                     log.debug("[WidgetWS] Skipping visitor_joined broadcast for visitor in waiting/call state: visitorId={}", visitorId);
                 }
+            }
+
+            // Initialize page tracking for this visitor
+            String currentPage = extractCurrentPage(visitor);
+            if (currentPage != null) {
+                pageTrackingState.put(visitorId, new PageTrackingState(
+                        currentPage, extractCurrentPageTitle(visitor), projectId, OffsetDateTime.now()));
             }
 
             log.info("[WidgetWS] Visitor connected: visitorId={}, projectId={}, activeConnections={}",
@@ -213,6 +240,12 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
         int actualSessionCount = sessionManager.getSessionCount(visitorId);
         boolean isLastConnection = actualSessionCount == 0;
 
+        // Record final page view on disconnect
+        if (isLastConnection) {
+            recordPreviousPageView(visitorId);
+            pageTrackingState.remove(visitorId);
+        }
+
         // Update visitor in database
         visitorRepository.findById(visitorId).ifPresent(visitor -> {
             // Sync DB with actual session count
@@ -230,7 +263,13 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                         visitor.getEmail(),
                         extractCurrentPage(visitor),
                         extractCurrentPageTitle(visitor),
-                        false  // isConnected = false
+                        false,  // isConnected = false
+                        visitor.getCountryCode(),
+                        visitor.getCountry(),
+                        visitor.getCity(),
+                        visitor.getBrowserName(),
+                        visitor.getOsName(),
+                        visitor.getDeviceType()
                 );
                 gracePeriodManager.scheduleDisconnectionBroadcast(visitorId, projectId, event);
             }
@@ -258,7 +297,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     }
 
     /**
-     * Handles page change messages by updating visitor metadata and broadcasting to reps.
+     * Handles page change messages by updating visitor metadata, recording page views,
+     * and broadcasting to reps.
      *
      * @param projectId the project ID
      * @param visitorId the visitor's internal ID
@@ -267,6 +307,14 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private void handlePageChange(UUID projectId, UUID visitorId, JsonNode json) {
         String url = json.has("url") ? json.get("url").asText() : null;
         String title = json.has("title") ? json.get("title").asText() : null;
+
+        // Record page view for the previous page (with duration)
+        recordPreviousPageView(visitorId);
+
+        // Track current page start time
+        if (url != null) {
+            pageTrackingState.put(visitorId, new PageTrackingState(url, title, projectId, OffsetDateTime.now()));
+        }
 
         visitorRepository.findById(visitorId).ifPresent(visitor -> {
             // Update metadata regardless of state (keeps DB in sync)
@@ -297,12 +345,60 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                     visitor.getEmail(),
                     url,
                     title,
-                    true  // isConnected - they're sending page changes, so connected
+                    true,  // isConnected - they're sending page changes, so connected
+                    visitor.getCountryCode(),
+                    visitor.getCountry(),
+                    visitor.getCity(),
+                    visitor.getBrowserName(),
+                    visitor.getOsName(),
+                    visitor.getDeviceType()
             );
             broadcaster.broadcastToProject(projectId, event);
 
             log.debug("[WidgetWS] Visitor page change: visitorId={}, url={}", visitorId, url);
         });
+    }
+
+    /**
+     * Records a page view for the previous page with its duration.
+     *
+     * @param visitorId the visitor's internal ID
+     */
+    private void recordPreviousPageView(UUID visitorId) {
+        PageTrackingState previous = pageTrackingState.get(visitorId);
+        if (previous != null) {
+            int durationMs = (int) ChronoUnit.MILLIS.between(previous.startedAt(), OffsetDateTime.now());
+            savePageViewAsync(previous.projectId(), visitorId, previous.url(), previous.title(),
+                    previous.startedAt(), durationMs);
+        }
+    }
+
+    /**
+     * Saves a page view record asynchronously to avoid blocking the WebSocket thread.
+     *
+     * @param projectId the project ID
+     * @param visitorId the visitor's internal ID
+     * @param url the page URL
+     * @param title the page title
+     * @param visitedAt when the page was visited
+     * @param durationMs time spent on the page in milliseconds
+     */
+    @Async
+    public void savePageViewAsync(UUID projectId, UUID visitorId, String url, String title,
+                                   OffsetDateTime visitedAt, int durationMs) {
+        try {
+            LiveConnectPageView pageView = LiveConnectPageView.builder()
+                    .visitorId(visitorId)
+                    .projectId(projectId)
+                    .url(url)
+                    .title(title)
+                    .visitedAt(visitedAt)
+                    .durationMs(durationMs)
+                    .build();
+            pageViewRepository.save(pageView);
+        } catch (Exception e) {
+            log.warn("[WidgetWS] Failed to save page view: {}", e.getMessage());
+        }
     }
 
     /**

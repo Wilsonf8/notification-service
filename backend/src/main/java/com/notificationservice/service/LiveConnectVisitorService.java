@@ -277,7 +277,13 @@ public class LiveConnectVisitorService {
                 isPingable,
                 isFirstVisit,
                 previousVisitEndedAt,
-                totalVisitCount
+                totalVisitCount,
+                visitor.getCountryCode(),
+                visitor.getCountry(),
+                visitor.getCity(),
+                visitor.getBrowserName(),
+                visitor.getOsName(),
+                visitor.getDeviceType()
         );
     }
 

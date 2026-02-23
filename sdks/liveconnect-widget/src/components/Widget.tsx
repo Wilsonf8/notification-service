@@ -307,8 +307,16 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
         // Get visitor ID (creates one if not exists)
         const visitorId = getVisitorId();
 
+        // Collect client info for visitor tracking
+        const clientInfo = {
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+          language: navigator.language,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        };
+
         // Initialize session with backend
-        const initResponse = await api.init(config.embedKey, visitorId);
+        const initResponse = await api.init(config.embedKey, visitorId, clientInfo);
 
         if (!isMounted) return;
 

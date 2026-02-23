@@ -53,6 +53,56 @@ public class LiveConnectVisitor {
     @Column(name = "ping_cooldown_until")
     private OffsetDateTime pingCooldownUntil;
 
+    // GeoIP fields
+    @Column(name = "country_code", length = 2)
+    private String countryCode;
+
+    @Column(name = "country", length = 100)
+    private String country;
+
+    @Column(name = "region", length = 100)
+    private String region;
+
+    @Column(name = "city", length = 100)
+    private String city;
+
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "timezone", length = 64)
+    private String timezone;
+
+    // Device/browser fields
+    @Column(name = "browser_name", length = 64)
+    private String browserName;
+
+    @Column(name = "browser_version", length = 32)
+    private String browserVersion;
+
+    @Column(name = "os_name", length = 64)
+    private String osName;
+
+    @Column(name = "os_version", length = 32)
+    private String osVersion;
+
+    @Column(name = "device_type", length = 16)
+    private String deviceType;
+
+    @Column(name = "screen_width")
+    private Short screenWidth;
+
+    @Column(name = "screen_height")
+    private Short screenHeight;
+
+    @Column(name = "language", length = 16)
+    private String language;
+
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
     @Column(name = "first_seen_at")
     private OffsetDateTime firstSeenAt;
 

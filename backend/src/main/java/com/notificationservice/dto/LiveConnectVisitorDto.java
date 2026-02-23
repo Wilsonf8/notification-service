@@ -18,6 +18,12 @@ import java.util.UUID;
  * @param isFirstVisit         true when the visitor's total visit count is 1 or less
  * @param previousVisitEndedAt when the last completed visit ended, for "Last seen X ago" display
  * @param totalVisitCount      total number of visits for this visitor
+ * @param countryCode          ISO 3166-1 alpha-2 country code
+ * @param country              full country name
+ * @param city                 city name
+ * @param browserName          browser name (e.g., "Chrome")
+ * @param osName               operating system name (e.g., "Mac OS X")
+ * @param deviceType           device type: "desktop", "mobile", or "tablet"
  */
 public record LiveConnectVisitorDto(
         UUID id,
@@ -31,5 +37,11 @@ public record LiveConnectVisitorDto(
         boolean isPingable,
         boolean isFirstVisit,
         OffsetDateTime previousVisitEndedAt,
-        int totalVisitCount
+        int totalVisitCount,
+        String countryCode,
+        String country,
+        String city,
+        String browserName,
+        String osName,
+        String deviceType
 ) {}

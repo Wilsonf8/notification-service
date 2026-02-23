@@ -330,7 +330,13 @@ public class LiveConnectConversationService {
                     OffsetDateTime.now(),
                     false,
                     null,
-                    0
+                    0,
+                    visitor.getCountryCode(),
+                    visitor.getCountry(),
+                    visitor.getCity(),
+                    visitor.getBrowserName(),
+                    visitor.getOsName(),
+                    visitor.getDeviceType()
             );
             broadcaster.broadcastToProject(
                     conversation.getProject().getId(),
@@ -466,7 +472,13 @@ public class LiveConnectConversationService {
                 isPingable,
                 false,
                 null,
-                0
+                0,
+                visitor.getCountryCode(),
+                visitor.getCountry(),
+                visitor.getCity(),
+                visitor.getBrowserName(),
+                visitor.getOsName(),
+                visitor.getDeviceType()
         );
 
         LiveConnectRepDto repDto = null;

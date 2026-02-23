@@ -113,6 +113,20 @@
             <version>0.15.4</version>
         </dependency>
 
+        <!-- MaxMind GeoIP2 — resolves IP to country/city/region/timezone -->
+        <dependency>
+            <groupId>com.maxmind.geoip2</groupId>
+            <artifactId>geoip2</artifactId>
+            <version>4.2.1</version>
+        </dependency>
+
+        <!-- ua-parser — parses User-Agent into browser/OS/device -->
+        <dependency>
+            <groupId>com.github.ua-parser</groupId>
+            <artifactId>uap-java</artifactId>
+            <version>1.6.1</version>
+        </dependency>
+
         <!-- Stripe -->
         <dependency>
             <groupId>com.stripe</groupId>

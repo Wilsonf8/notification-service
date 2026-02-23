@@ -13,6 +13,14 @@
 export interface InitRequest {
   /** Unique identifier for the visitor */
   visitorId: string;
+  /** Visitor's screen width in pixels */
+  screenWidth?: number;
+  /** Visitor's screen height in pixels */
+  screenHeight?: number;
+  /** Visitor's browser language (e.g., "en-US") */
+  language?: string;
+  /** Visitor's IANA timezone (e.g., "America/New_York") */
+  timezone?: string;
 }
 
 /**
@@ -275,12 +283,19 @@ export class ApiClient {
    * that is automatically stored and used for subsequent requests.
    * @param embedKey - The embed key (lck_xxx) for authentication
    * @param visitorId - Unique identifier for the visitor
+   * @param clientInfo - Optional client-side info (screen, language, timezone)
    * @returns The init response with session token and widget settings
    * @throws ApiError on failure
    */
-  public async init(embedKey: string, visitorId: string): Promise<InitResponse> {
+  public async init(
+    embedKey: string,
+    visitorId: string,
+    clientInfo?: Omit<InitRequest, 'visitorId'>
+  ): Promise<InitResponse> {
+    const body: InitRequest = { visitorId, ...clientInfo };
+
     const response = await this.request<InitResponse>('POST', '/v1/liveconnect/init', {
-      body: { visitorId },
+      body,
       headers: {
         'X-Embed-Key': embedKey,
       },

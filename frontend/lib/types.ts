@@ -284,6 +284,20 @@ export interface LiveConnectVisitor {
   isFirstVisit: boolean;
   previousVisitEndedAt: string | null;
   totalVisitCount: number;
+  countryCode: string | null;
+  country: string | null;
+  city: string | null;
+  browserName: string | null;
+  osName: string | null;
+  deviceType: string | null;
+}
+
+/** A single page view in a visitor's browsing history */
+export interface PageView {
+  url: string;
+  title: string | null;
+  visitedAt: string;
+  durationMs: number | null;
 }
 
 /** A single visitor visit (browsing session) */

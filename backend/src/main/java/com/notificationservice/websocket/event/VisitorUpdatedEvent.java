@@ -11,7 +11,13 @@ public record VisitorUpdatedEvent(
         String email,
         String currentPage,
         String currentPageTitle,
-        Boolean isConnected
+        Boolean isConnected,
+        String countryCode,
+        String country,
+        String city,
+        String browserName,
+        String osName,
+        String deviceType
 ) {
     /**
      * Returns the event type identifier.

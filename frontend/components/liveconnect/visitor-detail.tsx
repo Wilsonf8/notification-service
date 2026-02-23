@@ -15,9 +15,14 @@ import {
   IconLink,
   IconLoader2,
   IconCircleFilled,
+  IconMapPin,
+  IconDeviceDesktop,
+  IconDeviceMobile,
+  IconDeviceTablet,
+  IconBrowser,
 } from "@tabler/icons-react";
-import { pingVisitor, getVisitorVisits } from "@/lib/api/liveconnect-dashboard";
-import type { LiveConnectVisitor, VisitorDetailResponse } from "@/lib/types";
+import { pingVisitor, getVisitorVisits, getPageViews } from "@/lib/api/liveconnect-dashboard";
+import type { LiveConnectVisitor, VisitorDetailResponse, PageView } from "@/lib/types";
 
 /**
  * Formats a duration in seconds to a human-readable string.
@@ -32,6 +37,28 @@ function formatDuration(seconds: number): string {
   const hr = Math.floor(min / 60);
   const remainMin = min % 60;
   return remainMin > 0 ? `${hr}h ${remainMin}m` : `${hr}h`;
+}
+
+/**
+ * Formats a duration in milliseconds to a human-readable string.
+ * @param ms - Duration in milliseconds
+ * @returns Formatted duration string
+ */
+function formatDurationMs(ms: number): string {
+  return formatDuration(Math.floor(ms / 1000));
+}
+
+/**
+ * Returns a country flag emoji from a 2-letter country code.
+ * @param countryCode - ISO 3166-1 alpha-2 country code
+ * @returns Flag emoji string
+ */
+function countryFlag(countryCode: string): string {
+  const codePoints = countryCode
+    .toUpperCase()
+    .split("")
+    .map((c) => 0x1f1e6 + c.charCodeAt(0) - 65);
+  return String.fromCodePoint(...codePoints);
 }
 
 /** Props for the VisitorDetail component */
@@ -51,18 +78,22 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
   const [pingSuccess, setPingSuccess] = useState(false);
   const [visitData, setVisitData] = useState<VisitorDetailResponse | null>(null);
   const [visitDataLoading, setVisitDataLoading] = useState(false);
+  const [pageViews, setPageViews] = useState<PageView[]>([]);
+  const [pageViewsLoading, setPageViewsLoading] = useState(false);
 
   /**
-   * Fetches visit data when the selected visitor changes.
+   * Fetches visit data and page views when the selected visitor changes.
    */
   useEffect(() => {
     if (!visitor) {
       setVisitData(null);
+      setPageViews([]);
       return;
     }
 
     let cancelled = false;
     setVisitDataLoading(true);
+    setPageViewsLoading(true);
 
     getVisitorVisits(projectId, visitor.id)
       .then((data) => {
@@ -73,6 +104,17 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
       })
       .finally(() => {
         if (!cancelled) setVisitDataLoading(false);
+      });
+
+    getPageViews(projectId, visitor.id)
+      .then((data) => {
+        if (!cancelled) setPageViews(data);
+      })
+      .catch(() => {
+        if (!cancelled) setPageViews([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPageViewsLoading(false);
       });
 
     return () => {
@@ -114,6 +156,9 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
     );
   }
 
+  const locationParts = [visitor.city, visitor.country].filter(Boolean);
+  const locationText = locationParts.join(", ");
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -132,7 +177,14 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
             )}
           </div>
           <div>
-            <p className="font-medium">{visitor.name || "Anonymous"}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="font-medium">{visitor.name || "Anonymous"}</p>
+              {visitor.countryCode && (
+                <span className="text-sm" title={visitor.country || undefined}>
+                  {countryFlag(visitor.countryCode)}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground">
               {visitor.isConnected ? "Online" : "Offline"}
             </p>
@@ -145,6 +197,32 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
             <div className="flex items-center gap-2 text-muted-foreground">
               <IconMail className="h-4 w-4" />
               <span className="truncate">{visitor.email}</span>
+            </div>
+          )}
+          {locationText && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <IconMapPin className="h-4 w-4" />
+              <span className="truncate">{locationText}</span>
+            </div>
+          )}
+          {(visitor.browserName || visitor.osName) && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <IconBrowser className="h-4 w-4" />
+              <span className="truncate">
+                {[visitor.browserName, visitor.osName].filter(Boolean).join(" / ")}
+              </span>
+            </div>
+          )}
+          {visitor.deviceType && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              {visitor.deviceType === "mobile" ? (
+                <IconDeviceMobile className="h-4 w-4" />
+              ) : visitor.deviceType === "tablet" ? (
+                <IconDeviceTablet className="h-4 w-4" />
+              ) : (
+                <IconDeviceDesktop className="h-4 w-4" />
+              )}
+              <span className="capitalize">{visitor.deviceType}</span>
             </div>
           )}
           {visitor.currentPage && (
@@ -184,6 +262,44 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">No visit data available</p>
+          )}
+        </div>
+
+        {/* Browsing History */}
+        <div className="space-y-2 border-t pt-4">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Browsing History</p>
+          {pageViewsLoading ? (
+            <p className="text-xs text-muted-foreground">Loading...</p>
+          ) : pageViews.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {pageViews.map((pv, i) => (
+                <div key={i} className="p-1.5 text-xs bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate font-medium text-foreground">
+                      {pv.title || pv.url}
+                    </p>
+                    {pv.durationMs != null && (
+                      <span className="flex-shrink-0 font-mono text-muted-foreground">
+                        {formatDurationMs(pv.durationMs)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2 mt-0.5">
+                    {pv.title && (
+                      <p className="truncate text-muted-foreground">{pv.url}</p>
+                    )}
+                    <span className="flex-shrink-0 text-muted-foreground">
+                      {new Date(pv.visitedAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No browsing history recorded</p>
           )}
         </div>
 
