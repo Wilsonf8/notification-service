@@ -152,6 +152,114 @@ enum Endpoints {
         "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/visits?page=\(page)&size=\(size)"
     }
 
+    // MARK: - CRM
+
+    /// List CRM visitors for a project.
+    /// - Parameter projectId: The project UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitors(projectId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors"
+    }
+
+    /// Get CRM visitor detail.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorDetail(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)"
+    }
+
+    /// Update a visitor's pipeline stage.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmUpdateStage(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/stage"
+    }
+
+    /// Assign or unassign a rep to a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmAssignRep(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/assign"
+    }
+
+    /// List all CRM tags for a project.
+    /// - Parameter projectId: The project UUID.
+    /// - Returns: Endpoint path.
+    static func crmTags(projectId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/tags"
+    }
+
+    /// Get or update a specific CRM tag.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - tagId: The tag UUID.
+    /// - Returns: Endpoint path.
+    static func crmTag(projectId: UUID, tagId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/tags/\(tagId)"
+    }
+
+    /// Manage tags on a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorTags(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/tags"
+    }
+
+    /// Remove a specific tag from a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    ///   - tagId: The tag UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorTag(projectId: UUID, visitorId: UUID, tagId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/tags/\(tagId)"
+    }
+
+    /// List notes for a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorNotes(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/notes"
+    }
+
+    /// Delete a specific note from a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    ///   - noteId: The note UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorNote(projectId: UUID, visitorId: UUID, noteId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/notes/\(noteId)"
+    }
+
+    /// Get unified timeline for a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorTimeline(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/timeline"
+    }
+
+    /// List conversations for a CRM visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmVisitorConversations(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/conversations"
+    }
+
     // MARK: - WebSocket
 
     /// WebSocket URL for real-time dashboard updates.

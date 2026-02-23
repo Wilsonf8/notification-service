@@ -39,6 +39,12 @@ struct ContentView: View {
         .task {
             await checkAuthentication()
         }
+        .onChange(of: AuthManager.shared.isAuthenticated) { oldValue, newValue in
+            if !newValue {
+                // User signed out — reset all cached state
+                sidebarViewModel.reset()
+            }
+        }
         .onChange(of: NotificationRouter.shared.pendingNavigation) { _, navigation in
             handlePendingNavigation(navigation)
         }

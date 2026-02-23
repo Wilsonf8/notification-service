@@ -110,6 +110,7 @@ final class AuthManager {
         }
 
         KeychainService.shared.clearAll()
+        URLCache.shared.removeAllCachedResponses()
         currentUser = nil
         error = nil
     }

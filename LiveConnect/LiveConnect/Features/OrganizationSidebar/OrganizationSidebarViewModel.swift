@@ -103,6 +103,14 @@ final class OrganizationSidebarViewModel {
         selectedProjectId = project.id
     }
 
+    /// Resets all state for sign-out. Clears cached organizations, selected project, and UserDefaults.
+    func reset() {
+        organizations = []
+        selectedProjectId = nil
+        error = nil
+        UserDefaults.standard.removeObject(forKey: lastVisitedProjectKey)
+    }
+
     // MARK: - Private Methods
 
     /// Saves the last visited project to UserDefaults.

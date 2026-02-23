@@ -11,6 +11,7 @@ import SwiftUI
 enum DashboardTab: String, CaseIterable {
     case liveUsers = "Live Users"
     case conversations = "Conversations"
+    case crm = "CRM"
     case reps = "Reps"
     case settings = "Settings"
 
@@ -18,6 +19,7 @@ enum DashboardTab: String, CaseIterable {
         switch self {
         case .liveUsers: return "person.2.fill"
         case .conversations: return "bubble.left.and.bubble.right.fill"
+        case .crm: return "person.text.rectangle"
         case .reps: return "person.badge.key.fill"
         case .settings: return "gearshape.fill"
         }
@@ -101,6 +103,12 @@ struct ProjectDashboardView: View {
             Tab(DashboardTab.conversations.rawValue, systemImage: DashboardTab.conversations.icon, value: .conversations) {
                 tabContent {
                     ConversationsListView(projectId: projectId)
+                }
+            }
+
+            Tab(DashboardTab.crm.rawValue, systemImage: DashboardTab.crm.icon, value: .crm) {
+                tabContent {
+                    CrmVisitorListView(projectId: projectId, reps: viewModel.reps)
                 }
             }
 

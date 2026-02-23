@@ -23,7 +23,7 @@ struct VisitorVisit: Codable, Identifiable {
 }
 
 /// Visit statistics across time windows.
-struct VisitorVisitStats: Codable {
+struct VisitorVisitStats: Codable, Sendable {
     /// Number of visits in the last 24 hours.
     let visits24h: Int
 
@@ -38,7 +38,7 @@ struct VisitorVisitStats: Codable {
 }
 
 /// Engagement activity statistics across time windows.
-struct VisitorEngagementStats: Codable {
+struct VisitorEngagementStats: Codable, Sendable {
     /// Number of pings received (REP_TO_USER) in the last 24 hours.
     let pingsReceived24h: Int
 
