@@ -26,13 +26,14 @@ public class ProjectService {
     private final OrganizationMemberRepository organizationMemberRepository;
     private final TierService tierService;
 
+    /**
+     * Fetches all projects across all organizations the user is a member of.
+     * @param userId the user ID
+     * @return list of all accessible projects
+     */
     @Transactional(readOnly = true)
     public List<ProjectDto> getProjectsForUser(UUID userId) {
-        // Get user's personal organization
-        Organization personalOrg = organizationRepository.findPersonalOrgByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Personal organization not found"));
-
-        return projectRepository.findByOrganizationIdAndNotDeleted(personalOrg.getId()).stream()
+        return projectRepository.findAllByUserMembershipAndNotDeleted(userId).stream()
                 .map(this::toDto)
                 .toList();
     }

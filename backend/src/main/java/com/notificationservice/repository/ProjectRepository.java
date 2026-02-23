@@ -28,4 +28,12 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     @Query("SELECT p FROM Project p JOIN FETCH p.organization JOIN OrganizationMember m ON m.organization.id = p.organization.id WHERE p.id = :projectId AND m.user.id = :userId AND p.deletedAt IS NULL")
     Optional<Project> findByIdAndUserIdAndNotDeleted(UUID projectId, UUID userId);
+
+    /**
+     * Finds all non-deleted projects across all organizations the user is a member of.
+     * @param userId the user ID
+     * @return list of projects the user has access to
+     */
+    @Query("SELECT p FROM Project p JOIN FETCH p.organization JOIN OrganizationMember m ON m.organization.id = p.organization.id WHERE m.user.id = :userId AND p.deletedAt IS NULL")
+    List<Project> findAllByUserMembershipAndNotDeleted(UUID userId);
 }
