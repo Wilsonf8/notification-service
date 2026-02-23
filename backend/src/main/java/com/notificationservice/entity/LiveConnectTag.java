@@ -23,7 +23,7 @@ public class LiveConnectTag {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
+    @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
     @Column(length = 50, nullable = false)
@@ -33,6 +33,6 @@ public class LiveConnectTag {
     private String color;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 }

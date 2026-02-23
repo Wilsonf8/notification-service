@@ -23,21 +23,21 @@ public class LiveConnectVisitorNote {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "visitor_id")
+    @JoinColumn(name = "visitor_id", nullable = false)
     private LiveConnectVisitor visitor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
+    @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_rep_id")
+    @JoinColumn(name = "author_rep_id", nullable = false)
     private LiveConnectRep authorRep;
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 }

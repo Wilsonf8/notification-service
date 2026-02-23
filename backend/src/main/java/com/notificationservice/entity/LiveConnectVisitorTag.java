@@ -23,11 +23,11 @@ public class LiveConnectVisitorTag {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "visitor_id")
+    @JoinColumn(name = "visitor_id", nullable = false)
     private LiveConnectVisitor visitor;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tag_id")
+    @JoinColumn(name = "tag_id", nullable = false)
     private LiveConnectTag tag;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -35,6 +35,6 @@ public class LiveConnectVisitorTag {
     private LiveConnectRep taggedByRep;
 
     @CreationTimestamp
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 }

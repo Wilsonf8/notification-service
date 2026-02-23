@@ -105,7 +105,7 @@ public class LiveConnectVisitor {
 
     // CRM fields
     @Enumerated(EnumType.STRING)
-    @Column(name = "pipeline_stage")
+    @Column(name = "pipeline_stage", nullable = false)
     @Builder.Default
     private PipelineStage pipelineStage = PipelineStage.NEW;
 
@@ -113,7 +113,7 @@ public class LiveConnectVisitor {
     @JoinColumn(name = "assigned_rep_id")
     private LiveConnectRep assignedRep;
 
-    @Column(name = "lead_score")
+    @Column(name = "lead_score", nullable = false)
     @Builder.Default
     private Integer leadScore = 0;
 
