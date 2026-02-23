@@ -39,7 +39,11 @@ export default function CrmPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [days, setDays] = useState(7);
+  const [days, setDays] = useState(() => {
+    if (typeof window === "undefined") return 7;
+    const saved = localStorage.getItem(`crm-days-${projectId}`);
+    return saved ? Number(saved) : 7;
+  });
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(0);
@@ -88,6 +92,7 @@ export default function CrmPage() {
   const handleDaysChange = (newDays: number) => {
     setDays(newDays);
     setPage(0);
+    localStorage.setItem(`crm-days-${projectId}`, String(newDays));
   };
 
   /**
