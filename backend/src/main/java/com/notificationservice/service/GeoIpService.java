@@ -97,10 +97,11 @@ public class GeoIpService {
 
             // Skip private/local/loopback addresses
             if (address.isLoopbackAddress() || address.isSiteLocalAddress() || address.isLinkLocalAddress()) {
-                log.debug("[GeoIP] Skipping private/local IP: {}", ip);
+                log.info("[GeoIP] Skipping private/local IP: {}", ip);
                 return null;
             }
 
+            log.info("[GeoIP] Resolving IP: {}", ip);
             CityResponse response = databaseReader.city(address);
 
             String country = response.getCountry() != null ? response.getCountry().getName() : null;
@@ -112,9 +113,10 @@ public class GeoIpService {
             Double longitude = response.getLocation() != null ? response.getLocation().getLongitude() : null;
             String timezone = response.getLocation() != null ? response.getLocation().getTimeZone() : null;
 
+            log.info("[GeoIP] Resolved IP {}: country={}, city={}, region={}", ip, country, city, region);
             return new GeoLocation(country, countryCode, region, city, latitude, longitude, timezone);
         } catch (GeoIp2Exception e) {
-            log.debug("[GeoIP] Could not resolve IP {}: {}", ip, e.getMessage());
+            log.info("[GeoIP] Could not resolve IP {}: {}", ip, e.getMessage());
             return null;
         } catch (IOException e) {
             log.warn("[GeoIP] IO error resolving IP {}: {}", ip, e.getMessage());

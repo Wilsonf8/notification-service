@@ -83,6 +83,8 @@ public class LiveConnectSessionService {
 
         // Resolve GeoIP — only if IP changed or geo fields are empty
         boolean ipChanged = clientIp != null && !clientIp.equals(visitor.getIpAddress());
+        log.info("[LiveConnect] GeoIP check: clientIp={}, storedIp={}, ipChanged={}, countryCodeNull={}",
+                clientIp, visitor.getIpAddress(), ipChanged, visitor.getCountryCode() == null);
         if (ipChanged || visitor.getCountryCode() == null) {
             visitor.setIpAddress(clientIp);
             GeoLocation geo = geoIpService.resolve(clientIp);
