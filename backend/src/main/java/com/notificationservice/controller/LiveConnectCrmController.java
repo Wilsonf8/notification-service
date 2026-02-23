@@ -287,7 +287,7 @@ public class LiveConnectCrmController {
             @RequestParam(defaultValue = "20") int size,
             @AuthenticationPrincipal UUID userId) {
         repService.verifyRepAccess(projectId, userId);
-        return ResponseEntity.ok(conversationService.getConversations(projectId, userId, page, size, null, null));
+        return ResponseEntity.ok(conversationService.getVisitorConversations(projectId, visitorId, page, size));
     }
 
     // ---- Tag Definition Endpoints ----

@@ -429,6 +429,28 @@ public class LiveConnectConversationService {
         return messages.stream().map(msg -> toMessageDto(msg, conversation)).toList();
     }
 
+    /**
+     * Gets paginated conversations for a specific visitor.
+     *
+     * @param projectId the project ID (for context/logging)
+     * @param visitorId the visitor's internal ID
+     * @param page the page number (0-indexed)
+     * @param size the page size
+     * @return paginated list of conversations for the visitor
+     */
+    @Transactional(readOnly = true)
+    public ConversationListResponse getVisitorConversations(UUID projectId, UUID visitorId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<LiveConnectConversation> conversationPage = conversationRepository.findByVisitorIdPaged(visitorId, pageable);
+        return new ConversationListResponse(
+                conversationPage.getContent().stream().map(this::toConversationDto).toList(),
+                conversationPage.getNumber(),
+                conversationPage.getSize(),
+                conversationPage.getTotalElements(),
+                conversationPage.getTotalPages()
+        );
+    }
+
     private Project getAndValidateProject(UUID projectId, UUID userId) {
         Project project = projectRepository.findByIdAndNotDeleted(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
