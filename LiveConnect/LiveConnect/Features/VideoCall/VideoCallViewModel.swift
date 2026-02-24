@@ -57,6 +57,12 @@ final class VideoCallViewModel: RoomDelegate {
     /// Whether a remote participant is sharing their screen.
     var hasRemoteScreenShare: Bool { remoteScreenShareTrack != nil }
 
+    /// Whether the device is using the front-facing camera.
+    private(set) var isUsingFrontCamera = true
+
+    /// Whether the device has multiple cameras (front + back).
+    private(set) var canFlipCamera = false
+
     /// Whether background blur is enabled on the local camera.
     private(set) var isBlurEnabled = false
 
@@ -181,6 +187,9 @@ final class VideoCallViewModel: RoomDelegate {
                 captureOptions: audioCaptureOptions
             )
 
+            // Check if the device can switch between front and back cameras
+            canFlipCamera = CameraCapturer.canSwitchPosition()
+
             // Background blur is supported on all devices with the built-in processor
             isBlurSupported = true
 
@@ -254,6 +263,21 @@ final class VideoCallViewModel: RoomDelegate {
             try await localParticipant.setCamera(enabled: isCameraEnabled)
         } catch {
             isCameraEnabled.toggle() // Revert on failure
+            self.error = error
+        }
+    }
+
+    /// Switches between the front and back cameras.
+    func flipCamera() async {
+        guard let localParticipant,
+              let cameraPublication = localParticipant.trackPublications.values
+                  .first(where: { $0.source == .camera }) as? LocalTrackPublication,
+              let videoTrack = cameraPublication.track as? LocalVideoTrack,
+              let cameraCapturer = videoTrack.capturer as? CameraCapturer else { return }
+        do {
+            try await cameraCapturer.switchCameraPosition()
+            isUsingFrontCamera.toggle()
+        } catch {
             self.error = error
         }
     }

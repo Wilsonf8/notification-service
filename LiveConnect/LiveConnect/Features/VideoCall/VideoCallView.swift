@@ -251,6 +251,18 @@ struct VideoCallView: View {
                 }
             }
 
+            // Flip camera button (only shown when device has multiple cameras and camera is on)
+            if viewModel.canFlipCamera && viewModel.isCameraEnabled {
+                ControlButton(
+                    icon: "arrow.triangle.2.circlepath.camera",
+                    isActive: true
+                ) {
+                    Task {
+                        await viewModel.flipCamera()
+                    }
+                }
+            }
+
             // Blur button (only shown when supported)
             if viewModel.isBlurSupported {
                 ControlButton(

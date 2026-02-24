@@ -89,6 +89,12 @@ const remoteAudioTrackSignal = signal<RemoteTrack | null>(null);
 /** Whether local screen sharing is active */
 const isScreenSharingSignal = signal<boolean>(false);
 
+/** Whether the device is using the front-facing camera */
+const isUsingFrontCameraSignal = signal<boolean>(true);
+
+/** Whether the device has multiple cameras (front + back) */
+const canFlipCameraSignal = signal<boolean>(false);
+
 /** Whether background blur is enabled */
 const isBlurEnabledSignal = signal<boolean>(false);
 
@@ -300,6 +306,7 @@ function cleanupTracks(): void {
   remoteAudioTrackSignal.value = null;
   remoteScreenShareTrackSignal.value = null;
   isScreenSharingSignal.value = false;
+  isUsingFrontCameraSignal.value = true;
   isBlurEnabledSignal.value = false;
 }
 
@@ -415,7 +422,12 @@ export async function connectToRoom(url: string, token: string): Promise<Room> {
     roomSignal.value = room;
     isMicEnabledSignal.value = true;
     isCameraEnabledSignal.value = true;
+    isUsingFrontCameraSignal.value = true;
     connectionStateSignal.value = ConnectionState.Connected;
+
+    // Detect multiple cameras for flip camera support
+    const devices = await Room.getLocalDevices('videoinput');
+    canFlipCameraSignal.value = devices.length > 1;
 
     // Register text stream handler for chat if a listener is registered
     if (chatMessageListener) {
@@ -602,6 +614,33 @@ export async function toggleScreenShare(): Promise<boolean> {
   }
 
   return isScreenSharingSignal.value;
+}
+
+/**
+ * Flips between the front and back cameras.
+ * Uses facingMode constraint to switch between 'user' (front) and 'environment' (back).
+ * @returns The new front camera state
+ */
+export async function flipCamera(): Promise<boolean> {
+  const videoTrack = localVideoTrackSignal.value;
+
+  if (!videoTrack) {
+    console.warn('[LiveKit] Cannot flip camera: no local video track');
+    return isUsingFrontCameraSignal.value;
+  }
+
+  const newFacingMode = isUsingFrontCameraSignal.value ? 'environment' : 'user';
+
+  try {
+    await videoTrack.restartTrack({ facingMode: newFacingMode });
+    isUsingFrontCameraSignal.value = !isUsingFrontCameraSignal.value;
+    console.log('[LiveKit] Camera flipped to', newFacingMode);
+    notifyStateChange();
+  } catch (err) {
+    console.error('[LiveKit] Failed to flip camera:', err);
+  }
+
+  return isUsingFrontCameraSignal.value;
 }
 
 /**
@@ -913,6 +952,8 @@ export {
   isScreenSharingSignal as screenSharing,
   isBlurEnabledSignal as blurEnabled,
   isBlurSupportedSignal as blurSupported,
+  isUsingFrontCameraSignal as usingFrontCamera,
+  canFlipCameraSignal as canFlipCamera,
   connectionStateSignal as connectionState,
   localVideoTrackSignal as localVideoTrack,
   remoteVideoTrackSignal as remoteVideoTrack,

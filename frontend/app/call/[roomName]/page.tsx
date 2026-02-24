@@ -41,6 +41,7 @@ import {
   IconScreenShare,
   IconScreenShareOff,
   IconFocusCentered,
+  IconCameraRotate,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { CallChat } from '@/components/liveconnect/call-chat';
@@ -69,6 +70,8 @@ interface CallState {
   isMicEnabled: boolean;
   isCameraEnabled: boolean;
   isScreenSharing: boolean;
+  isUsingFrontCamera: boolean;
+  canFlipCamera: boolean;
   isBlurEnabled: boolean;
   isBlurSupported: boolean;
   hasRemoteVideo: boolean;
@@ -179,6 +182,8 @@ function CallPageContent() {
     isMicEnabled: true,
     isCameraEnabled: true,
     isScreenSharing: false,
+    isUsingFrontCamera: true,
+    canFlipCamera: false,
     isBlurEnabled: false,
     isBlurSupported: false,
     hasRemoteVideo: false,
@@ -489,6 +494,13 @@ function CallPageContent() {
       });
 
       setCallState((prev) => ({ ...prev, status: 'connected' }));
+
+      // Detect multiple cameras for flip camera support
+      const devices = await Room.getLocalDevices('videoinput');
+      if (devices.length > 1) {
+        setCallState((prev) => ({ ...prev, canFlipCamera: true }));
+      }
+
       console.log('[CallPage] Connected to room:', room.name);
     } catch (error) {
       console.error('[CallPage] Connection error:', error);
@@ -560,6 +572,22 @@ function CallPageContent() {
       console.log('[CallPage] Screen share toggle cancelled or failed:', error);
     }
   }, [callState.isScreenSharing]);
+
+  /**
+   * Flips between front and back cameras.
+   */
+  const flipCamera = useCallback(async () => {
+    const videoTrack = localVideoTrackRef.current;
+    if (!videoTrack) return;
+
+    const newFacingMode = callState.isUsingFrontCamera ? 'environment' : 'user';
+    try {
+      await videoTrack.restartTrack({ facingMode: newFacingMode });
+      setCallState((prev) => ({ ...prev, isUsingFrontCamera: !prev.isUsingFrontCamera }));
+    } catch (error) {
+      console.error('[CallPage] Failed to flip camera:', error);
+    }
+  }, [callState.isUsingFrontCamera]);
 
   /**
    * Toggles background blur on the local video track.
@@ -822,6 +850,19 @@ function CallPageContent() {
               <IconVideoOff className="size-6" />
             )}
           </button>
+
+          {/* Flip camera (only shown when multiple cameras and camera is on) */}
+          {callState.canFlipCamera && callState.isCameraEnabled && (
+            <button
+              type="button"
+              onClick={flipCamera}
+              className="flex size-12 items-center justify-center border border-border bg-card text-foreground transition-colors hover:bg-muted"
+              aria-label="Flip camera"
+              title="Flip Camera"
+            >
+              <IconCameraRotate className="size-6" />
+            </button>
+          )}
 
           {/* Screen share toggle */}
           <button

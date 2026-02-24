@@ -12,10 +12,12 @@ import {
   screenSharing,
   blurEnabled,
   blurSupported,
+  canFlipCamera,
   toggleMicrophone,
   toggleCamera,
   toggleScreenShare,
   toggleBlur,
+  flipCamera,
   checkBlurSupport,
   attachLocalVideo,
   attachRemoteVideo,
@@ -328,6 +330,32 @@ function BlurIcon(): h.JSX.Element {
 }
 
 /**
+ * Camera flip/rotate icon.
+ * @returns SVG element
+ */
+function CameraFlipIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2" />
+      <circle cx="14.5" cy="13.5" r="2.5" />
+      <path d="M8.5 13.5a2.5 2.5 0 0 0 3.5 2.5" />
+      <path d="M6 9l-3 3l3 3" />
+    </svg>
+  );
+}
+
+/**
  * Dots icon (overflow menu trigger).
  * @returns SVG element
  */
@@ -456,6 +484,7 @@ export function VideoCall({
   const [isScreenShareOn, setIsScreenShareOn] = useState<boolean>(screenSharing.value);
   const [isBlurOn, setIsBlurOn] = useState<boolean>(blurEnabled.value);
   const [isBlurAvailable, setIsBlurAvailable] = useState<boolean>(blurSupported.value);
+  const [isFlipAvailable, setIsFlipAvailable] = useState<boolean>(canFlipCamera.value);
 
   /**
    * Effect to cleanup video elements when component unmounts.
@@ -647,6 +676,7 @@ export function VideoCall({
     const unsubScreenShare = screenSharing.subscribe((value) => setIsScreenShareOn(value));
     const unsubBlur = blurEnabled.subscribe((value) => setIsBlurOn(value));
     const unsubBlurSupported = blurSupported.subscribe((value) => setIsBlurAvailable(value));
+    const unsubFlipCamera = canFlipCamera.subscribe((value) => setIsFlipAvailable(value));
 
     return () => {
       unsubMic();
@@ -654,6 +684,7 @@ export function VideoCall({
       unsubScreenShare();
       unsubBlur();
       unsubBlurSupported();
+      unsubFlipCamera();
     };
   }, []);
 
@@ -683,6 +714,13 @@ export function VideoCall({
    */
   const handleToggleBlur = async (): Promise<void> => {
     await toggleBlur();
+  };
+
+  /**
+   * Handles camera flip.
+   */
+  const handleFlipCamera = async (): Promise<void> => {
+    await flipCamera();
   };
 
   /**
@@ -917,6 +955,21 @@ export function VideoCall({
               >
                 {isScreenShareOn ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
               </button>
+
+              {/* Camera flip (only shown when multiple cameras and camera is on) */}
+              {isFlipAvailable && isCameraOn && (
+                <button
+                  type="button"
+                  class="lc-video__control"
+                  onClick={() => handleFlipCamera()}
+                  onKeyDown={(e) => handleKeyDown(e, handleFlipCamera)}
+                  aria-label="Flip camera"
+                  title="Flip Camera"
+                  role="menuitem"
+                >
+                  <CameraFlipIcon />
+                </button>
+              )}
 
               {/* Background blur toggle (only shown if supported) */}
               {isBlurAvailable && (
