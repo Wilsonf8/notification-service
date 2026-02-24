@@ -921,15 +921,13 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
               isChatVisible={isChatVisible}
               hasUnreadChat={hasUnreadChat}
               dragHandleRef={dragHandleRef}
-            />
-            {isChatVisible && (
-              <div style={{ height: '250px', borderTop: '1px solid var(--lc-border)' }}>
+              chatOverlay={isChatVisible ? (
                 <ChatPanel
                   messages={chatMessages}
                   onSendMessage={handleSendMessage}
                 />
-              </div>
-            )}
+              ) : null}
+            />
           </div>
         </div>
       );

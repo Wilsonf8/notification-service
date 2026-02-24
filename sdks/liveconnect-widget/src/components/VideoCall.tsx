@@ -3,7 +3,7 @@
  * In-call video interface with local PIP, remote video, and control bar.
  */
 
-import { h } from 'preact';
+import { h, type ComponentChildren } from 'preact';
 import { useRef, useEffect, useState, useCallback } from 'preact/hooks';
 import type { Ref } from 'preact';
 import {
@@ -56,6 +56,8 @@ interface VideoCallProps {
   participantName?: string;
   /** Ref to attach to the drag handle (info bar) for panel repositioning */
   dragHandleRef?: Ref<HTMLDivElement>;
+  /** Optional chat overlay content to render inside the video container */
+  chatOverlay?: ComponentChildren;
 }
 
 // ============================================================================
@@ -426,6 +428,7 @@ export function VideoCall({
   participantName = 'Representative',
   hasUnreadChat,
   dragHandleRef,
+  chatOverlay,
 }: VideoCallProps): h.JSX.Element {
   // Video element refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -814,6 +817,13 @@ export function VideoCall({
         muted
         aria-label="Your video"
       />
+
+      {/* Chat overlay (left side of video, z-index 20) */}
+      {chatOverlay && (
+        <div class="lc-video__chat-overlay">
+          {chatOverlay}
+        </div>
+      )}
 
       {/* Control bar (bottom) — auto-hides after inactivity */}
       <div
