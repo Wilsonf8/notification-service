@@ -3,6 +3,7 @@ package com.notificationservice.controller;
 import com.notificationservice.dto.*;
 import com.notificationservice.entity.LiveConnectConversation;
 import com.notificationservice.entity.LiveConnectRep;
+import com.notificationservice.entity.PipelineStage;
 import com.notificationservice.repository.LiveConnectConversationRepository;
 import com.notificationservice.service.LiveConnectCrmService;
 import com.notificationservice.service.LiveConnectNoteService;
@@ -18,6 +19,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,6 +48,8 @@ public class LiveConnectCrmController {
      * @param size      page size
      * @param days      time range in days (1, 3, 7, 30)
      * @param search    optional search term
+     * @param stages    optional pipeline stages to filter by (comma-separated)
+     * @param tagIds    optional tag IDs for AND-logic filtering (comma-separated)
      * @param sort      sort field (lastSeenAt, leadScore, name)
      * @param direction sort direction (asc, desc)
      * @param userId    the authenticated user's ID
@@ -58,11 +62,13 @@ public class LiveConnectCrmController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "7") int days,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Set<PipelineStage> stages,
+            @RequestParam(required = false) Set<UUID> tagIds,
             @RequestParam(defaultValue = "lastSeenAt") String sort,
             @RequestParam(defaultValue = "desc") String direction,
             @AuthenticationPrincipal UUID userId) {
         repService.verifyRepAccess(projectId, userId);
-        return ResponseEntity.ok(crmService.getVisitors(projectId, days, search, page, size, sort, direction));
+        return ResponseEntity.ok(crmService.getVisitors(projectId, days, search, stages, tagIds, page, size, sort, direction));
     }
 
     /**

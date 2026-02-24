@@ -11,22 +11,14 @@ import Foundation
 enum PipelineStage: String, Codable, Sendable, CaseIterable {
     case new = "NEW"
     case engaged = "ENGAGED"
-    case contacted = "CONTACTED"
-    case qualified = "QUALIFIED"
-    case proposal = "PROPOSAL"
     case won = "WON"
-    case lost = "LOST"
 
     /// Human-readable display label.
     var label: String {
         switch self {
         case .new: return "New"
         case .engaged: return "Engaged"
-        case .contacted: return "Contacted"
-        case .qualified: return "Qualified"
-        case .proposal: return "Proposal"
         case .won: return "Won"
-        case .lost: return "Lost"
         }
     }
 }

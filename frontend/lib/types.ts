@@ -520,6 +520,8 @@ export interface CrmVisitorListParams {
   size?: number;
   days?: number;
   search?: string;
+  stages?: PipelineStage[];
+  tagIds?: string[];
   sort?: string;
   direction?: string;
 }

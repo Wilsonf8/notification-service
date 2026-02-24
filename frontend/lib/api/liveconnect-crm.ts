@@ -32,6 +32,8 @@ export async function getCrmVisitors(
   if (params?.size !== undefined) query.set("size", String(params.size));
   if (params?.days !== undefined) query.set("days", String(params.days));
   if (params?.search) query.set("search", params.search);
+  if (params?.stages?.length) query.set("stages", params.stages.join(","));
+  if (params?.tagIds?.length) query.set("tagIds", params.tagIds.join(","));
   if (params?.sort) query.set("sort", params.sort);
   if (params?.direction) query.set("direction", params.direction);
 

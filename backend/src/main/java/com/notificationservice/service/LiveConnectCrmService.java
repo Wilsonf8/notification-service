@@ -34,11 +34,14 @@ public class LiveConnectCrmService {
     private final LiveConnectVisitService visitService;
 
     /**
-     * Gets paginated CRM visitor list with time-range filter and optional search.
+     * Gets paginated CRM visitor list with time-range filter, optional search,
+     * stage filter, and tag filter.
      *
      * @param projectId the project ID
      * @param days      number of days to look back (1, 3, 7, 30)
      * @param search    optional search term
+     * @param stages    optional pipeline stages to filter by
+     * @param tagIds    optional tag IDs for AND-logic filtering
      * @param page      page number (0-indexed)
      * @param size      page size
      * @param sort      sort field (lastSeenAt, leadScore, name)
@@ -47,6 +50,7 @@ public class LiveConnectCrmService {
      */
     @Transactional(readOnly = true)
     public CrmVisitorListResponse getVisitors(UUID projectId, int days, String search,
+                                               Set<PipelineStage> stages, Set<UUID> tagIds,
                                                int page, int size, String sort, String direction) {
         OffsetDateTime since = OffsetDateTime.now().minusDays(days);
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -57,7 +61,12 @@ public class LiveConnectCrmService {
         };
         PageRequest pageable = PageRequest.of(page, size, Sort.by(dir, sortField));
 
-        Page<LiveConnectVisitor> visitors = visitorRepository.findForCrm(projectId, since, search, pageable);
+        Collection<PipelineStage> stageFilter = (stages != null && !stages.isEmpty()) ? stages : null;
+        Collection<UUID> tagFilter = (tagIds != null && !tagIds.isEmpty()) ? tagIds : null;
+        long tagCount = tagFilter != null ? tagFilter.size() : 0;
+
+        Page<LiveConnectVisitor> visitors = visitorRepository.findForCrm(
+                projectId, since, search, stageFilter, tagFilter, tagCount, pageable);
 
         if (visitors.isEmpty()) {
             return new CrmVisitorListResponse(List.of(), 0, 0, page, size);

@@ -1,6 +1,7 @@
 package com.notificationservice.repository;
 
 import com.notificationservice.entity.LiveConnectVisitor;
+import com.notificationservice.entity.PipelineStage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,12 +59,15 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
     void batchUpdateLastSeenAt(Collection<UUID> visitorIds, OffsetDateTime now);
 
     /**
-     * Finds visitors for CRM list view with time-range filter and optional search.
-     * Searches across name, email, city, and country fields.
+     * Finds visitors for CRM list view with time-range filter, optional search,
+     * stage filter, and tag filter (AND logic).
      *
      * @param projectId the project ID
      * @param since     the earliest lastSeenAt threshold
      * @param search    optional search term (null or empty to skip)
+     * @param stages    optional pipeline stages to filter by (null to skip)
+     * @param tagIds    optional tag IDs for AND-logic filtering (null to skip)
+     * @param tagCount  number of tags required (used with tagIds for AND logic)
      * @param pageable  pagination and sorting parameters
      * @return paginated list of visitors matching the criteria
      */
@@ -73,6 +77,15 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
            "LOWER(v.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(v.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
            "LOWER(v.city) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-           "LOWER(v.country) LIKE LOWER(CONCAT('%', :search, '%')))")
-    Page<LiveConnectVisitor> findForCrm(UUID projectId, OffsetDateTime since, String search, Pageable pageable);
+           "LOWER(v.country) LIKE LOWER(CONCAT('%', :search, '%'))) " +
+           "AND (:stages IS NULL OR v.pipelineStage IN :stages) " +
+           "AND (:tagIds IS NULL OR v.id IN (" +
+           "  SELECT vt.visitor.id FROM LiveConnectVisitorTag vt " +
+           "  WHERE vt.tag.id IN :tagIds " +
+           "  GROUP BY vt.visitor.id " +
+           "  HAVING COUNT(DISTINCT vt.tag.id) = :tagCount" +
+           "))")
+    Page<LiveConnectVisitor> findForCrm(UUID projectId, OffsetDateTime since, String search,
+                                        Collection<PipelineStage> stages, Collection<UUID> tagIds, long tagCount,
+                                        Pageable pageable);
 }

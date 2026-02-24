@@ -46,6 +46,21 @@ struct CrmVisitorListView: View {
                     .padding(.horizontal)
                     .padding(.top, 8)
 
+                // Stage filter
+                CrmStageFilter(selectedStages: $viewModel.selectedStages)
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+
+                // Tag filter (only show if tags exist)
+                if !viewModel.projectTags.isEmpty {
+                    CrmTagFilter(
+                        tags: viewModel.projectTags,
+                        selectedTagIds: $viewModel.selectedTagIds
+                    )
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+                }
+
                 // Content
                 ZStack {
                     if viewModel.isLoading && viewModel.visitors.isEmpty {
@@ -63,6 +78,7 @@ struct CrmVisitorListView: View {
             }
             .task {
                 await viewModel.loadVisitors()
+                await viewModel.loadProjectTags()
             }
             .navigationDestination(for: UUID.self) { visitorId in
                 CrmVisitorDetailView(
@@ -250,11 +266,7 @@ private struct CrmVisitorRow: View {
         switch stage {
         case .new: return .yellow
         case .engaged: return .orange
-        case .contacted: return .blue
-        case .qualified: return .cyan
-        case .proposal: return .purple
         case .won: return .green
-        case .lost: return .red
         }
     }
 }

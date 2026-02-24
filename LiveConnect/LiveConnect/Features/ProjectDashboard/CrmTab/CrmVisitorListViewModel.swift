@@ -48,6 +48,23 @@ final class CrmVisitorListViewModel {
         }
     }
 
+    /// Selected pipeline stages to filter by (empty = all).
+    var selectedStages: Set<PipelineStage> = [] {
+        didSet {
+            Task { await reload() }
+        }
+    }
+
+    /// Selected tag IDs to filter by with AND logic (empty = all).
+    var selectedTagIds: Set<UUID> = [] {
+        didSet {
+            Task { await reload() }
+        }
+    }
+
+    /// Available project tags for the filter UI.
+    private(set) var projectTags: [CrmTag] = []
+
     /// Page size for API requests.
     private let pageSize = 20
 
@@ -111,6 +128,15 @@ final class CrmVisitorListViewModel {
         await loadVisitors()
     }
 
+    /// Loads available project tags for the filter UI.
+    func loadProjectTags() async {
+        do {
+            projectTags = try await APIClient.shared.get(
+                Endpoints.crmTags(projectId: projectId)
+            )
+        } catch {}
+    }
+
     // MARK: - Private Methods
 
     /// Builds query items for the API request.
@@ -127,6 +153,12 @@ final class CrmVisitorListViewModel {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             items.append(URLQueryItem(name: "search", value: trimmed))
+        }
+        if !selectedStages.isEmpty {
+            items.append(URLQueryItem(name: "stages", value: selectedStages.map(\.rawValue).joined(separator: ",")))
+        }
+        if !selectedTagIds.isEmpty {
+            items.append(URLQueryItem(name: "tagIds", value: selectedTagIds.map(\.uuidString).joined(separator: ",")))
         }
         return items
     }

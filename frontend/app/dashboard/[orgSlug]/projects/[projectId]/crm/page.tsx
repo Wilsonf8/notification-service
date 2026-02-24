@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/card";
 import { IconChevronLeft, IconChevronRight, IconSearch } from "@tabler/icons-react";
 import { useProject } from "../layout";
-import { getCrmVisitors } from "@/lib/api/liveconnect-crm";
+import { getCrmVisitors, getProjectTags } from "@/lib/api/liveconnect-crm";
 import { CrmVisitorList } from "@/components/liveconnect/crm/crm-visitor-list";
 import { CrmTimeFilter } from "@/components/liveconnect/crm/crm-time-filter";
-import type { CrmVisitorListItem } from "@/lib/types";
+import { CrmStageFilter } from "@/components/liveconnect/crm/crm-stage-filter";
+import { CrmTagFilter } from "@/components/liveconnect/crm/crm-tag-filter";
+import type { CrmVisitorListItem, PipelineStage, Tag } from "@/lib/types";
 
 /** Page size for pagination */
 const PAGE_SIZE = 20;
@@ -46,6 +48,17 @@ export default function CrmPage() {
     const saved = localStorage.getItem(`crm-days-${projectId}`);
     return saved ? Number(saved) : 7;
   });
+  const [stages, setStages] = useState<PipelineStage[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem(`crm-stages-${projectId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [];
+    const saved = localStorage.getItem(`crm-tagIds-${projectId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [projectTags, setProjectTags] = useState<Tag[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(0);
@@ -62,6 +75,8 @@ export default function CrmPage() {
         size: PAGE_SIZE,
         days,
         search: search || undefined,
+        stages: stages.length ? stages : undefined,
+        tagIds: selectedTagIds.length ? selectedTagIds : undefined,
         sort: "lastSeenAt",
         direction: "desc",
       });
@@ -77,7 +92,16 @@ export default function CrmPage() {
 
   useEffect(() => {
     fetchVisitors();
-  }, [projectId, days, search, page]);
+  }, [projectId, days, search, stages, selectedTagIds, page]);
+
+  // Fetch project tags on mount and validate persisted tagIds
+  useEffect(() => {
+    getProjectTags(projectId).then((tags) => {
+      setProjectTags(tags);
+      const validIds = new Set(tags.map((t) => t.id));
+      setSelectedTagIds((prev) => prev.filter((id) => validIds.has(id)));
+    }).catch(() => {});
+  }, [projectId]);
 
   /**
    * Handles search form submission.
@@ -95,6 +119,24 @@ export default function CrmPage() {
     setDays(newDays);
     setPage(0);
     localStorage.setItem(`crm-days-${projectId}`, String(newDays));
+  };
+
+  /**
+   * Handles stage filter change.
+   */
+  const handleStagesChange = (newStages: PipelineStage[]) => {
+    setStages(newStages);
+    setPage(0);
+    localStorage.setItem(`crm-stages-${projectId}`, JSON.stringify(newStages));
+  };
+
+  /**
+   * Handles tag filter change.
+   */
+  const handleTagsChange = (newTagIds: string[]) => {
+    setSelectedTagIds(newTagIds);
+    setPage(0);
+    localStorage.setItem(`crm-tagIds-${projectId}`, JSON.stringify(newTagIds));
   };
 
   /**
@@ -126,6 +168,14 @@ export default function CrmPage() {
               </CardDescription>
             </div>
             <CrmTimeFilter value={days} onChange={handleDaysChange} />
+          </div>
+
+          {/* Stage + Tag filters */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <CrmStageFilter value={stages} onChange={handleStagesChange} />
+            {projectTags.length > 0 && (
+              <CrmTagFilter tags={projectTags} value={selectedTagIds} onChange={handleTagsChange} />
+            )}
           </div>
 
           {/* Search */}
