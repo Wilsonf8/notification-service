@@ -6,9 +6,5 @@ package com.notificationservice.entity;
 public enum PipelineStage {
     NEW,
     ENGAGED,
-    CONTACTED,
-    QUALIFIED,
-    PROPOSAL,
-    WON,
-    LOST
+    WON
 }

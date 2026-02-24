@@ -14,11 +14,7 @@ import { cn } from "@/lib/utils";
 const STAGES: { value: PipelineStage; label: string; color: string }[] = [
   { value: "NEW", label: "New", color: "bg-stone-500" },
   { value: "ENGAGED", label: "Engaged", color: "bg-blue-500" },
-  { value: "CONTACTED", label: "Contacted", color: "bg-indigo-500" },
-  { value: "QUALIFIED", label: "Qualified", color: "bg-purple-500" },
-  { value: "PROPOSAL", label: "Proposal", color: "bg-amber-500" },
   { value: "WON", label: "Won", color: "bg-green-500" },
-  { value: "LOST", label: "Lost", color: "bg-red-500" },
 ];
 
 interface PipelineStageSelectProps {

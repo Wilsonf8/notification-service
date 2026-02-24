@@ -480,11 +480,7 @@ export interface ConversationFilters {
 export type PipelineStage =
   | "NEW"
   | "ENGAGED"
-  | "CONTACTED"
-  | "QUALIFIED"
-  | "PROPOSAL"
-  | "WON"
-  | "LOST";
+  | "WON";
 
 /** Tag definition */
 export interface Tag {

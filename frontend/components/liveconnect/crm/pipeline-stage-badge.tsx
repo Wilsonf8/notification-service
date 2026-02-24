@@ -10,11 +10,7 @@ import type { PipelineStage } from "@/lib/types";
 const STAGE_CONFIG: Record<PipelineStage, { label: string; className: string }> = {
   NEW: { label: "New", className: "bg-stone-500/20 text-stone-300" },
   ENGAGED: { label: "Engaged", className: "bg-blue-500/20 text-blue-400" },
-  CONTACTED: { label: "Contacted", className: "bg-indigo-500/20 text-indigo-400" },
-  QUALIFIED: { label: "Qualified", className: "bg-purple-500/20 text-purple-400" },
-  PROPOSAL: { label: "Proposal", className: "bg-amber-500/20 text-amber-400" },
   WON: { label: "Won", className: "bg-green-500/20 text-green-400" },
-  LOST: { label: "Lost", className: "bg-red-500/20 text-red-400" },
 };
 
 interface PipelineStageBadgeProps {
