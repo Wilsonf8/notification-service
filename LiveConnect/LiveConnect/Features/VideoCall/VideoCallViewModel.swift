@@ -188,7 +188,7 @@ final class VideoCallViewModel: RoomDelegate {
             )
 
             // Check if the device can switch between front and back cameras
-            canFlipCamera = CameraCapturer.canSwitchPosition()
+            canFlipCamera = try await CameraCapturer.canSwitchPosition()
 
             // Background blur is supported on all devices with the built-in processor
             isBlurSupported = true
