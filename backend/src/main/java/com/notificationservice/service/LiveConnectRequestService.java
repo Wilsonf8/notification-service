@@ -220,6 +220,7 @@ public class LiveConnectRequestService {
 
         return new AcceptRequestResponse(
                 conversation.getId(),
+                request.getVisitor().getId(),
                 roomName,
                 repToken,
                 liveKitTokenService.getLiveKitUrl()

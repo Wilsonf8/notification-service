@@ -39,6 +39,9 @@ public class LiveConnectVisitor {
 
     private String email;
 
+    @Column(name = "phone", length = 30)
+    private String phone;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;

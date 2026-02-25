@@ -138,6 +138,7 @@ public class LiveConnectCrmService {
                 v.getVisitorId(),
                 v.getName(),
                 v.getEmail(),
+                v.getPhone(),
                 v.getCountryCode(),
                 v.getCountry(),
                 v.getRegion(),
@@ -333,4 +334,25 @@ public class LiveConnectCrmService {
                 rep.getCreatedAt()
         );
     }
+
+    /**
+     * Patches visitor contact fields using PATCH semantics.
+     * Null fields are ignored (not updated). Empty string clears the field.
+     *
+     * @param visitorId the visitor's internal ID
+     * @param request   the contact fields to patch
+     * @throws ResourceNotFoundException if visitor not found
+     */
+    @Transactional
+    public void updateVisitorContact(UUID visitorId, UpdateVisitorContactRequest request) {
+        LiveConnectVisitor visitor = visitorRepository.findById(visitorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Visitor not found"));
+
+        if (request.name() != null) visitor.setName(request.name());
+        if (request.email() != null) visitor.setEmail(request.email());
+        if (request.phone() != null) visitor.setPhone(request.phone());
+
+        visitorRepository.save(visitor);
+    }
+
 }

@@ -11,6 +11,7 @@ import java.util.UUID;
  * @param visitorId the client-side visitor identifier
  * @param name the visitor's name
  * @param email the visitor's email
+ * @param phone the visitor's phone number
  * @param countryCode ISO country code
  * @param country full country name
  * @param region region/state name
@@ -35,6 +36,7 @@ public record CrmVisitorDetailDto(
         String visitorId,
         String name,
         String email,
+        String phone,
         String countryCode,
         String country,
         String region,

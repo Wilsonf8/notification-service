@@ -1,0 +1,1 @@
+ALTER TABLE liveconnect_visitors ADD COLUMN phone VARCHAR(30);

@@ -20,7 +20,7 @@ import { RepAssignmentSelect } from "@/components/liveconnect/crm/rep-assignment
 import { VisitorTags } from "@/components/liveconnect/crm/visitor-tags";
 import { VisitorEngagementStats } from "@/components/liveconnect/crm/visitor-engagement-stats";
 import { VisitorTimeline } from "@/components/liveconnect/crm/visitor-timeline";
-import { VisitorNotes } from "@/components/liveconnect/crm/visitor-notes";
+import { VisitorInfoPanel } from "@/components/liveconnect/visitor-info-panel";
 import { VisitorConversationsList } from "@/components/liveconnect/crm/visitor-conversations-list";
 import type { CrmVisitorDetail, LiveConnectRep } from "@/lib/types";
 
@@ -165,7 +165,7 @@ export default function CrmVisitorDetailPage({ params }: PageProps) {
               setVisitor((prev) => prev ? { ...prev, tags } : prev);
             }}
           />
-          <VisitorNotes projectId={projectId} visitorId={visitorId} />
+          <VisitorInfoPanel projectId={projectId} visitorId={visitorId} variant="card" />
         </div>
       </div>
     </div>

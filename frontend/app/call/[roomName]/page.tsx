@@ -42,9 +42,11 @@ import {
   IconScreenShareOff,
   IconFocusCentered,
   IconCameraRotate,
+  IconId,
 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils';
 import { CallChat } from '@/components/liveconnect/call-chat';
+import { VisitorInfoPanel } from '@/components/liveconnect/visitor-info-panel';
 import { getToken } from '@/lib/auth';
 import { endConversation } from '@/lib/api/liveconnect-dashboard';
 
@@ -155,6 +157,7 @@ function CallPageContent() {
   const conversationId = searchParams.get('conversation');
   const projectId = searchParams.get('project');
   const liveKitUrl = searchParams.get('liveKitUrl');
+  const visitorId = searchParams.get('visitor');
 
   // Determine auth type - rep uses JWT token from localStorage, visitor uses session token
   const isRepCall = !!repToken;
@@ -191,6 +194,7 @@ function CallPageContent() {
     callDuration: 0,
   });
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const [hasUnreadChat, setHasUnreadChat] = useState(false);
   const isChatOpenRef = useRef(isChatOpen);
 
@@ -731,7 +735,7 @@ function CallPageContent() {
       {/* Main video area */}
       <div className={cn(
         'relative flex-1 overflow-hidden',
-        isChatOpen && 'hidden sm:block'
+        (isChatOpen || isInfoOpen) && 'hidden sm:block'
       )}>
         {/* Remote screen share (fills main area when active) */}
         {callState.hasRemoteScreenShare && (
@@ -907,7 +911,10 @@ function CallPageContent() {
           {/* Chat toggle */}
           <button
             type="button"
-            onClick={() => setIsChatOpen(!isChatOpen)}
+            onClick={() => {
+              setIsChatOpen(!isChatOpen);
+              if (!isChatOpen) setIsInfoOpen(false);
+            }}
             className={cn(
               'relative flex size-12 items-center justify-center border transition-colors',
               isChatOpen
@@ -923,6 +930,28 @@ function CallPageContent() {
               <span className="absolute top-1 right-1 size-2 rounded-full bg-destructive" aria-label="Unread messages" />
             )}
           </button>
+
+          {/* Info toggle (rep calls only) */}
+          {isRepCall && visitorId && projectId && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsInfoOpen(!isInfoOpen);
+                if (!isInfoOpen) setIsChatOpen(false);
+              }}
+              className={cn(
+                'flex size-12 items-center justify-center border transition-colors',
+                isInfoOpen
+                  ? 'border-primary bg-primary/20 text-primary'
+                  : 'border-border bg-card text-foreground hover:bg-muted'
+              )}
+              aria-label={isInfoOpen ? 'Close visitor info' : 'Open visitor info'}
+              aria-pressed={isInfoOpen}
+              title={isInfoOpen ? 'Close Info' : 'Visitor Info'}
+            >
+              <IconId className="size-6" />
+            </button>
+          )}
 
           {/* End call */}
           <button
@@ -951,6 +980,21 @@ function CallPageContent() {
             room={roomRef.current}
             onClose={() => setIsChatOpen(false)}
             onNewMessage={handleNewMessage}
+          />
+        </div>
+      )}
+
+      {/* Visitor info sidebar (rep calls only) */}
+      {isRepCall && visitorId && projectId && (
+        <div className={cn(
+          'h-full w-full sm:w-80',
+          isInfoOpen ? 'block' : 'hidden'
+        )}>
+          <VisitorInfoPanel
+            projectId={projectId}
+            visitorId={visitorId}
+            variant="sidebar"
+            onClose={() => setIsInfoOpen(false)}
           />
         </div>
       )}

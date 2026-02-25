@@ -106,7 +106,7 @@ function RequestItem({ request, projectId }: RequestItemProps) {
       setIsAccepting(true);
       const response = await acceptRequest(projectId, request.id);
       // Navigate to the call page with rep auth params including LiveKit URL
-      const callUrl = `/call/${response.roomName}?token=${encodeURIComponent(response.token)}&conversation=${response.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(response.liveKitUrl)}`;
+      const callUrl = `/call/${response.roomName}?token=${encodeURIComponent(response.token)}&conversation=${response.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(response.liveKitUrl)}&visitor=${response.visitorId}`;
       window.open(callUrl, "_blank", "width=900,height=600");
     } catch (err) {
       setAcceptError("This request was already accepted by another rep");

@@ -426,6 +426,7 @@ export interface VisitorsResponse {
 /** Response from acceptRequest API */
 export interface AcceptRequestResponse {
   conversationId: string;
+  visitorId: string;
   roomName: string;
   token: string;
   liveKitUrl: string;
@@ -526,12 +527,20 @@ export interface CrmVisitorListParams {
   direction?: string;
 }
 
+/** Request body for patching visitor contact fields */
+export interface UpdateVisitorContactRequest {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
 /** CRM visitor detail (full profile) */
 export interface CrmVisitorDetail {
   id: string;
   visitorId: string;
   name: string | null;
   email: string | null;
+  phone: string | null;
   countryCode: string | null;
   country: string | null;
   region: string | null;

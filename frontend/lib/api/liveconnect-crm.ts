@@ -8,6 +8,7 @@ import type {
   CrmVisitorListResponse,
   CrmVisitorListParams,
   CrmVisitorDetail,
+  UpdateVisitorContactRequest,
   Tag,
   VisitorNote,
   TimelineResponse,
@@ -56,6 +57,24 @@ export async function getCrmVisitorDetail(
   return apiFetch<CrmVisitorDetail>(
     `${CRM_BASE(projectId)}/visitors/${visitorId}`
   );
+}
+
+/**
+ * Patches visitor contact fields (name, email, phone).
+ * Only non-undefined fields are sent to the API.
+ * @param projectId - The project ID
+ * @param visitorId - The visitor's internal ID
+ * @param data - The contact fields to patch
+ */
+export async function updateVisitorContact(
+  projectId: string,
+  visitorId: string,
+  data: UpdateVisitorContactRequest
+): Promise<void> {
+  await apiFetch(`${CRM_BASE(projectId)}/visitors/${visitorId}/contact`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 /**

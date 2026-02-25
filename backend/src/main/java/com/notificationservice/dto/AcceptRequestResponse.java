@@ -7,12 +7,14 @@ import java.util.UUID;
  * Contains conversation details for starting the call.
  *
  * @param conversationId the created conversation ID
+ * @param visitorId the visitor's internal ID (for info panel in call popup)
  * @param roomName the LiveKit room name
  * @param token the LiveKit token for joining
  * @param liveKitUrl the LiveKit WebSocket URL for client connections
  */
 public record AcceptRequestResponse(
         UUID conversationId,
+        UUID visitorId,
         String roomName,
         String token,
         String liveKitUrl

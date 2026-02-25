@@ -146,6 +146,27 @@ public class LiveConnectCrmController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Patches visitor contact fields (name, email, phone).
+     * Null fields are ignored; empty string clears the field.
+     *
+     * @param projectId the project ID
+     * @param visitorId the visitor's internal ID
+     * @param request   the contact fields to patch
+     * @param userId    the authenticated user's ID
+     * @return no content on success
+     */
+    @PatchMapping("/visitors/{visitorId}/contact")
+    public ResponseEntity<Void> updateVisitorContact(
+            @PathVariable UUID projectId,
+            @PathVariable UUID visitorId,
+            @Valid @RequestBody UpdateVisitorContactRequest request,
+            @AuthenticationPrincipal UUID userId) {
+        repService.verifyRepAccess(projectId, userId);
+        crmService.updateVisitorContact(visitorId, request);
+        return ResponseEntity.noContent().build();
+    }
+
     // ---- Tag Assignment Endpoints ----
 
     /**
