@@ -169,8 +169,13 @@ public class LiveConnectSessionService {
 
         PendingRequestInfo pendingRequestInfo = pendingRequestOpt
                 .filter(r -> r.getExpiresAt().isAfter(OffsetDateTime.now()))
-                .filter(r -> r.getDirection() == RequestDirection.USER_TO_REPS)
-                .map(r -> new PendingRequestInfo(r.getId(), r.getExpiresAt(), r.getDirection().name()))
+                .map(r -> {
+                    String repName = null;
+                    if (r.getDirection() == RequestDirection.REP_TO_USER && r.getInitiatedByRep() != null) {
+                        repName = r.getInitiatedByRep().getUser().getUsername();
+                    }
+                    return new PendingRequestInfo(r.getId(), r.getExpiresAt(), r.getDirection().name(), repName);
+                })
                 .orElse(null);
 
         log.info("[LiveConnect] Final pendingRequestInfo for response: {}", pendingRequestInfo);

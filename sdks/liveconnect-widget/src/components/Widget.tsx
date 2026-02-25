@@ -343,16 +343,26 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
           const now = Date.now();
           console.log('[LiveConnect Widget] Pending request found:', {
             requestId: initResponse.pendingRequest.requestId,
+            direction: initResponse.pendingRequest.direction,
             expiresAt,
             now,
             isNotExpired: expiresAt > now,
             diff: expiresAt - now,
           });
           if (expiresAt > now) {
-            console.log('[LiveConnect Widget] Restoring WAITING state with requestId:', initResponse.pendingRequest.requestId);
-            setCurrentRequestId(initResponse.pendingRequest.requestId);
-            const transitionResult = startWaiting(initResponse.pendingRequest.requestId, expiresAt);
-            console.log('[LiveConnect Widget] startWaiting transition result:', transitionResult);
+            if (initResponse.pendingRequest.direction === 'REP_TO_USER') {
+              console.log('[LiveConnect Widget] Restoring INCOMING_PING state with requestId:', initResponse.pendingRequest.requestId);
+              showIncomingPing(
+                initResponse.pendingRequest.requestId,
+                initResponse.pendingRequest.repName || 'Rep',
+                expiresAt
+              );
+            } else {
+              console.log('[LiveConnect Widget] Restoring WAITING state with requestId:', initResponse.pendingRequest.requestId);
+              setCurrentRequestId(initResponse.pendingRequest.requestId);
+              const transitionResult = startWaiting(initResponse.pendingRequest.requestId, expiresAt);
+              console.log('[LiveConnect Widget] startWaiting transition result:', transitionResult);
+            }
           } else {
             console.log('[LiveConnect Widget] Pending request expired, not restoring WAITING state');
           }

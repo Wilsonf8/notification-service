@@ -70,6 +70,8 @@ export interface PendingRequestInfo {
   expiresAt: string;
   /** Direction of the request (USER_TO_REPS, REP_TO_USER, MUTUAL) */
   direction: string;
+  /** Rep's display name (populated for REP_TO_USER, null otherwise) */
+  repName: string | null;
 }
 
 /**
