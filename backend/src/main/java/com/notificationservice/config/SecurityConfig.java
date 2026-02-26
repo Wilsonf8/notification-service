@@ -96,7 +96,7 @@ public class SecurityConfig {
         CorsConfiguration defaultConfig = new CorsConfiguration();
         List<String> origins = Arrays.asList(allowedOriginsConfig.split(","));
         defaultConfig.setAllowedOrigins(origins.stream().map(String::trim).toList());
-        defaultConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        defaultConfig.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         defaultConfig.setAllowedHeaders(List.of("*"));
         defaultConfig.setAllowCredentials(true);
         source.registerCorsConfiguration("/**", defaultConfig);
