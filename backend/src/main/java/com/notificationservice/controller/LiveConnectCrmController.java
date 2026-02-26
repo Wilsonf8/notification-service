@@ -43,16 +43,21 @@ public class LiveConnectCrmController {
     /**
      * Gets paginated CRM visitor list.
      *
-     * @param projectId the project ID
-     * @param page      page number (0-indexed)
-     * @param size      page size
-     * @param days      time range in days (1, 3, 7, 30)
-     * @param search    optional search term
-     * @param stages    optional pipeline stages to filter by (comma-separated)
-     * @param tagIds    optional tag IDs for AND-logic filtering (comma-separated)
-     * @param sort      sort field (lastSeenAt, leadScore, name)
-     * @param direction sort direction (asc, desc)
-     * @param userId    the authenticated user's ID
+     * @param projectId      the project ID
+     * @param page           page number (0-indexed)
+     * @param size           page size
+     * @param days           time range in days (1, 3, 7, 30)
+     * @param search         optional search term
+     * @param stages         optional pipeline stages to filter by (comma-separated)
+     * @param tagIds         optional tag IDs for AND-logic filtering (comma-separated)
+     * @param hasBeenInCall  if true, only visitors who have been in a video call
+     * @param hasContactForm if true, only visitors who submitted a contact form
+     * @param hasContactInfo if true, only visitors with name, email, or phone set
+     * @param repUpdatedInfo if true, only visitors whose contact was updated by a rep
+     * @param onlineNow      if true, only currently online visitors
+     * @param sort           sort field (lastSeenAt, leadScore, name, lastCallAt)
+     * @param direction      sort direction (asc, desc)
+     * @param userId         the authenticated user's ID
      * @return paginated visitor list
      */
     @GetMapping("/visitors")
@@ -64,11 +69,18 @@ public class LiveConnectCrmController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Set<PipelineStage> stages,
             @RequestParam(required = false) Set<UUID> tagIds,
+            @RequestParam(defaultValue = "false") boolean hasBeenInCall,
+            @RequestParam(defaultValue = "false") boolean hasContactForm,
+            @RequestParam(defaultValue = "false") boolean hasContactInfo,
+            @RequestParam(defaultValue = "false") boolean repUpdatedInfo,
+            @RequestParam(defaultValue = "false") boolean onlineNow,
             @RequestParam(defaultValue = "lastSeenAt") String sort,
             @RequestParam(defaultValue = "desc") String direction,
             @AuthenticationPrincipal UUID userId) {
         repService.verifyRepAccess(projectId, userId);
-        return ResponseEntity.ok(crmService.getVisitors(projectId, days, search, stages, tagIds, page, size, sort, direction));
+        return ResponseEntity.ok(crmService.getVisitors(projectId, days, search, stages, tagIds,
+                hasBeenInCall, hasContactForm, hasContactInfo, repUpdatedInfo, onlineNow,
+                page, size, sort, direction));
     }
 
     /**
@@ -162,8 +174,8 @@ public class LiveConnectCrmController {
             @PathVariable UUID visitorId,
             @Valid @RequestBody UpdateVisitorContactRequest request,
             @AuthenticationPrincipal UUID userId) {
-        repService.verifyRepAccess(projectId, userId);
-        crmService.updateVisitorContact(visitorId, request);
+        var rep = repService.verifyRepAccess(projectId, userId);
+        crmService.updateVisitorContact(visitorId, request, rep);
         return ResponseEntity.noContent().build();
     }
 

@@ -142,6 +142,11 @@ public class LiveConnectRequestService {
                 .build();
         conversation = conversationRepository.save(conversation);
 
+        // Update visitor lastCallAt for CRM sort/filter
+        LiveConnectVisitor visitor = request.getVisitor();
+        visitor.setLastCallAt(OffsetDateTime.now());
+        visitorRepository.save(visitor);
+
         // Update the request
         request.setStatus(RequestStatus.ACCEPTED);
         request.setAcceptedByRep(rep);
@@ -413,6 +418,11 @@ public class LiveConnectRequestService {
                 .rep(rep)
                 .build();
         conversation = conversationRepository.save(conversation);
+
+        // Update visitor lastCallAt for CRM sort/filter
+        LiveConnectVisitor pingVisitor = request.getVisitor();
+        pingVisitor.setLastCallAt(OffsetDateTime.now());
+        visitorRepository.save(pingVisitor);
 
         // Update the request
         request.setStatus(RequestStatus.ACCEPTED);

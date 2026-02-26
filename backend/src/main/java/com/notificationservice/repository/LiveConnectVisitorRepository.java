@@ -60,15 +60,20 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
 
     /**
      * Finds visitors for CRM list view with time-range filter, optional search,
-     * stage filter, and tag filter (AND logic).
+     * stage filter, tag filter (AND logic), and boolean filters.
      *
-     * @param projectId the project ID
-     * @param since     the earliest lastSeenAt threshold
-     * @param search    optional search term (null or empty to skip)
-     * @param stages    optional pipeline stages to filter by (null to skip)
-     * @param tagIds    optional tag IDs for AND-logic filtering (null to skip)
-     * @param tagCount  number of tags required (used with tagIds for AND logic)
-     * @param pageable  pagination and sorting parameters
+     * @param projectId      the project ID
+     * @param since          the earliest lastSeenAt threshold
+     * @param search         optional search term (null or empty to skip)
+     * @param stages         optional pipeline stages to filter by (null to skip)
+     * @param tagIds         optional tag IDs for AND-logic filtering (null to skip)
+     * @param tagCount       number of tags required (used with tagIds for AND logic)
+     * @param hasBeenInCall  if true, only visitors with at least one VIDEO_CALL conversation
+     * @param hasContactForm if true, only visitors with at least one CONTACT_FORM conversation
+     * @param hasContactInfo if true, only visitors with name, email, or phone set
+     * @param repUpdatedInfo if true, only visitors whose contact was updated by a rep
+     * @param onlineThreshold if non-null, only visitors with lastSeenAt >= this threshold
+     * @param pageable       pagination and sorting parameters
      * @return paginated list of visitors matching the criteria
      */
     @Query("SELECT v FROM LiveConnectVisitor v WHERE v.project.id = :projectId " +
@@ -84,8 +89,21 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
            "  WHERE vt.tag.id IN :tagIds " +
            "  GROUP BY vt.visitor.id " +
            "  HAVING COUNT(DISTINCT vt.tag.id) = :tagCount" +
-           "))")
+           ")) " +
+           "AND (:hasBeenInCall = false OR v.id IN (" +
+           "  SELECT c.visitor.id FROM LiveConnectConversation c " +
+           "  WHERE c.type = com.notificationservice.entity.ConversationType.VIDEO_CALL" +
+           ")) " +
+           "AND (:hasContactForm = false OR v.id IN (" +
+           "  SELECT c.visitor.id FROM LiveConnectConversation c " +
+           "  WHERE c.type = com.notificationservice.entity.ConversationType.CONTACT_FORM" +
+           ")) " +
+           "AND (:hasContactInfo = false OR v.name IS NOT NULL OR v.email IS NOT NULL OR v.phone IS NOT NULL) " +
+           "AND (:repUpdatedInfo = false OR v.contactUpdatedAt IS NOT NULL) " +
+           "AND (:onlineThreshold IS NULL OR v.lastSeenAt >= :onlineThreshold)")
     Page<LiveConnectVisitor> findForCrm(UUID projectId, OffsetDateTime since, String search,
                                         Collection<PipelineStage> stages, Collection<UUID> tagIds, long tagCount,
+                                        boolean hasBeenInCall, boolean hasContactForm, boolean hasContactInfo,
+                                        boolean repUpdatedInfo, OffsetDateTime onlineThreshold,
                                         Pageable pageable);
 }
