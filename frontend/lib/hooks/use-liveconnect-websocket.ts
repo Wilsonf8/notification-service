@@ -493,7 +493,7 @@ export function useLiveConnectWebSocket(
       case "conversation_started": {
         // Open call window when visitor accepts rep's ping
         const startedEvent = event as ConversationStartedEvent;
-        const callUrl = `/call/${startedEvent.roomName}?token=${encodeURIComponent(startedEvent.token)}&conversation=${startedEvent.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(startedEvent.liveKitUrl)}`;
+        const callUrl = `/call/${startedEvent.roomName}?token=${encodeURIComponent(startedEvent.token)}&conversation=${startedEvent.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(startedEvent.liveKitUrl)}&visitor=${startedEvent.visitorId}`;
         window.open(callUrl, "_blank", "width=900,height=600");
         break;
       }
