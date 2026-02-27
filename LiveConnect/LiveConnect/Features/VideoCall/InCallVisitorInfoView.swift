@@ -393,17 +393,26 @@ struct InCallVisitorInfoView: View {
     // MARK: - Notes CRUD
 
     /// Adds a new note.
+    /// Uses the void POST overload then re-fetches the notes list,
+    /// because the POST response date format can differ from the GET format
+    /// and may fail to decode.
+    @MainActor
     private func addNote() async {
         let content = newNoteText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !content.isEmpty else { return }
 
         isAddingNote = true
         do {
-            let note: VisitorNote = try await APIClient.shared.post(
+            try await APIClient.shared.post(
                 Endpoints.crmVisitorNotes(projectId: projectId, visitorId: visitorId),
                 body: AddNoteRequest(content: content)
             )
-            notes.insert(note, at: 0)
+            let response: VisitorNotesResponse = try await APIClient.shared.get(
+                Endpoints.crmVisitorNotes(projectId: projectId, visitorId: visitorId)
+            )
+            withAnimation {
+                notes = response.content
+            }
             newNoteText = ""
         } catch {
             print("InCallVisitorInfoView: Failed to add note: \(error)")
@@ -412,12 +421,15 @@ struct InCallVisitorInfoView: View {
     }
 
     /// Deletes a note by ID.
+    @MainActor
     private func deleteNote(_ noteId: UUID) async {
         do {
             try await APIClient.shared.delete(
                 Endpoints.crmVisitorNote(projectId: projectId, visitorId: visitorId, noteId: noteId)
             )
-            notes.removeAll { $0.id == noteId }
+            withAnimation {
+                notes.removeAll { $0.id == noteId }
+            }
         } catch {
             print("InCallVisitorInfoView: Failed to delete note: \(error)")
         }

@@ -22,7 +22,16 @@ final class APIClient: Sendable {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let dateString = try container.decode(String.self)
-            if let date = formatter.date(from: dateString) {
+
+            // Normalize: truncate fractional seconds to 3 digits (ms precision).
+            // Handles 6-digit (PostgreSQL) and 9-digit (Java OffsetDateTime.now()) formats.
+            let normalized = dateString.replacingOccurrences(
+                of: #"(\.\d{3})\d+"#,
+                with: "$1",
+                options: .regularExpression
+            )
+
+            if let date = formatter.date(from: normalized) {
                 return date
             }
             // Fallback for dates without fractional seconds
