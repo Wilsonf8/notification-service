@@ -68,7 +68,11 @@ public class LiveConnectCrmService {
             case "lastCallAt" -> "lastCallAt";
             default -> "lastSeenAt";
         };
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(dir, sortField));
+        Sort.Order order = new Sort.Order(dir, sortField);
+        if ("lastCallAt".equals(sortField)) {
+            order = order.nullsLast();
+        }
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(order));
 
         Collection<PipelineStage> stageFilter = (stages != null && !stages.isEmpty()) ? stages : null;
         Collection<UUID> tagFilter = (tagIds != null && !tagIds.isEmpty()) ? tagIds : null;
