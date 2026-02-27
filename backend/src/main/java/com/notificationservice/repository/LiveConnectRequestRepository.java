@@ -36,6 +36,15 @@ public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectR
     @Query("SELECT r FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId AND r.status = 'PENDING'")
     Optional<LiveConnectRequest> findPendingByVisitorId(UUID visitorId);
 
+    /**
+     * Finds all pending REP_TO_USER pings initiated by a specific rep.
+     *
+     * @param repId the rep's internal ID
+     * @return list of pending ping requests
+     */
+    @Query("SELECT r FROM LiveConnectRequest r WHERE r.initiatedByRep.id = :repId AND r.direction = 'REP_TO_USER' AND r.status = 'PENDING'")
+    List<LiveConnectRequest> findPendingPingsByRepId(UUID repId);
+
     @Query("SELECT r FROM LiveConnectRequest r WHERE r.project.id = :projectId AND r.visitor.id = :visitorId AND r.status = 'PENDING'")
     Optional<LiveConnectRequest> findPendingByProjectIdAndVisitorId(UUID projectId, UUID visitorId);
 

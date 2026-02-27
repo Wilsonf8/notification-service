@@ -29,6 +29,7 @@ import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
 import com.notificationservice.websocket.event.RequestAcceptedByOtherEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
+import com.notificationservice.websocket.event.PingWithdrawnEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestDismissedEvent;
 import com.notificationservice.websocket.event.RequestReceivedEvent;
@@ -159,6 +160,9 @@ public class LiveConnectRequestService {
         rep.setPresence(RepPresence.IN_CALL);
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
+
+        // Withdraw any pending pings this rep has to other visitors
+        withdrawPendingPingsForRep(rep, projectId, null);
 
         // Update visitor engagement state to IN_CALL
         visitorSessionManager.setVisitorState(request.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.IN_CALL);
@@ -437,11 +441,14 @@ public class LiveConnectRequestService {
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
 
+        // Withdraw any other pending pings this rep has (excluding the one being accepted)
+        UUID projectId = request.getProject().getId();
+        withdrawPendingPingsForRep(rep, projectId, requestId);
+
         // Update visitor engagement state to IN_CALL
         visitorSessionManager.setVisitorState(request.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.IN_CALL);
 
         // Broadcast rep availability change to visitors
-        UUID projectId = request.getProject().getId();
         boolean hasAvailableReps = repRepository.hasAnyAvailableReps(projectId);
         RepAvailabilityChangedEvent availabilityEvent = new RepAvailabilityChangedEvent(hasAvailableReps);
         broadcaster.broadcastToProjectVisitors(projectId, availabilityEvent);
@@ -533,6 +540,42 @@ public class LiveConnectRequestService {
         LiveConnectVisitor visitor = request.getVisitor();
         visitor.setPingCooldownUntil(OffsetDateTime.now().plusSeconds(PING_COOLDOWN_SECONDS));
         visitorRepository.save(visitor);
+    }
+
+    /**
+     * Withdraws all pending pings by a rep, excluding the specified request.
+     * Called when a rep enters a call so other visitors don't see stale incoming pings.
+     *
+     * @param rep the rep entering a call
+     * @param projectId the project ID for broadcasting
+     * @param excludeRequestId request ID to skip (the ping being accepted), or null
+     */
+    private void withdrawPendingPingsForRep(LiveConnectRep rep, UUID projectId, UUID excludeRequestId) {
+        List<LiveConnectRequest> pendingPings = requestRepository.findPendingPingsByRepId(rep.getId());
+
+        for (LiveConnectRequest ping : pendingPings) {
+            if (excludeRequestId != null && ping.getId().equals(excludeRequestId)) {
+                continue;
+            }
+
+            // Cancel the ping
+            ping.setStatus(RequestStatus.CANCELLED);
+            requestRepository.save(ping);
+
+            // Reset visitor engagement back to BROWSING
+            visitorSessionManager.setVisitorState(
+                    ping.getVisitor().getId(),
+                    VisitorSessionManager.VisitorEngagementState.BROWSING
+            );
+
+            // Notify the visitor their incoming ping was withdrawn
+            PingWithdrawnEvent visitorEvent = new PingWithdrawnEvent(ping.getId());
+            broadcaster.sendToVisitor(ping.getVisitor().getId(), visitorEvent);
+
+            // Notify reps so the request is removed from their queue
+            RequestCancelledEvent repEvent = new RequestCancelledEvent(ping.getId());
+            broadcaster.broadcastToProject(projectId, repEvent);
+        }
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {

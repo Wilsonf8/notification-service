@@ -61,6 +61,25 @@ struct CrmVisitorListView: View {
                     .padding(.top, 8)
                 }
 
+                // Sort picker
+                CrmSortPicker(
+                    sortField: $viewModel.sortField,
+                    ascending: $viewModel.sortAscending
+                )
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+                // Boolean filters
+                CrmBooleanFilters(
+                    hasBeenInCall: $viewModel.hasBeenInCall,
+                    hasContactForm: $viewModel.hasContactForm,
+                    hasContactInfo: $viewModel.hasContactInfo,
+                    repUpdatedInfo: $viewModel.repUpdatedInfo,
+                    onlineNow: $viewModel.onlineNow
+                )
+                .padding(.horizontal)
+                .padding(.top, 8)
+
                 // Content
                 ZStack {
                     if viewModel.isLoading && viewModel.visitors.isEmpty {

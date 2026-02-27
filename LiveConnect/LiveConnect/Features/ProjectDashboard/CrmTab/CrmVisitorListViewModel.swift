@@ -62,6 +62,41 @@ final class CrmVisitorListViewModel {
         }
     }
 
+    /// Sort field for the visitor list.
+    var sortField: CrmSortField = .lastSeenAt {
+        didSet { Task { await reload() } }
+    }
+
+    /// Whether sort direction is ascending.
+    var sortAscending = false {
+        didSet { Task { await reload() } }
+    }
+
+    /// Filter: visitors who have been in a call.
+    var hasBeenInCall = false {
+        didSet { Task { await reload() } }
+    }
+
+    /// Filter: visitors who submitted a contact form.
+    var hasContactForm = false {
+        didSet { Task { await reload() } }
+    }
+
+    /// Filter: visitors who have contact info.
+    var hasContactInfo = false {
+        didSet { Task { await reload() } }
+    }
+
+    /// Filter: visitors with rep-updated info.
+    var repUpdatedInfo = false {
+        didSet { Task { await reload() } }
+    }
+
+    /// Filter: visitors currently online.
+    var onlineNow = false {
+        didSet { Task { await reload() } }
+    }
+
     /// Available project tags for the filter UI.
     private(set) var projectTags: [CrmTag] = []
 
@@ -147,8 +182,8 @@ final class CrmVisitorListViewModel {
             URLQueryItem(name: "page", value: String(page)),
             URLQueryItem(name: "size", value: String(pageSize)),
             URLQueryItem(name: "days", value: String(selectedDays)),
-            URLQueryItem(name: "sort", value: "lastSeenAt"),
-            URLQueryItem(name: "direction", value: "desc")
+            URLQueryItem(name: "sort", value: sortField.rawValue),
+            URLQueryItem(name: "direction", value: sortAscending ? "asc" : "desc")
         ]
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
@@ -159,6 +194,21 @@ final class CrmVisitorListViewModel {
         }
         if !selectedTagIds.isEmpty {
             items.append(URLQueryItem(name: "tagIds", value: selectedTagIds.map(\.uuidString).joined(separator: ",")))
+        }
+        if hasBeenInCall {
+            items.append(URLQueryItem(name: "hasBeenInCall", value: "true"))
+        }
+        if hasContactForm {
+            items.append(URLQueryItem(name: "hasContactForm", value: "true"))
+        }
+        if hasContactInfo {
+            items.append(URLQueryItem(name: "hasContactInfo", value: "true"))
+        }
+        if repUpdatedInfo {
+            items.append(URLQueryItem(name: "repUpdatedInfo", value: "true"))
+        }
+        if onlineNow {
+            items.append(URLQueryItem(name: "onlineNow", value: "true"))
         }
         return items
     }

@@ -180,6 +180,11 @@ public class LiveConnectVisitorService {
             throw new IllegalArgumentException("Visitor is in ping cooldown");
         }
 
+        // Check if rep is already in a call
+        if (rep.getCurrentConversation() != null) {
+            throw new IllegalArgumentException("You are already in a call");
+        }
+
         OffsetDateTime expiresAt = OffsetDateTime.now().plusMinutes(REQUEST_EXPIRY_MINUTES);
 
         LiveConnectRequest request = LiveConnectRequest.builder()

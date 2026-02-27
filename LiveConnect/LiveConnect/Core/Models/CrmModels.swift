@@ -7,6 +7,24 @@
 
 import Foundation
 
+/// Sort field for the CRM visitor list.
+enum CrmSortField: String, CaseIterable {
+    case lastSeenAt
+    case leadScore
+    case name
+    case lastCallAt
+
+    /// Human-readable display label.
+    var label: String {
+        switch self {
+        case .lastSeenAt: return "Last Seen"
+        case .leadScore: return "Score"
+        case .name: return "Name"
+        case .lastCallAt: return "Last Call"
+        }
+    }
+}
+
 /// Pipeline stage for CRM visitors.
 enum PipelineStage: String, Codable, Sendable, CaseIterable {
     case new = "NEW"

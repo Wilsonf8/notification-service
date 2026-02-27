@@ -98,6 +98,15 @@ export interface RepAvailabilityChangedEvent {
 }
 
 /**
+ * Ping withdrawn event - Rep's pending ping was withdrawn because they entered a call.
+ */
+export interface PingWithdrawnEvent {
+  type: 'ping_withdrawn';
+  /** The request ID that was withdrawn */
+  requestId: string;
+}
+
+/**
  * Union type for all incoming WebSocket events.
  */
 export type IncomingEvent =
@@ -108,7 +117,8 @@ export type IncomingEvent =
   | CallEndedEvent
   | MessageReceivedEvent
   | RequestExpiredEvent
-  | RepAvailabilityChangedEvent;
+  | RepAvailabilityChangedEvent
+  | PingWithdrawnEvent;
 
 // ============================================================================
 // Outgoing Message Types (Client -> Server)
@@ -160,6 +170,7 @@ export interface WebSocketEventMap {
   message_received: (event: MessageReceivedEvent) => void;
   request_expired: (event: RequestExpiredEvent) => void;
   rep_availability_changed: (event: RepAvailabilityChangedEvent) => void;
+  ping_withdrawn: (event: PingWithdrawnEvent) => void;
   connection_state_change: (state: ConnectionState) => void;
   error: (error: Error) => void;
 }
@@ -420,6 +431,9 @@ export class WebSocketClient {
           break;
         case 'rep_availability_changed':
           this.emit('rep_availability_changed', message as RepAvailabilityChangedEvent);
+          break;
+        case 'ping_withdrawn':
+          this.emit('ping_withdrawn', message as PingWithdrawnEvent);
           break;
         default: {
           // Handle unknown message types gracefully

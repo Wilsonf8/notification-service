@@ -29,6 +29,7 @@ import {
   type MessageReceivedEvent,
   type RequestExpiredEvent,
   type RepAvailabilityChangedEvent,
+  type PingWithdrawnEvent,
 } from '../websocket';
 import {
   connectToRoom,
@@ -443,6 +444,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Handle rep availability changes
     ws.on('rep_availability_changed', handleRepAvailabilityChanged);
 
+    // Handle ping withdrawn (rep entered a call with another visitor)
+    ws.on('ping_withdrawn', handlePingWithdrawn);
+
     // Handle connection state changes
     ws.on('connection_state_change', (state) => {
       if (state === 'disconnected') {
@@ -559,6 +563,18 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
    */
   const handleRepAvailabilityChanged = useCallback((event: RepAvailabilityChangedEvent): void => {
     setIsOnline(event.repsAvailable);
+  }, []);
+
+  /**
+   * Handles ping withdrawn event.
+   * Collapses the widget if currently showing an incoming ping.
+   * @param _event - Ping withdrawn event data
+   */
+  const handlePingWithdrawn = useCallback((_event: PingWithdrawnEvent): void => {
+    const currentState = widgetState.value;
+    if (currentState.type === WidgetStateType.INCOMING_PING) {
+      collapse();
+    }
   }, []);
 
   // ============================================================================
