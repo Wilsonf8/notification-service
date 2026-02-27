@@ -63,11 +63,17 @@ import {
   IconUsers,
   IconX,
   IconAlertTriangle,
+  IconFolder,
+  IconPlus,
+  IconVideo,
 } from "@tabler/icons-react";
+import Link from "next/link";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { useTierLimits } from "@/lib/hooks/use-tier-limits";
 import {
   getOrganizationMembers,
+  getOrganizationProjects,
+  createOrganizationProject,
   updateMemberRole,
   removeMember,
   leaveOrganization,
@@ -85,6 +91,7 @@ import type {
   OrganizationInvitation,
   OrgRole,
   UserSearchResult,
+  Project,
 } from "@/lib/types";
 
 /** Page params containing the org slug */
@@ -116,6 +123,12 @@ export default function TeamPage({ params }: TeamPageProps) {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
+  // Project state
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [creatingProject, setCreatingProject] = useState(false);
+
   // Edit org name state
   const [isEditNameOpen, setIsEditNameOpen] = useState(false);
   const [editedName, setEditedName] = useState("");
@@ -138,12 +151,14 @@ export default function TeamPage({ params }: TeamPageProps) {
     try {
       setLoading(true);
       setError(null);
-      const [membersData, invitationsData] = await Promise.all([
+      const [membersData, invitationsData, projectsData] = await Promise.all([
         getOrganizationMembers(orgSlug),
         getOrgInvitations(orgSlug).catch(() => [] as OrganizationInvitation[]),
+        getOrganizationProjects(orgSlug).catch(() => [] as Project[]),
       ]);
       setMembers(membersData);
       setInvitations(invitationsData);
+      setProjects(projectsData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load members");
     } finally {
@@ -270,6 +285,29 @@ export default function TeamPage({ params }: TeamPageProps) {
   };
 
   /**
+   * Handles creating a new project in the current organization.
+   */
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return;
+
+    try {
+      setCreatingProject(true);
+      const project = await createOrganizationProject(orgSlug, {
+        name: newProjectName.trim(),
+        type: "LIVECONNECT",
+      });
+      setProjects((prev) => [...prev, project]);
+      setNewProjectName("");
+      setIsCreateProjectOpen(false);
+      refreshLimits();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create project");
+    } finally {
+      setCreatingProject(false);
+    }
+  };
+
+  /**
    * Gets the badge variant for a role.
    */
   const getRoleBadgeVariant = (role: OrgRole) => {
@@ -307,6 +345,7 @@ export default function TeamPage({ params }: TeamPageProps) {
   }
 
   const memberLimitReached = limits ? members.length + invitations.length >= limits.maxMembers : false;
+  const projectLimitReached = limits ? projects.length >= limits.maxProjects : false;
   const isInactive = currentOrg && !currentOrg.isPersonal && limits && !limits.orgActive;
 
   return (
@@ -364,6 +403,61 @@ export default function TeamPage({ params }: TeamPageProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Projects */}
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Projects</CardTitle>
+            <CardDescription>
+              {limits
+                ? `${projects.length} / ${limits.maxProjects} projects`
+                : `${projects.length} project${projects.length !== 1 ? "s" : ""}`}
+            </CardDescription>
+          </div>
+          {canManageMembers && (
+            <Button
+              onClick={() => setIsCreateProjectOpen(true)}
+              className="gap-2"
+              disabled={projectLimitReached || !!isInactive}
+              title={projectLimitReached ? "Project limit reached" : undefined}
+            >
+              <IconPlus className="h-4 w-4" />
+              New Project
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {projects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8">
+              <IconFolder className="h-10 w-10 text-muted-foreground" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                No projects yet
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {projects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/dashboard/${orgSlug}/projects/${project.id}`}
+                  className="flex items-center justify-between p-3 hover:bg-accent transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <IconVideo className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">{project.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Created {new Date(project.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -725,6 +819,43 @@ export default function TeamPage({ params }: TeamPageProps) {
               disabled={inviting || !selectedUser}
             >
               {inviting ? "Inviting..." : "Invite Member"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Project Dialog */}
+      <Dialog open={isCreateProjectOpen} onOpenChange={setIsCreateProjectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Project</DialogTitle>
+            <DialogDescription>
+              Create a new LiveConnect project for real-time customer engagement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="project-name">Project Name</Label>
+              <Input
+                id="project-name"
+                placeholder="My Project"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newProjectName.trim()) {
+                    handleCreateProject();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
+            <Button
+              onClick={handleCreateProject}
+              disabled={creatingProject || !newProjectName.trim()}
+            >
+              {creatingProject ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
         </DialogContent>
