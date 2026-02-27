@@ -383,6 +383,7 @@ final class WebSocketManager: WebSocketDelegate {
                 let dto = try decoder.decode(ConversationStartedDTO.self, from: data)
                 let response = AcceptedCallResponse(
                     conversationId: dto.conversationId,
+                    visitorId: dto.visitorId,
                     roomName: dto.roomName,
                     token: dto.token,
                     liveKitUrl: dto.liveKitUrl

@@ -11,6 +11,7 @@ import LiveKit
 /// Full-screen video call view.
 struct VideoCallView: View {
     let conversationId: UUID
+    let visitorId: UUID?
     let livekitUrl: String
     let livekitToken: String
     let projectId: UUID
@@ -19,9 +20,11 @@ struct VideoCallView: View {
 
     @State private var viewModel: VideoCallViewModel
     @State private var showChat = false
+    @State private var showInfo = false
 
     init(
         conversationId: UUID,
+        visitorId: UUID? = nil,
         livekitUrl: String,
         livekitToken: String,
         projectId: UUID,
@@ -29,6 +32,7 @@ struct VideoCallView: View {
         onDismiss: @escaping () -> Void
     ) {
         self.conversationId = conversationId
+        self.visitorId = visitorId
         self.livekitUrl = livekitUrl
         self.livekitToken = livekitToken
         self.projectId = projectId
@@ -223,6 +227,16 @@ struct VideoCallView: View {
                     )
                     .transition(.move(edge: .trailing))
                 }
+
+                // Visitor info panel
+                if showInfo, let visitorId {
+                    InCallVisitorInfoView(
+                        projectId: projectId,
+                        visitorId: visitorId,
+                        onClose: { showInfo = false }
+                    )
+                    .transition(.move(edge: .trailing))
+                }
             }
         }
     }
@@ -275,6 +289,19 @@ struct VideoCallView: View {
                 }
             }
 
+            // Visitor info button (only when visitorId is available)
+            if visitorId != nil {
+                ControlButton(
+                    icon: "person.text.rectangle",
+                    isActive: showInfo
+                ) {
+                    withAnimation {
+                        showInfo.toggle()
+                        if showInfo { showChat = false }
+                    }
+                }
+            }
+
             // Chat button
             ControlButton(
                 icon: "bubble.left.fill",
@@ -283,6 +310,7 @@ struct VideoCallView: View {
             ) {
                 withAnimation {
                     showChat.toggle()
+                    if showChat { showInfo = false }
                 }
             }
 
@@ -397,6 +425,7 @@ private struct LocalVideoView: View {
 #Preview {
     VideoCallView(
         conversationId: UUID(),
+        visitorId: UUID(),
         livekitUrl: "wss://example.livekit.cloud",
         livekitToken: "token",
         projectId: UUID(),

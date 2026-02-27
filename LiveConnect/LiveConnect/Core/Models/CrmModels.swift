@@ -74,6 +74,7 @@ struct CrmVisitorDetail: Codable, Identifiable, Sendable {
     let visitorId: String
     let name: String?
     let email: String?
+    let phone: String?
     let countryCode: String?
     let country: String?
     let region: String?
@@ -231,6 +232,13 @@ struct AddTagRequest: Encodable, Sendable {
 /// Request body to add a note to a visitor.
 struct AddNoteRequest: Encodable, Sendable {
     let content: String
+}
+
+/// Request body to update a visitor's contact info (null fields are ignored by the backend).
+struct UpdateVisitorContactRequest: Encodable, Sendable {
+    let name: String?
+    let email: String?
+    let phone: String?
 }
 
 // MARK: - AnyCodableValue

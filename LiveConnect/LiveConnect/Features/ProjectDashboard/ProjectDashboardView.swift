@@ -59,6 +59,7 @@ struct ProjectDashboardView: View {
             .fullScreenCover(item: $activeCall) { call in
                 VideoCallView(
                     conversationId: call.conversationId,
+                    visitorId: call.visitorId,
                     livekitUrl: call.liveKitUrl,
                     livekitToken: call.token,
                     projectId: projectId,

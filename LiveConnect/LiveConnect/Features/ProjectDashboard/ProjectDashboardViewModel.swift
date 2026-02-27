@@ -433,6 +433,7 @@ final class ProjectDashboardViewModel {
 /// Response when accepting a call request.
 struct AcceptedCallResponse: Codable, Sendable, Equatable {
     let conversationId: UUID
+    let visitorId: UUID?
     let roomName: String
     let token: String
     let liveKitUrl: String

@@ -124,6 +124,19 @@ final class APIClient: Sendable {
         _ = try await performRaw(request)
     }
 
+    /// Performs a PATCH request with no response body.
+    /// - Parameters:
+    ///   - endpoint: The API endpoint path.
+    ///   - body: Optional request body.
+    /// - Throws: APIError if request fails.
+    func patch<B: Encodable>(_ endpoint: String, body: B?) async throws {
+        var request = try buildRequest(endpoint: endpoint, method: "PATCH")
+        if let body {
+            request.httpBody = try encoder.encode(body)
+        }
+        _ = try await performRaw(request)
+    }
+
     /// Performs a DELETE request.
     /// - Parameter endpoint: The API endpoint path.
     /// - Throws: APIError if request fails.

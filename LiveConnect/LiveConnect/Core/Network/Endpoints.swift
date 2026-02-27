@@ -170,6 +170,15 @@ enum Endpoints {
         "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)"
     }
 
+    /// Update a visitor's contact information.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func crmUpdateVisitorContact(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/crm/visitors/\(visitorId)/contact"
+    }
+
     /// Update a visitor's pipeline stage.
     /// - Parameters:
     ///   - projectId: The project UUID.
