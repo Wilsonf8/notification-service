@@ -64,6 +64,7 @@ export function CrmSortSelect({
         size="sm"
         onClick={() => onDirectionChange(direction === "asc" ? "desc" : "asc")}
         className="h-7 w-7 p-0"
+        aria-label={direction === "asc" ? "Sort descending" : "Sort ascending"}
       >
         {direction === "asc" ? (
           <IconSortAscending className="h-3.5 w-3.5" />
