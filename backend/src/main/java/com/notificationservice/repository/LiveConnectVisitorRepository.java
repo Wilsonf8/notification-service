@@ -72,7 +72,8 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
      * @param hasContactForm if true, only visitors with at least one CONTACT_FORM conversation
      * @param hasContactInfo if true, only visitors with name, email, or phone set
      * @param repUpdatedInfo if true, only visitors whose contact was updated by a rep
-     * @param onlineThreshold if non-null, only visitors with lastSeenAt >= this threshold
+     * @param onlineNow      if true, only visitors with lastSeenAt >= onlineThreshold
+     * @param onlineThreshold the recency threshold for "online now" filtering
      * @param pageable       pagination and sorting parameters
      * @return paginated list of visitors matching the criteria
      */
@@ -100,10 +101,10 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
            ")) " +
            "AND (:hasContactInfo = false OR v.name IS NOT NULL OR v.email IS NOT NULL OR v.phone IS NOT NULL) " +
            "AND (:repUpdatedInfo = false OR v.contactUpdatedAt IS NOT NULL) " +
-           "AND (:onlineThreshold IS NULL OR v.lastSeenAt >= :onlineThreshold)")
+           "AND (:onlineNow = false OR v.lastSeenAt >= :onlineThreshold)")
     Page<LiveConnectVisitor> findForCrm(UUID projectId, OffsetDateTime since, String search,
                                         Collection<PipelineStage> stages, Collection<UUID> tagIds, long tagCount,
                                         boolean hasBeenInCall, boolean hasContactForm, boolean hasContactInfo,
-                                        boolean repUpdatedInfo, OffsetDateTime onlineThreshold,
+                                        boolean repUpdatedInfo, boolean onlineNow, OffsetDateTime onlineThreshold,
                                         Pageable pageable);
 }

@@ -73,12 +73,12 @@ public class LiveConnectCrmService {
         Collection<PipelineStage> stageFilter = (stages != null && !stages.isEmpty()) ? stages : null;
         Collection<UUID> tagFilter = (tagIds != null && !tagIds.isEmpty()) ? tagIds : null;
         long tagCount = tagFilter != null ? tagFilter.size() : 0;
-        OffsetDateTime onlineThreshold = onlineNow ? OffsetDateTime.now().minusMinutes(2) : null;
+        OffsetDateTime onlineThreshold = OffsetDateTime.now().minusMinutes(2);
 
         Page<LiveConnectVisitor> visitors = visitorRepository.findForCrm(
                 projectId, since, search, stageFilter, tagFilter, tagCount,
                 hasBeenInCall, hasContactForm, hasContactInfo, repUpdatedInfo,
-                onlineThreshold, pageable);
+                onlineNow, onlineThreshold, pageable);
 
         if (visitors.isEmpty()) {
             return new CrmVisitorListResponse(List.of(), 0, 0, page, size);
