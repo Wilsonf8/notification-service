@@ -487,7 +487,7 @@ export default function EmbedPage() {
 
       {/* Success Dialog - Shows Full Key */}
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent showCloseButton={false}>
+        <DialogContent showCloseButton={false} className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <IconAlertTriangle className="h-5 w-5 text-primary" />
@@ -532,7 +532,7 @@ export default function EmbedPage() {
 
       {/* Embed Script Modal */}
       <Dialog open={!!scriptModalKey} onOpenChange={(open) => !open && setScriptModalKey(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Embed Script</DialogTitle>
             <DialogDescription>

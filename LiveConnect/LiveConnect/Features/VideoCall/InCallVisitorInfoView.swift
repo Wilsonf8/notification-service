@@ -84,7 +84,6 @@ struct InCallVisitorInfoView: View {
                 }
             }
             .padding()
-            .background(Color.black.opacity(0.8))
 
             if isLoading {
                 loadingView
@@ -102,7 +101,7 @@ struct InCallVisitorInfoView: View {
         }
         .frame(width: 300)
         .frame(maxHeight: .infinity)
-        .background(.ultraThinMaterial.opacity(0.9))
+        .background(.ultraThinMaterial)
         .overlay(alignment: .leading) {
             dragHandle
         }

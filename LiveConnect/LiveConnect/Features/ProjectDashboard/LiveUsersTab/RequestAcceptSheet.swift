@@ -12,7 +12,7 @@ import SwiftUI
 struct RequestAcceptSheet: View {
     let projectId: UUID
     let requestId: UUID
-    let onCallAccepted: (AcceptedCallResponse) -> Void
+    let onCallAccepted: (AcceptedCallResponse, String?) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var request: Request?
@@ -209,7 +209,7 @@ struct RequestAcceptSheet: View {
 
             // Dismiss sheet and start call
             dismiss()
-            onCallAccepted(response)
+            onCallAccepted(response, request?.visitor.name)
         } catch {
             self.error = error.localizedDescription
         }
@@ -253,5 +253,5 @@ struct RequestAcceptSheet: View {
     RequestAcceptSheet(
         projectId: UUID(),
         requestId: UUID()
-    ) { _ in }
+    ) { _, _ in }
 }

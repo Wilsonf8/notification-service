@@ -56,7 +56,6 @@ struct InCallChatView: View {
                 }
             }
             .padding()
-            .background(Color.black.opacity(0.8))
 
             // Messages list
             ScrollViewReader { proxy in
@@ -98,11 +97,10 @@ struct InCallChatView: View {
                 .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
             .padding()
-            .background(Color.black.opacity(0.8))
         }
         .frame(width: 300)
         .frame(maxHeight: .infinity)
-        .background(.ultraThinMaterial.opacity(0.9))
+        .background(.ultraThinMaterial)
         .overlay(alignment: .leading) {
             dragHandle
         }

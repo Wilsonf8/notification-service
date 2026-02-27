@@ -18,6 +18,9 @@ struct ContentView: View {
     /// Active call response when a request is accepted from notification.
     @State private var activeCallFromNotification: AcceptedCallResponse?
 
+    /// Visitor name for the active call from notification.
+    @State private var notificationCallVisitorName: String?
+
     /// WebSocket manager for calls accepted from notifications.
     @State private var notificationWebSocketManager = WebSocketManager()
 
@@ -52,7 +55,8 @@ struct ContentView: View {
             RequestAcceptSheet(
                 projectId: data.projectId,
                 requestId: data.requestId
-            ) { response in
+            ) { response, visitorName in
+                notificationCallVisitorName = visitorName
                 activeCallFromNotification = response
             }
         }
@@ -60,12 +64,14 @@ struct ContentView: View {
             if let projectId = requestAcceptSheet?.projectId ?? sidebarViewModel.selectedProjectId {
                 VideoCallView(
                     conversationId: call.conversationId,
+                    visitorName: notificationCallVisitorName,
                     livekitUrl: call.liveKitUrl,
                     livekitToken: call.token,
                     projectId: projectId,
                     webSocketManager: notificationWebSocketManager
                 ) {
                     activeCallFromNotification = nil
+                    notificationCallVisitorName = nil
                 }
             }
         }

@@ -87,6 +87,18 @@ final class VideoCallViewModel: RoomDelegate {
     /// The last error that occurred.
     private(set) var error: Error?
 
+    /// Timestamp when the call successfully connected (used for duration display).
+    private(set) var callStartTime: Date?
+
+    /// Formatted call duration string (e.g. "05:32").
+    var formattedDuration: String {
+        guard let start = callStartTime else { return "00:00" }
+        let elapsed = Int(Date().timeIntervalSince(start))
+        let minutes = elapsed / 60
+        let seconds = elapsed % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
     /// Conversation ID for this call.
     private let conversationId: UUID
 
@@ -102,6 +114,11 @@ final class VideoCallViewModel: RoomDelegate {
     init(conversationId: UUID, projectId: UUID) {
         self.conversationId = conversationId
         self.projectId = projectId
+    }
+
+    /// Clears the error state (e.g. before retrying).
+    func clearError() {
+        error = nil
     }
 
     /// Clears the unread chat indicator.
@@ -223,6 +240,7 @@ final class VideoCallViewModel: RoomDelegate {
                 }
             }
 
+            callStartTime = Date()
             isConnecting = false
         } catch {
             self.error = error
@@ -239,6 +257,7 @@ final class VideoCallViewModel: RoomDelegate {
         remoteScreenShareTrack = nil
         isBlurEnabled = false
         blurProcessor = nil
+        callStartTime = nil
     }
 
     /// Toggles the microphone mute state.

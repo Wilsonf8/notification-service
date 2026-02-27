@@ -17,7 +17,7 @@ enum LiveUsersSection: String, CaseIterable {
 /// Live Users tab showing waiting, in-call, and browsing visitors.
 struct LiveUsersView: View {
     @Bindable var viewModel: ProjectDashboardViewModel
-    var onJoinCall: (AcceptedCallResponse) -> Void
+    var onJoinCall: (AcceptedCallResponse, String?) -> Void
 
     @State private var selectedSection: LiveUsersSection = .browsing
     @State private var selectedVisitor: Visitor?
@@ -47,7 +47,7 @@ struct LiveUsersView: View {
                             onAccept: { request in
                                 Task {
                                     if let response = await viewModel.acceptRequest(request.id) {
-                                        onJoinCall(response)
+                                        onJoinCall(response, request.visitor.name)
                                     }
                                 }
                             },
@@ -141,6 +141,6 @@ struct LiveUsersView: View {
 #Preview {
     LiveUsersView(
         viewModel: ProjectDashboardViewModel(),
-        onJoinCall: { _ in }
+        onJoinCall: { _, _ in }
     )
 }

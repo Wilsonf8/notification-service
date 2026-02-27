@@ -36,6 +36,7 @@ struct ProjectDashboardView: View {
     @State private var showSidebar = false
     @State private var showAccountSheet = false
     @State private var activeCall: AcceptedCallResponse?
+    @State private var activeCallVisitorName: String?
 
     var body: some View {
         Group {
@@ -60,12 +61,14 @@ struct ProjectDashboardView: View {
                 VideoCallView(
                     conversationId: call.conversationId,
                     visitorId: call.visitorId,
+                    visitorName: activeCallVisitorName,
                     livekitUrl: call.liveKitUrl,
                     livekitToken: call.token,
                     projectId: projectId,
                     webSocketManager: viewModel.webSocketManager
                 ) {
                     activeCall = nil
+                    activeCallVisitorName = nil
                 }
             }
             .task {
@@ -100,7 +103,8 @@ struct ProjectDashboardView: View {
         TabView(selection: $selectedTab) {
             Tab(DashboardTab.liveUsers.rawValue, systemImage: DashboardTab.liveUsers.icon, value: .liveUsers) {
                 tabContent {
-                    LiveUsersView(viewModel: viewModel) { callResponse in
+                    LiveUsersView(viewModel: viewModel) { callResponse, visitorName in
+                        activeCallVisitorName = visitorName
                         activeCall = callResponse
                     }
                 }
