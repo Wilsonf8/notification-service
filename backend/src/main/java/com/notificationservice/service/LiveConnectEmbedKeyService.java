@@ -84,6 +84,7 @@ public class LiveConnectEmbedKeyService {
                 .project(project)
                 .name(request.name())
                 .keyHash(keyHash)
+                .keyValue(fullKey)
                 .keyPrefix(keyPrefixDisplay)
                 .allowedDomains(allowedDomains)
                 .build();
@@ -166,11 +167,15 @@ public class LiveConnectEmbedKeyService {
      */
     @Transactional
     public LiveConnectEmbedKey validateEmbedKey(String key, String domain) {
-        LiveConnectEmbedKey embedKey = embedKeyRepository.findAll().stream()
-                .filter(k -> !k.getIsRevoked())
-                .filter(k -> passwordEncoder.matches(key, k.getKeyHash()))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid embed key"));
+        // Try direct lookup first (new keys with stored key_value)
+        LiveConnectEmbedKey embedKey = embedKeyRepository.findByKeyValueAndIsRevokedFalse(key)
+                // Fall back to bcrypt matching for legacy keys without key_value
+                .orElseGet(() -> embedKeyRepository.findAll().stream()
+                        .filter(k -> !k.getIsRevoked())
+                        .filter(k -> k.getKeyValue() == null)
+                        .filter(k -> passwordEncoder.matches(key, k.getKeyHash()))
+                        .findFirst()
+                        .orElseThrow(() -> new ResourceNotFoundException("Invalid embed key")));
 
         if (embedKey.getAllowedDomains() != null && !embedKey.getAllowedDomains().isEmpty()) {
             boolean domainAllowed = embedKey.getAllowedDomains().stream()
@@ -227,6 +232,7 @@ public class LiveConnectEmbedKeyService {
                 embedKey.getId(),
                 embedKey.getName(),
                 embedKey.getKeyPrefix(),
+                embedKey.getKeyValue(),
                 embedKey.getAllowedDomains(),
                 embedKey.getCreatedAt(),
                 embedKey.getLastUsedAt()

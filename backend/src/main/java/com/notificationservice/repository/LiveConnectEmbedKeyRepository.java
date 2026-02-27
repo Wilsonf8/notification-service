@@ -29,4 +29,11 @@ public interface LiveConnectEmbedKeyRepository extends JpaRepository<LiveConnect
 
     @Query("SELECT k FROM LiveConnectEmbedKey k WHERE k.keyHash = :keyHash AND k.isRevoked = false")
     Optional<LiveConnectEmbedKey> findByKeyHashAndNotRevoked(String keyHash);
+
+    /**
+     * Finds an active embed key by its plaintext key value (new keys only).
+     * @param keyValue the full key value
+     * @return the embed key if found and not revoked
+     */
+    Optional<LiveConnectEmbedKey> findByKeyValueAndIsRevokedFalse(String keyValue);
 }

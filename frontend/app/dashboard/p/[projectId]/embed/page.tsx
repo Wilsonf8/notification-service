@@ -96,7 +96,20 @@ export default function EmbedPage() {
   const [newEmbedKey, setNewEmbedKey] = useState<LiveConnectEmbedKeyCreated | null>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
+  // Script modal state
+  const [scriptModalKey, setScriptModalKey] = useState<LiveConnectEmbedKey | null>(null);
+
   const [deletingKeyId, setDeletingKeyId] = useState<string | null>(null);
+
+  /**
+   * Generates the ready-to-paste embed script tag for a given key.
+   * @param keyValue - The embed key or placeholder to insert into data-key
+   * @returns HTML script tag string
+   */
+  const getEmbedScript = (keyValue: string): string => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.notifykit.dev";
+    return `<script\n  src="${baseUrl}/sdk/liveconnect.js"\n  data-key="${keyValue}"\n  async\n></script>`;
+  };
 
   /**
    * Fetches embed keys from the API.
@@ -339,8 +352,13 @@ export default function EmbedPage() {
               <TableBody>
                 {embedKeys.map((key) => (
                   <TableRow key={key.id}>
-                    <TableCell className="font-mono text-xs">
-                      {key.keyPrefix}...
+                    <TableCell>
+                      <button
+                        className="font-mono text-xs text-primary underline underline-offset-4 hover:text-primary/80"
+                        onClick={() => setScriptModalKey(key)}
+                      >
+                        {key.keyPrefix}
+                      </button>
                     </TableCell>
                     <TableCell>{key.name}</TableCell>
                     <TableCell className="hidden md:table-cell">
@@ -363,6 +381,14 @@ export default function EmbedPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => setScriptModalKey(key)}
+                          title="View embed script"
+                        >
+                          <IconCode className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon-sm"
@@ -459,7 +485,7 @@ export default function EmbedPage() {
               Embed Key Created
             </DialogTitle>
             <DialogDescription>
-              Copy your embed key now. You won&apos;t be able to see it again.
+              Your embed key has been created. You can view the embed script anytime by clicking the key in the table.
             </DialogDescription>
           </DialogHeader>
           {newEmbedKey && (
@@ -481,13 +507,47 @@ export default function EmbedPage() {
                   </Button>
                 </div>
               </div>
+              <div>
+                <p className="mb-2 text-xs text-muted-foreground">Ready-to-paste embed script</p>
+                <CodeBlock code={getEmbedScript(newEmbedKey.key)} />
+              </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter showCloseButton>
             <Button onClick={() => setShowSuccessDialog(false)}>
-              I&apos;ve Copied the Key
+              Done
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Embed Script Modal */}
+      <Dialog open={!!scriptModalKey} onOpenChange={(open) => !open && setScriptModalKey(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Embed Script</DialogTitle>
+            <DialogDescription>
+              {scriptModalKey?.name} &middot; <span className="font-mono">{scriptModalKey?.keyPrefix}</span>
+            </DialogDescription>
+          </DialogHeader>
+          {scriptModalKey && (
+            <div className="space-y-3">
+              {scriptModalKey.key ? (
+                <CodeBlock code={getEmbedScript(scriptModalKey.key)} />
+              ) : (
+                <>
+                  <CodeBlock code={getEmbedScript(scriptModalKey.keyPrefix + "...")} />
+                  <div className="flex items-start gap-2 bg-yellow-500/10 p-3">
+                    <IconAlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-500" />
+                    <p className="text-xs text-muted-foreground">
+                      This is a legacy key — the full value can&apos;t be recovered. Create a new key to get a ready-to-paste script.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+          <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>
 
@@ -499,16 +559,10 @@ export default function EmbedPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <CodeBlock
-            code={`<script
-  src="${process.env.NEXT_PUBLIC_APP_URL || "https://app.notifykit.dev"}/sdk/liveconnect.js"
-  data-key="${newEmbedKey?.key || embedKeys[0]?.keyPrefix + "..." || "YOUR_EMBED_KEY"}"
-  async
-></script>`}
-          />
+          <CodeBlock code={getEmbedScript("YOUR_EMBED_KEY")} />
           <div className="bg-muted p-3">
             <p className="text-xs text-muted-foreground">
-              <strong>Note:</strong> Replace <code className="bg-background px-1 font-mono">YOUR_EMBED_KEY</code> with your actual embed key. The widget will automatically appear in the bottom-right corner of your website.
+              <strong>Note:</strong> Click a key in the table above to get the script with your key pre-filled. The widget will automatically appear in the bottom-right corner of your website.
             </p>
           </div>
         </CardContent>

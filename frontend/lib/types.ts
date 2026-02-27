@@ -143,6 +143,7 @@ export interface LiveConnectEmbedKey {
   id: string;
   name: string;
   keyPrefix: string;
+  key: string | null;
   allowedDomains: string[];
   createdAt: string;
   lastUsedAt: string | null;

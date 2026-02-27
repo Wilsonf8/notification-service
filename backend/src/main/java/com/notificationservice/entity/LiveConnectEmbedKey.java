@@ -36,6 +36,9 @@ public class LiveConnectEmbedKey {
     @Column(name = "key_hash", nullable = false)
     private String keyHash;
 
+    @Column(name = "key_value")
+    private String keyValue;
+
     private String name;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
