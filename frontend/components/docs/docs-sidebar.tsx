@@ -15,6 +15,7 @@ import {
   IconCode,
   IconBug,
   IconArrowLeft,
+  IconPuzzle,
 } from "@tabler/icons-react";
 
 /** Navigation item configuration */
@@ -48,6 +49,11 @@ export const docsNavItems: NavItem[] = [
     label: "API Reference",
     href: "/docs/api-reference",
     icon: IconCode,
+  },
+  {
+    label: "No-Code Integrations",
+    href: "/docs/no-code-integrations",
+    icon: IconPuzzle,
   },
   {
     label: "Troubleshooting",
