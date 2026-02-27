@@ -523,9 +523,17 @@ export interface CrmVisitorListParams {
   search?: string;
   stages?: PipelineStage[];
   tagIds?: string[];
+  hasBeenInCall?: boolean;
+  hasContactForm?: boolean;
+  hasContactInfo?: boolean;
+  repUpdatedInfo?: boolean;
+  onlineNow?: boolean;
   sort?: string;
   direction?: string;
 }
+
+/** Available CRM sort fields */
+export type CrmSortField = "lastSeenAt" | "leadScore" | "name" | "lastCallAt";
 
 /** Request body for patching visitor contact fields */
 export interface UpdateVisitorContactRequest {

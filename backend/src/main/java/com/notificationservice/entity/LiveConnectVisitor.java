@@ -120,6 +120,16 @@ public class LiveConnectVisitor {
     @Builder.Default
     private Integer leadScore = 0;
 
+    @Column(name = "last_call_at")
+    private OffsetDateTime lastCallAt;
+
+    @Column(name = "contact_updated_at")
+    private OffsetDateTime contactUpdatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contact_updated_by_rep_id")
+    private LiveConnectRep contactUpdatedByRep;
+
     @Column(name = "first_seen_at")
     private OffsetDateTime firstSeenAt;
 

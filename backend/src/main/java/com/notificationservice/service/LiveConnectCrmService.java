@@ -35,28 +35,37 @@ public class LiveConnectCrmService {
 
     /**
      * Gets paginated CRM visitor list with time-range filter, optional search,
-     * stage filter, and tag filter.
+     * stage filter, tag filter, and boolean filters.
      *
-     * @param projectId the project ID
-     * @param days      number of days to look back (1, 3, 7, 30)
-     * @param search    optional search term
-     * @param stages    optional pipeline stages to filter by
-     * @param tagIds    optional tag IDs for AND-logic filtering
-     * @param page      page number (0-indexed)
-     * @param size      page size
-     * @param sort      sort field (lastSeenAt, leadScore, name)
-     * @param direction sort direction (asc, desc)
+     * @param projectId      the project ID
+     * @param days           number of days to look back (1, 3, 7, 30)
+     * @param search         optional search term
+     * @param stages         optional pipeline stages to filter by
+     * @param tagIds         optional tag IDs for AND-logic filtering
+     * @param hasBeenInCall  if true, only visitors with at least one video call
+     * @param hasContactForm if true, only visitors who submitted a contact form
+     * @param hasContactInfo if true, only visitors with name, email, or phone
+     * @param repUpdatedInfo if true, only visitors whose contact was rep-edited
+     * @param onlineNow      if true, only currently online visitors
+     * @param page           page number (0-indexed)
+     * @param size           page size
+     * @param sort           sort field (lastSeenAt, leadScore, name, lastCallAt)
+     * @param direction      sort direction (asc, desc)
      * @return paginated CRM visitor list
      */
     @Transactional(readOnly = true)
     public CrmVisitorListResponse getVisitors(UUID projectId, int days, String search,
                                                Set<PipelineStage> stages, Set<UUID> tagIds,
+                                               boolean hasBeenInCall, boolean hasContactForm,
+                                               boolean hasContactInfo, boolean repUpdatedInfo,
+                                               boolean onlineNow,
                                                int page, int size, String sort, String direction) {
         OffsetDateTime since = OffsetDateTime.now().minusDays(days);
         Sort.Direction dir = "asc".equalsIgnoreCase(direction) ? Sort.Direction.ASC : Sort.Direction.DESC;
         String sortField = switch (sort) {
             case "leadScore" -> "leadScore";
             case "name" -> "name";
+            case "lastCallAt" -> "lastCallAt";
             default -> "lastSeenAt";
         };
         PageRequest pageable = PageRequest.of(page, size, Sort.by(dir, sortField));
@@ -64,9 +73,12 @@ public class LiveConnectCrmService {
         Collection<PipelineStage> stageFilter = (stages != null && !stages.isEmpty()) ? stages : null;
         Collection<UUID> tagFilter = (tagIds != null && !tagIds.isEmpty()) ? tagIds : null;
         long tagCount = tagFilter != null ? tagFilter.size() : 0;
+        OffsetDateTime onlineThreshold = onlineNow ? OffsetDateTime.now().minusMinutes(2) : null;
 
         Page<LiveConnectVisitor> visitors = visitorRepository.findForCrm(
-                projectId, since, search, stageFilter, tagFilter, tagCount, pageable);
+                projectId, since, search, stageFilter, tagFilter, tagCount,
+                hasBeenInCall, hasContactForm, hasContactInfo, repUpdatedInfo,
+                onlineThreshold, pageable);
 
         if (visitors.isEmpty()) {
             return new CrmVisitorListResponse(List.of(), 0, 0, page, size);
@@ -338,19 +350,24 @@ public class LiveConnectCrmService {
     /**
      * Patches visitor contact fields using PATCH semantics.
      * Null fields are ignored (not updated). Empty string clears the field.
+     * Tracks which rep made the change and when for CRM filtering.
      *
      * @param visitorId the visitor's internal ID
      * @param request   the contact fields to patch
+     * @param rep       the rep making the update
      * @throws ResourceNotFoundException if visitor not found
      */
     @Transactional
-    public void updateVisitorContact(UUID visitorId, UpdateVisitorContactRequest request) {
+    public void updateVisitorContact(UUID visitorId, UpdateVisitorContactRequest request, LiveConnectRep rep) {
         LiveConnectVisitor visitor = visitorRepository.findById(visitorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Visitor not found"));
 
         if (request.name() != null) visitor.setName(request.name());
         if (request.email() != null) visitor.setEmail(request.email());
         if (request.phone() != null) visitor.setPhone(request.phone());
+
+        visitor.setContactUpdatedAt(OffsetDateTime.now());
+        visitor.setContactUpdatedByRep(rep);
 
         visitorRepository.save(visitor);
     }

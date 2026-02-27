@@ -35,6 +35,11 @@ export async function getCrmVisitors(
   if (params?.search) query.set("search", params.search);
   if (params?.stages?.length) query.set("stages", params.stages.join(","));
   if (params?.tagIds?.length) query.set("tagIds", params.tagIds.join(","));
+  if (params?.hasBeenInCall) query.set("hasBeenInCall", "true");
+  if (params?.hasContactForm) query.set("hasContactForm", "true");
+  if (params?.hasContactInfo) query.set("hasContactInfo", "true");
+  if (params?.repUpdatedInfo) query.set("repUpdatedInfo", "true");
+  if (params?.onlineNow) query.set("onlineNow", "true");
   if (params?.sort) query.set("sort", params.sort);
   if (params?.direction) query.set("direction", params.direction);
 

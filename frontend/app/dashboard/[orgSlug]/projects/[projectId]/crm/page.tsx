@@ -1,6 +1,6 @@
 /**
  * CRM visitor list page.
- * Shows all visitors with filtering, search, and pagination.
+ * Shows all visitors with filtering, search, sorting, and pagination.
  * @module app/dashboard/[orgSlug]/projects/[projectId]/crm/page
  */
 "use client";
@@ -23,10 +23,39 @@ import { CrmVisitorList } from "@/components/liveconnect/crm/crm-visitor-list";
 import { CrmTimeFilter } from "@/components/liveconnect/crm/crm-time-filter";
 import { CrmStageFilter } from "@/components/liveconnect/crm/crm-stage-filter";
 import { CrmTagFilter } from "@/components/liveconnect/crm/crm-tag-filter";
-import type { CrmVisitorListItem, PipelineStage, Tag } from "@/lib/types";
+import { CrmBooleanFilters, type BooleanFilterState } from "@/components/liveconnect/crm/crm-boolean-filters";
+import { CrmSortSelect } from "@/components/liveconnect/crm/crm-sort-select";
+import type { CrmVisitorListItem, CrmSortField, PipelineStage, Tag } from "@/lib/types";
 
 /** Page size for pagination */
 const PAGE_SIZE = 20;
+
+/** Default boolean filter state (all off) */
+const DEFAULT_BOOLEAN_FILTERS: BooleanFilterState = {
+  hasBeenInCall: false,
+  hasContactForm: false,
+  hasContactInfo: false,
+  repUpdatedInfo: false,
+  onlineNow: false,
+};
+
+/** Valid sort field values for localStorage validation */
+const VALID_SORT_FIELDS: CrmSortField[] = ["lastSeenAt", "leadScore", "name", "lastCallAt"];
+
+/**
+ * Safely parses a JSON string, returning fallback on failure.
+ * @param value - Raw string from localStorage
+ * @param fallback - Default value if parsing fails
+ * @returns Parsed value or fallback
+ */
+function safeParse<T>(value: string | null, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
 
 /**
  * CRM visitor list page component.
@@ -50,18 +79,34 @@ export default function CrmPage() {
   });
   const [stages, setStages] = useState<PipelineStage[]>(() => {
     if (typeof window === "undefined") return [];
-    const saved = localStorage.getItem(`crm-stages-${projectId}`);
-    return saved ? JSON.parse(saved) : [];
+    return safeParse(localStorage.getItem(`crm-stages-${projectId}`), []);
   });
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
-    const saved = localStorage.getItem(`crm-tagIds-${projectId}`);
-    return saved ? JSON.parse(saved) : [];
+    return safeParse(localStorage.getItem(`crm-tagIds-${projectId}`), []);
+  });
+  const [booleanFilters, setBooleanFilters] = useState<BooleanFilterState>(() => {
+    if (typeof window === "undefined") return DEFAULT_BOOLEAN_FILTERS;
+    return { ...DEFAULT_BOOLEAN_FILTERS, ...safeParse(localStorage.getItem(`crm-boolFilters-${projectId}`), {}) };
   });
   const [projectTags, setProjectTags] = useState<Tag[]>([]);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(0);
+
+  // Sort state
+  const [sort, setSort] = useState<CrmSortField>(() => {
+    if (typeof window === "undefined") return "lastSeenAt";
+    const saved = localStorage.getItem(`crm-sort-${projectId}`);
+    return saved && VALID_SORT_FIELDS.includes(saved as CrmSortField)
+      ? (saved as CrmSortField)
+      : "lastSeenAt";
+  });
+  const [direction, setDirection] = useState<"asc" | "desc">(() => {
+    if (typeof window === "undefined") return "desc";
+    const saved = localStorage.getItem(`crm-direction-${projectId}`);
+    return saved === "asc" || saved === "desc" ? saved : "desc";
+  });
 
   /**
    * Fetches CRM visitors from the API.
@@ -77,8 +122,13 @@ export default function CrmPage() {
         search: search || undefined,
         stages: stages.length ? stages : undefined,
         tagIds: selectedTagIds.length ? selectedTagIds : undefined,
-        sort: "lastSeenAt",
-        direction: "desc",
+        hasBeenInCall: booleanFilters.hasBeenInCall || undefined,
+        hasContactForm: booleanFilters.hasContactForm || undefined,
+        hasContactInfo: booleanFilters.hasContactInfo || undefined,
+        repUpdatedInfo: booleanFilters.repUpdatedInfo || undefined,
+        onlineNow: booleanFilters.onlineNow || undefined,
+        sort,
+        direction,
       });
       setVisitors(response.visitors);
       setTotalPages(response.totalPages);
@@ -92,7 +142,7 @@ export default function CrmPage() {
 
   useEffect(() => {
     fetchVisitors();
-  }, [projectId, days, search, stages, selectedTagIds, page]);
+  }, [projectId, days, search, stages, selectedTagIds, booleanFilters, sort, direction, page]);
 
   // Fetch project tags on mount and validate persisted tagIds
   useEffect(() => {
@@ -140,6 +190,33 @@ export default function CrmPage() {
   };
 
   /**
+   * Handles boolean filter change.
+   */
+  const handleBooleanFiltersChange = (newFilters: BooleanFilterState) => {
+    setBooleanFilters(newFilters);
+    setPage(0);
+    localStorage.setItem(`crm-boolFilters-${projectId}`, JSON.stringify(newFilters));
+  };
+
+  /**
+   * Handles sort field change.
+   */
+  const handleSortChange = (newSort: CrmSortField) => {
+    setSort(newSort);
+    setPage(0);
+    localStorage.setItem(`crm-sort-${projectId}`, newSort);
+  };
+
+  /**
+   * Handles sort direction change.
+   */
+  const handleDirectionChange = (newDirection: "asc" | "desc") => {
+    setDirection(newDirection);
+    setPage(0);
+    localStorage.setItem(`crm-direction-${projectId}`, newDirection);
+  };
+
+  /**
    * Navigates to visitor detail page.
    */
   const handleVisitorSelect = (visitorId: string) => {
@@ -171,11 +248,24 @@ export default function CrmPage() {
           </div>
 
           {/* Stage + Tag filters */}
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <CrmStageFilter value={stages} onChange={handleStagesChange} />
             {projectTags.length > 0 && (
               <CrmTagFilter tags={projectTags} value={selectedTagIds} onChange={handleTagsChange} />
             )}
+            <div className="ml-auto">
+              <CrmSortSelect
+                sort={sort}
+                direction={direction}
+                onSortChange={handleSortChange}
+                onDirectionChange={handleDirectionChange}
+              />
+            </div>
+          </div>
+
+          {/* Boolean filters */}
+          <div className="mt-3">
+            <CrmBooleanFilters value={booleanFilters} onChange={handleBooleanFiltersChange} />
           </div>
 
           {/* Search */}
