@@ -633,17 +633,23 @@ export function useLiveConnectWebSocket(
     };
   }, [clearTimers]);
 
-  // Close WebSocket on tab close / navigation away
+  // Notify backend on tab close / navigation away via fetch with keepalive
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (wsRef.current) {
-        wsRef.current.close(1000, "Page unloading");
-      }
+      const token = getToken();
+      if (!token || !projectId) return;
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
+      fetch(`${apiUrl}/api/projects/${projectId}/liveconnect/disconnect`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        keepalive: true,
+      });
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+  }, [projectId]);
 
   return {
     isConnected,

@@ -35,6 +35,7 @@ public class LiveConnectRepService {
     private final UserRepository userRepository;
     private final WebSocketBroadcaster broadcaster;
     private final TierService tierService;
+    private final LiveConnectRequestService requestService;
 
     /**
      * Gets all reps for a project.
@@ -170,6 +171,25 @@ public class LiveConnectRepService {
 
         LiveConnectRep savedRep = repRepository.save(rep);
         return toDto(savedRep);
+    }
+
+    /**
+     * Disconnects a rep from a project, setting them offline and withdrawing pending pings.
+     * Used by the HTTP disconnect endpoint for reliable cleanup during page unload.
+     * Skips reps that are currently in a call to avoid disrupting active conversations.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID of the rep to disconnect
+     */
+    @Transactional
+    public void disconnectRep(UUID projectId, UUID userId) {
+        repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
+            if (rep.getPresence() == RepPresence.IN_CALL) return;
+            rep.setPresence(RepPresence.OFFLINE);
+            rep.setActiveConnections(0);
+            repRepository.save(rep);
+            requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
+        });
     }
 
     /**

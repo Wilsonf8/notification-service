@@ -140,6 +140,24 @@ public class LiveConnectDashboardController {
         return ResponseEntity.ok(repService.resetRepState(projectId, userId));
     }
 
+    // Disconnect Endpoint
+
+    /**
+     * Disconnects the calling rep, setting them offline and withdrawing pending pings.
+     * Called via fetch with keepalive during page unload for reliable cleanup.
+     *
+     * @param projectId the project ID
+     * @param userId the authenticated user's ID
+     * @return 200 OK on success
+     */
+    @PostMapping("/disconnect")
+    public ResponseEntity<Void> disconnect(
+            @PathVariable UUID projectId,
+            @AuthenticationPrincipal UUID userId) {
+        repService.disconnectRep(projectId, userId);
+        return ResponseEntity.ok().build();
+    }
+
     // Visitor Endpoints
 
     /**
