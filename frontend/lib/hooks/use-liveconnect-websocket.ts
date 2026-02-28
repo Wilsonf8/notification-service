@@ -633,6 +633,18 @@ export function useLiveConnectWebSocket(
     };
   }, [clearTimers]);
 
+  // Close WebSocket on tab close / navigation away
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (wsRef.current) {
+        wsRef.current.close(1000, "Page unloading");
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
+
   return {
     isConnected,
     error,
