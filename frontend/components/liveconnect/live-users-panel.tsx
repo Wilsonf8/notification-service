@@ -212,6 +212,7 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
             visitor={selectedVisitor}
             projectId={projectId}
             onClose={() => setSelectedVisitorId(null)}
+            deviceSessionId={deviceSessionId}
           />
         </div>
       </div>

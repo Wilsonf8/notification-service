@@ -71,9 +71,14 @@ enum Endpoints {
     /// - Parameters:
     ///   - projectId: The project UUID.
     ///   - visitorId: The visitor UUID.
+    ///   - deviceSessionId: The device session ID of the pinging client (optional).
     /// - Returns: Endpoint path.
-    static func pingVisitor(projectId: UUID, visitorId: UUID) -> String {
-        "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/ping"
+    static func pingVisitor(projectId: UUID, visitorId: UUID, deviceSessionId: String? = nil) -> String {
+        let base = "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/ping"
+        if let deviceSessionId {
+            return "\(base)?deviceSessionId=\(deviceSessionId)"
+        }
+        return base
     }
 
     /// Accept a request.

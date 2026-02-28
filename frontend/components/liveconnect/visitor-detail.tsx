@@ -66,13 +66,14 @@ interface VisitorDetailProps {
   visitor: LiveConnectVisitor | null;
   projectId: string;
   onClose: () => void;
+  deviceSessionId?: string;
 }
 
 /**
  * Visitor detail panel component.
  * Shows detailed information about a selected visitor with ping action.
  */
-export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProps) {
+export function VisitorDetail({ visitor, projectId, onClose, deviceSessionId }: VisitorDetailProps) {
   const [isPinging, setIsPinging] = useState(false);
   const [pingError, setPingError] = useState<string | null>(null);
   const [pingSuccess, setPingSuccess] = useState(false);
@@ -132,7 +133,7 @@ export function VisitorDetail({ visitor, projectId, onClose }: VisitorDetailProp
       setIsPinging(true);
       setPingError(null);
       setPingSuccess(false);
-      await pingVisitor(projectId, visitor.id);
+      await pingVisitor(projectId, visitor.id, deviceSessionId);
       setPingSuccess(true);
       // Reset success message after 3 seconds
       setTimeout(() => setPingSuccess(false), 3000);

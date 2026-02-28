@@ -147,12 +147,13 @@ public class LiveConnectVisitorService {
      * @param projectId the project ID
      * @param visitorId the visitor's internal ID
      * @param userId the requesting user's ID (must be a rep)
+     * @param deviceSessionId the device session ID of the pinging client (null for backward compat)
      * @return ping response with request ID and expiry
      * @throws ResourceNotFoundException if project, visitor not found, or user is not a rep
      * @throws IllegalArgumentException if project is not LIVECONNECT type, visitor is offline, or has pending request
      */
     @Transactional
-    public PingVisitorResponse pingVisitor(UUID projectId, UUID visitorId, UUID userId) {
+    public PingVisitorResponse pingVisitor(UUID projectId, UUID visitorId, UUID userId, String deviceSessionId) {
         getAndValidateProject(projectId, userId);
         LiveConnectRep rep = verifyRepAccess(projectId, userId);
 
@@ -193,6 +194,7 @@ public class LiveConnectVisitorService {
                 .initiatedByRep(rep)
                 .direction(RequestDirection.REP_TO_USER)
                 .expiresAt(expiresAt)
+                .deviceSessionId(deviceSessionId)
                 .build();
 
         request = requestRepository.save(request);

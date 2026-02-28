@@ -184,6 +184,7 @@ interface ConversationStartedEvent extends BaseWebSocketEvent {
   token: string;
   liveKitUrl: string;
   originDeviceSessionId?: string;
+  source?: string;
 }
 
 /** Call started broadcast event from backend */
@@ -495,12 +496,18 @@ export function useLiveConnectWebSocket(
 
       case "conversation_started": {
         const startedEvent = event as ConversationStartedEvent;
-        if (startedEvent.originDeviceSessionId) {
-          // Accept-initiated: HTTP response already opened the call on the accepting device.
-          // All other devices should ignore this event.
+        if (startedEvent.source === "accept") {
+          // Rep accepted a visitor's request — HTTP response already opened the call on the accepting device.
+          // All devices (including the accepting one) should ignore the WS event.
           break;
         }
-        // No originDeviceSessionId means visitor-initiated (e.g., visitorAcceptsPing) — open on all devices
+        if (startedEvent.source === "ping_accepted") {
+          // Visitor accepted a rep's ping — only the device that sent the ping should open the call.
+          if (startedEvent.originDeviceSessionId !== deviceSessionIdRef.current) {
+            break;
+          }
+        }
+        // Open the call: either ping_accepted on the matching device, or no source (legacy/backward compat)
         const callUrl = `/call/${startedEvent.roomName}?token=${encodeURIComponent(startedEvent.token)}&conversation=${startedEvent.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(startedEvent.liveKitUrl)}&visitor=${startedEvent.visitorId}`;
         window.open(callUrl, "_blank", "width=900,height=600");
         break;

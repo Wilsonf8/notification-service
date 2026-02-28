@@ -56,6 +56,10 @@ public class LiveConnectRequest {
     @Column(name = "expires_at", nullable = false)
     private OffsetDateTime expiresAt;
 
+    /** The device session ID of the client that initiated this request (for multi-device routing). */
+    @Column(name = "device_session_id")
+    private String deviceSessionId;
+
     @CreationTimestamp
     @Column(name = "created_at")
     private OffsetDateTime createdAt;

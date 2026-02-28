@@ -197,7 +197,8 @@ public class LiveConnectRequestService {
                 roomName,
                 repToken,
                 liveKitTokenService.getLiveKitUrl(),
-                deviceSessionId
+                deviceSessionId,
+                "accept"
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 
@@ -472,14 +473,15 @@ public class LiveConnectRequestService {
                 request.getVisitor().getName() != null ? request.getVisitor().getName() : "Visitor"
         );
 
-        // Broadcast to rep with rep's token (null deviceSessionId = open on all devices)
+        // Broadcast to rep with rep's token (includes deviceSessionId from the ping so only the pinging device opens)
         ConversationStartedEvent repEvent = new ConversationStartedEvent(
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
                 repToken,
                 liveKitTokenService.getLiveKitUrl(),
-                null
+                request.getDeviceSessionId(),
+                "ping_accepted"
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 

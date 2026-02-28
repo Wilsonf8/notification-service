@@ -123,13 +123,16 @@ export async function getVisitors(
  * Pings a visitor to initiate a call request from rep side.
  * @param projectId - The project ID
  * @param visitorId - The visitor ID to ping
+ * @param deviceSessionId - The device session ID of the pinging client (optional)
  */
 export async function pingVisitor(
   projectId: string,
-  visitorId: string
+  visitorId: string,
+  deviceSessionId?: string
 ): Promise<void> {
+  const params = deviceSessionId ? `?deviceSessionId=${encodeURIComponent(deviceSessionId)}` : '';
   await apiFetch(
-    `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/ping`,
+    `/api/projects/${projectId}/liveconnect/visitors/${visitorId}/ping${params}`,
     { method: "POST" }
   );
 }

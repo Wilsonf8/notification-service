@@ -10,7 +10,8 @@ import java.util.UUID;
  * @param roomName the LiveKit room name
  * @param token the LiveKit token for the rep
  * @param liveKitUrl the LiveKit server URL
- * @param originDeviceSessionId the device session that triggered the accept (null for visitor-initiated calls)
+ * @param originDeviceSessionId the device session that initiated this action (null = open on all devices)
+ * @param source how the conversation was started: "accept" (rep accepted visitor request) or "ping_accepted" (visitor accepted rep's ping)
  */
 public record ConversationStartedEvent(
         UUID conversationId,
@@ -18,7 +19,8 @@ public record ConversationStartedEvent(
         String roomName,
         String token,
         String liveKitUrl,
-        String originDeviceSessionId
+        String originDeviceSessionId,
+        String source
 ) {
     /**
      * Returns the event type identifier.

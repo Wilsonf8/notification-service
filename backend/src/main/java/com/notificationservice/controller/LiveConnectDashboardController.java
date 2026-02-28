@@ -162,14 +162,16 @@ public class LiveConnectDashboardController {
      * @param projectId the project ID
      * @param visitorId the visitor's internal ID
      * @param userId the authenticated user's ID (must be a rep)
+     * @param deviceSessionId the device session ID of the pinging client (optional)
      * @return ping response with request ID and expiry
      */
     @PostMapping("/visitors/{visitorId}/ping")
     public ResponseEntity<PingVisitorResponse> pingVisitor(
             @PathVariable UUID projectId,
             @PathVariable UUID visitorId,
-            @AuthenticationPrincipal UUID userId) {
-        return ResponseEntity.ok(visitorService.pingVisitor(projectId, visitorId, userId));
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(required = false) String deviceSessionId) {
+        return ResponseEntity.ok(visitorService.pingVisitor(projectId, visitorId, userId, deviceSessionId));
     }
 
     /**

@@ -103,6 +103,7 @@ private struct ConversationStartedDTO: Codable {
     let token: String
     let liveKitUrl: String
     let originDeviceSessionId: String?
+    let source: String?
 }
 
 /// DTO for message_received event from backend.
@@ -391,7 +392,8 @@ final class WebSocketManager: WebSocketDelegate {
                     roomName: dto.roomName,
                     token: dto.token,
                     liveKitUrl: dto.liveKitUrl,
-                    originDeviceSessionId: dto.originDeviceSessionId
+                    originDeviceSessionId: dto.originDeviceSessionId,
+                    source: dto.source
                 )
                 onConversationStarted?(response)
 
