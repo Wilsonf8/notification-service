@@ -8,7 +8,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -48,12 +48,10 @@ function LoginForm() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm space-y-4">
-        <Button variant="ghost" asChild>
-          <Link href="/">
-            <IconArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </Button>
+        <Link href="/" className={buttonVariants({ variant: "ghost" })}>
+          <IconArrowLeft className="h-4 w-4" />
+          Back
+        </Link>
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">hooman.live</CardTitle>
