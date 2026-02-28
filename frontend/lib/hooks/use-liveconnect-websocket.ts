@@ -270,6 +270,8 @@ export function useLiveConnectWebSocket(
   const enabledRef = useRef(enabled);
   const connectRef = useRef<() => void>(() => {});
   const deviceSessionIdRef = useRef(crypto.randomUUID());
+  /** Snapshot of visitors moved to queue, keyed by visitorId, for restoring on cancel */
+  const visitorSnapshotRef = useRef<Map<string, LiveConnectVisitor>>(new Map());
 
   // Keep enabled ref in sync
   useEffect(() => {
@@ -391,8 +393,14 @@ export function useLiveConnectWebSocket(
           if (prev.some((r) => r.id === event.requestId)) return prev;
           return [...prev, request];
         });
-        // Remove visitor from browsing list — they're now in the queue
-        setVisitors?.((prev) => prev.filter((v) => v.id !== event.visitorId));
+        // Snapshot and remove visitor from browsing list — they're now in the queue
+        setVisitors?.((prev) => {
+          const visitor = prev.find((v) => v.id === event.visitorId);
+          if (visitor) {
+            visitorSnapshotRef.current.set(event.visitorId, visitor);
+          }
+          return prev.filter((v) => v.id !== event.visitorId);
+        });
         break;
       }
 
@@ -406,26 +414,31 @@ export function useLiveConnectWebSocket(
         setRequests?.((prev) => {
           const cancelledRequest = prev.find((r) => r.id === event.requestId);
           if (cancelledRequest) {
-            const visitor: LiveConnectVisitor = {
-              id: cancelledRequest.visitorId,
-              visitorId: cancelledRequest.visitorId,
-              name: cancelledRequest.visitorName,
-              email: null,
-              currentPage: null,
-              currentPageTitle: null,
-              lastSeenAt: new Date().toISOString(),
-              isConnected: true,
-              isPingable: true,
-              isFirstVisit: false,
-              previousVisitEndedAt: null,
-              totalVisitCount: 0,
-              countryCode: null,
-              country: null,
-              city: null,
-              browserName: null,
-              osName: null,
-              deviceType: null,
-            };
+            // Restore from snapshot if available, otherwise build a minimal visitor
+            const snapshot = visitorSnapshotRef.current.get(cancelledRequest.visitorId);
+            const visitor: LiveConnectVisitor = snapshot
+              ? { ...snapshot, lastSeenAt: new Date().toISOString(), isConnected: true }
+              : {
+                  id: cancelledRequest.visitorId,
+                  visitorId: cancelledRequest.visitorId,
+                  name: cancelledRequest.visitorName,
+                  email: null,
+                  currentPage: null,
+                  currentPageTitle: null,
+                  lastSeenAt: new Date().toISOString(),
+                  isConnected: true,
+                  isPingable: true,
+                  isFirstVisit: false,
+                  previousVisitEndedAt: null,
+                  totalVisitCount: 0,
+                  countryCode: null,
+                  country: null,
+                  city: null,
+                  browserName: null,
+                  osName: null,
+                  deviceType: null,
+                };
+            visitorSnapshotRef.current.delete(cancelledRequest.visitorId);
             setVisitors?.((prevVisitors) => {
               if (prevVisitors.some((v) => v.id === cancelledRequest.visitorId)) return prevVisitors;
               return [...prevVisitors, visitor];
