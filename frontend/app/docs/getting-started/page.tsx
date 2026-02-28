@@ -23,15 +23,15 @@ export default function GettingStartedPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Getting Started</h1>
         <p className="mt-2 text-muted-foreground">
-          Learn how to integrate LiveConnect into your website for instant video calls.
+          Learn how to integrate Hooman into your website for instant video calls.
         </p>
       </div>
 
       {/* What is LiveConnect */}
       <section className="space-y-4">
-        <h2 className="text-xl font-semibold">What is LiveConnect?</h2>
+        <h2 className="text-xl font-semibold">What is Hooman?</h2>
         <p className="text-muted-foreground">
-          LiveConnect is an embeddable widget that enables real-time video calls between
+          Hooman is an embeddable widget that enables real-time video calls between
           your website visitors and your team. With a single script tag, you can add
           a professional video calling experience to any website.
         </p>
@@ -51,7 +51,7 @@ export default function GettingStartedPage() {
             <div className="text-2xl font-bold text-primary">1</div>
             <h3 className="mt-2 font-medium">Embed Widget</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add the LiveConnect script to your website with your embed key.
+              Add the Hooman script to your website with your embed key.
             </p>
           </div>
           <div className="border border-border p-4">
@@ -83,7 +83,7 @@ export default function GettingStartedPage() {
           <Link href="/dashboard" className="text-primary hover:underline">
             project settings
           </Link>{" "}
-          of your LiveConnect dashboard.
+          of your Hooman dashboard.
         </p>
       </section>
 

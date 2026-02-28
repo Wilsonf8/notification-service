@@ -35,7 +35,7 @@ struct LoginView: View {
                             .font(.system(size: 60))
                             .foregroundStyle(.yellow)
 
-                        Text("LiveConnect")
+                        Text("Hooman")
                             .font(.system(size: 36, weight: .bold, design: .default))
                             .foregroundStyle(.white)
 

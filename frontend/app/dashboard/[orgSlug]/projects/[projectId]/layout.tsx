@@ -190,7 +190,7 @@ export default function ProjectLayout({ params, children }: ProjectLayoutProps) 
           <div>
             <h1 className="text-xl font-semibold md:text-2xl">{project.name}</h1>
             <p className="text-sm text-muted-foreground">
-              LiveConnect - Real-time customer engagement
+              Hooman - Real-time customer engagement
             </p>
           </div>
         </div>

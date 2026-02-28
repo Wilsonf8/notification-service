@@ -4,7 +4,7 @@
  */
 import { CodeBlock } from "@/components/dashboard/docs/code-block";
 
-const EMBED_CODE = `<script src="https://app.notifykit.dev/sdk/liveconnect.js" data-key="YOUR_KEY" async></script>`;
+const EMBED_CODE = `<script src="https://hooman.live/sdk/liveconnect.js" data-key="YOUR_KEY" async></script>`;
 
 /**
  * Displays the embed code block with copy functionality.

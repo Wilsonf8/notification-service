@@ -48,7 +48,7 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">LiveConnect</CardTitle>
+          <CardTitle className="text-2xl">Hooman</CardTitle>
           <CardDescription>Sign in to engage with your customers</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

@@ -83,7 +83,7 @@ export default nextConfig;`;
 <body>
   <!-- Your website content -->
 
-  <!-- Add LiveConnect widget -->
+  <!-- Add Hooman widget -->
   <script
     src="https://your-domain.com/sdk/liveconnect.js"
     data-key="lck_YOUR_EMBED_KEY"
@@ -97,7 +97,7 @@ export default nextConfig;`;
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Installation</h1>
         <p className="mt-2 text-muted-foreground">
-          Framework-specific guides for adding LiveConnect to your website.
+          Framework-specific guides for adding Hooman to your website.
         </p>
       </div>
 
@@ -116,7 +116,7 @@ export default nextConfig;`;
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">Next.js Integration</h2>
             <p className="text-muted-foreground">
-              Add LiveConnect to your Next.js application using the Script component
+              Add Hooman to your Next.js application using the Script component
               for optimal loading performance.
             </p>
           </section>
@@ -124,7 +124,7 @@ export default nextConfig;`;
           <section className="space-y-4">
             <h3 className="text-lg font-medium">Step 1: Add the Script Tag</h3>
             <p className="text-muted-foreground">
-              Add the LiveConnect script to your root layout file. Using{" "}
+              Add the Hooman script to your root layout file. Using{" "}
               <code className="bg-muted px-1.5 py-0.5 text-sm">strategy=&quot;lazyOnload&quot;</code>{" "}
               ensures the widget loads after the page is interactive.
             </p>
@@ -169,7 +169,7 @@ export default nextConfig;`;
             <h3 className="text-lg font-medium">Step 3: Deploy and Test</h3>
             <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
               <li>Deploy your changes to your hosting platform</li>
-              <li>Visit your website and look for the LiveConnect widget in the corner</li>
+              <li>Visit your website and look for the Hooman widget in the corner</li>
               <li>Click the widget to test requesting a call</li>
               <li>Verify that camera and microphone permissions are requested</li>
             </ol>

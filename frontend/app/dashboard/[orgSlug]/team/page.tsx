@@ -830,7 +830,7 @@ export default function TeamPage({ params }: TeamPageProps) {
           <DialogHeader>
             <DialogTitle>Create Project</DialogTitle>
             <DialogDescription>
-              Create a new LiveConnect project for real-time customer engagement.
+              Create a new Hooman project for real-time customer engagement.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">

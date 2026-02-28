@@ -55,7 +55,7 @@ export function DocsHeader() {
                   onClick={() => setSheetOpen(false)}
                 >
                   <IconArrowLeft className="h-4 w-4" />
-                  <span className="text-sm">Back to LiveConnect</span>
+                  <span className="text-sm">Back to Hooman</span>
                 </Link>
               </SheetTitle>
             </SheetHeader>

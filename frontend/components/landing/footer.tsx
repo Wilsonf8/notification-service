@@ -16,7 +16,7 @@ export function Footer() {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            &copy; 2025 LiveConnect
+            &copy; 2025 Hooman
           </p>
 
           {/* Links */}

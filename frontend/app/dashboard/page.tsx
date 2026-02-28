@@ -70,7 +70,7 @@ export default function DashboardRedirectPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <CardTitle>Welcome to LiveConnect</CardTitle>
+            <CardTitle>Welcome to Hooman</CardTitle>
             <CardDescription>
               Create your first project to get started with real-time customer engagement.
             </CardDescription>

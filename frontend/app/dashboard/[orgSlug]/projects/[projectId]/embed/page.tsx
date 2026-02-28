@@ -113,7 +113,7 @@ export default function EmbedPage() {
    * @returns HTML script tag string
    */
   const getEmbedScript = (keyValue: string): string => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.notifykit.dev";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://hooman.live";
     return `<script\n  src="${baseUrl}/sdk/liveconnect.js"\n  data-key="${keyValue}"\n  async\n></script>`;
   };
 
@@ -294,7 +294,7 @@ export default function EmbedPage() {
                 <DialogHeader>
                   <DialogTitle>Create Embed Key</DialogTitle>
                   <DialogDescription>
-                    Create a key to embed the LiveConnect widget on your website.
+                    Create a key to embed the Hooman widget on your website.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -565,7 +565,7 @@ export default function EmbedPage() {
         <CardHeader>
           <CardTitle>Embed Code</CardTitle>
           <CardDescription>
-            Add this code snippet to your website to embed the LiveConnect widget
+            Add this code snippet to your website to embed the Hooman widget
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

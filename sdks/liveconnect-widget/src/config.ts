@@ -44,7 +44,7 @@ function isValidPosition(value: string): value is WidgetPosition {
 
 /**
  * Extracts the app URL from the script element's src attribute.
- * The script is served from the app (e.g., https://app.notifykit.dev/sdk/liveconnect.js)
+ * The script is served from the app (e.g., https://hooman.live/sdk/liveconnect.js)
  * so we can derive the app base URL from it.
  * @param scriptElement - The script element
  * @returns The app base URL or fallback to current origin

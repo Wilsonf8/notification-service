@@ -42,7 +42,7 @@ export default nextConfig;`;
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Troubleshooting</h1>
         <p className="mt-2 text-muted-foreground">
-          Solutions for common issues when integrating the LiveConnect widget.
+          Solutions for common issues when integrating the Hooman widget.
         </p>
       </div>
 
@@ -138,7 +138,7 @@ export default nextConfig;`;
               <code className="bg-muted px-1.5 py-0.5 text-sm">lck_</code>
             </li>
             <li>
-              <strong>Check the console:</strong> Open Developer Tools and look for errors containing &quot;LiveConnect&quot;
+              <strong>Check the console:</strong> Open Developer Tools and look for errors containing &quot;Hooman&quot;
             </li>
             <li>
               <strong>Verify script URL:</strong> Ensure the script URL is accessible and not blocked
@@ -225,7 +225,7 @@ export default nextConfig;`;
               <strong>Invalid embed key:</strong> The key may be invalid or for a different project
             </li>
             <li>
-              <strong>Server unavailable:</strong> The LiveConnect server may be temporarily unavailable
+              <strong>Server unavailable:</strong> The Hooman server may be temporarily unavailable
             </li>
           </ul>
         </div>

@@ -57,7 +57,7 @@ struct ProjectSettingsView: View {
                     SettingsSection(title: "Support") {
                         Button {
                             // Open help URL
-                            if let url = URL(string: "https://liveconnect.dev/docs") {
+                            if let url = URL(string: "https://hooman.live/docs") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {

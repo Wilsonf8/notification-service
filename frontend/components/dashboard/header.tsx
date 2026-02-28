@@ -125,7 +125,7 @@ export function DashboardHeader() {
                   className="flex items-center gap-2"
                   onClick={() => setSheetOpen(false)}
                 >
-                  <span className="text-lg font-semibold">LiveConnect</span>
+                  <span className="text-lg font-semibold">Hooman</span>
                 </Link>
               </SheetTitle>
             </SheetHeader>

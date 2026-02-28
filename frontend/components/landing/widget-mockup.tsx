@@ -22,7 +22,7 @@ export function WidgetMockup() {
         <button
           onClick={() => setIsOpen(true)}
           className="absolute bottom-4 right-4 flex h-14 w-14 items-center justify-center bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105"
-          aria-label="Open LiveConnect"
+          aria-label="Open Hooman"
         >
           <IconVideo className="h-6 w-6" />
           {/* Status dot */}
@@ -40,7 +40,7 @@ export function WidgetMockup() {
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <div className="flex items-center gap-2">
               <IconVideo className="h-5 w-5 text-primary" />
-              <span className="font-medium">LiveConnect</span>
+              <span className="font-medium">Hooman</span>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -75,7 +75,7 @@ export function WidgetMockup() {
           {/* Footer */}
           <div className="border-t border-border px-4 py-2 text-center">
             <span className="text-xs text-muted-foreground">
-              Powered by LiveConnect
+              Powered by Hooman
             </span>
           </div>
         </div>

@@ -46,7 +46,7 @@ export default function NoCodeIntegrationsPage() {
           No-Code Integrations
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Add LiveConnect to your website using a no-code platform. No
+          Add Hooman to your website using a no-code platform. No
           programming required.
         </p>
       </div>
@@ -66,7 +66,7 @@ export default function NoCodeIntegrationsPage() {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold">Squarespace Integration</h2>
             <p className="text-muted-foreground">
-              Add LiveConnect to your Squarespace site using Code Injection.
+              Add Hooman to your Squarespace site using Code Injection.
             </p>
           </section>
 
@@ -110,7 +110,7 @@ export default function NoCodeIntegrationsPage() {
 
           <section className="space-y-4">
             <h3 className="text-lg font-medium">
-              Step 2: Add the LiveConnect Script
+              Step 2: Add the Hooman Script
             </h3>
             <p className="text-muted-foreground">
               Paste the following code into the{" "}
@@ -122,11 +122,11 @@ export default function NoCodeIntegrationsPage() {
               <code className="bg-muted px-1.5 py-0.5 text-xs">
                 your-domain.com
               </code>{" "}
-              with your LiveConnect domain and{" "}
+              with your Hooman domain and{" "}
               <code className="bg-muted px-1.5 py-0.5 text-xs">
                 lck_YOUR_EMBED_KEY
               </code>{" "}
-              with your embed key from the LiveConnect dashboard.
+              with your embed key from the Hooman dashboard.
             </p>
           </section>
 
@@ -138,7 +138,7 @@ export default function NoCodeIntegrationsPage() {
               </li>
               <li>Visit your live Squarespace site</li>
               <li>
-                Look for the LiveConnect widget button in the corner of your
+                Look for the Hooman widget button in the corner of your
                 page
               </li>
               <li>Click it to verify it opens and connects</li>
@@ -217,7 +217,7 @@ function PlaceholderContent({ platform }: { platform: string }) {
       </p>
       <p className="mt-4 text-sm text-muted-foreground">
         In the meantime, check if your platform supports adding custom code to
-        the site header or footer, and paste the LiveConnect script tag there.
+        the site header or footer, and paste the Hooman script tag there.
       </p>
     </div>
   );
