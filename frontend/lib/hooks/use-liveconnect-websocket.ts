@@ -391,6 +391,8 @@ export function useLiveConnectWebSocket(
           if (prev.some((r) => r.id === event.requestId)) return prev;
           return [...prev, request];
         });
+        // Remove visitor from browsing list — they're now in the queue
+        setVisitors?.((prev) => prev.filter((v) => v.id !== event.visitorId));
         break;
       }
 
@@ -424,7 +426,10 @@ export function useLiveConnectWebSocket(
               osName: null,
               deviceType: null,
             };
-            setVisitors?.((prevVisitors) => [...prevVisitors, visitor]);
+            setVisitors?.((prevVisitors) => {
+              if (prevVisitors.some((v) => v.id === cancelledRequest.visitorId)) return prevVisitors;
+              return [...prevVisitors, visitor];
+            });
           }
           return prev.filter((r) => r.id !== event.requestId);
         });
