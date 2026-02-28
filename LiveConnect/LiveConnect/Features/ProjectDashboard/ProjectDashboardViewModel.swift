@@ -191,7 +191,7 @@ final class ProjectDashboardViewModel {
 
         do {
             let response: AcceptedCallResponse = try await APIClient.shared.post(
-                Endpoints.acceptRequest(projectId: projectId, requestId: requestId)
+                Endpoints.acceptRequest(projectId: projectId, requestId: requestId, deviceSessionId: webSocketManager.deviceSessionId)
             )
             return response
         } catch {
@@ -423,6 +423,12 @@ final class ProjectDashboardViewModel {
         }
 
         webSocketManager.onConversationStarted = { [weak self] response in
+            if response.originDeviceSessionId != nil {
+                // Accept-initiated: HTTP response already opened the call on the accepting device.
+                // All other devices should ignore this event.
+                return
+            }
+            // No originDeviceSessionId means visitor-initiated (e.g., visitorAcceptsPing) — open on all devices
             self?.incomingCall = response
         }
     }
@@ -437,4 +443,5 @@ struct AcceptedCallResponse: Codable, Sendable, Equatable {
     let roomName: String
     let token: String
     let liveKitUrl: String
+    let originDeviceSessionId: String?
 }

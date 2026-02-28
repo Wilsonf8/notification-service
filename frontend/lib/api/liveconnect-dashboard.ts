@@ -191,14 +191,17 @@ export async function getPendingRequests(
  * Accepts a call request and joins the video call.
  * @param projectId - The project ID
  * @param requestId - The request ID to accept
+ * @param deviceSessionId - The device session ID of the accepting client (optional)
  * @returns Object containing conversation ID, room name, and LiveKit token
  */
 export async function acceptRequest(
   projectId: string,
-  requestId: string
+  requestId: string,
+  deviceSessionId?: string
 ): Promise<AcceptRequestResponse> {
+  const params = deviceSessionId ? `?deviceSessionId=${encodeURIComponent(deviceSessionId)}` : '';
   return apiFetch<AcceptRequestResponse>(
-    `/api/projects/${projectId}/liveconnect/requests/${requestId}/accept`,
+    `/api/projects/${projectId}/liveconnect/requests/${requestId}/accept${params}`,
     { method: "POST" }
   );
 }

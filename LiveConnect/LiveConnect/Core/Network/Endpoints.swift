@@ -80,9 +80,14 @@ enum Endpoints {
     /// - Parameters:
     ///   - projectId: The project UUID.
     ///   - requestId: The request UUID.
+    ///   - deviceSessionId: The device session ID of the accepting client (optional).
     /// - Returns: Endpoint path.
-    static func acceptRequest(projectId: UUID, requestId: UUID) -> String {
-        "/api/projects/\(projectId)/liveconnect/requests/\(requestId)/accept"
+    static func acceptRequest(projectId: UUID, requestId: UUID, deviceSessionId: String? = nil) -> String {
+        let base = "/api/projects/\(projectId)/liveconnect/requests/\(requestId)/accept"
+        if let deviceSessionId {
+            return "\(base)?deviceSessionId=\(deviceSessionId)"
+        }
+        return base
     }
 
     /// Dismiss a request.

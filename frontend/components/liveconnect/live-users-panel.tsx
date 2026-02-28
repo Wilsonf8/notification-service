@@ -50,6 +50,7 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
   const {
     isConnected,
     reconnect,
+    deviceSessionId,
   } = useLiveConnectWebSocket(projectId, true, setVisitors, setRequests, setActiveCalls);
 
   // Rep presence management
@@ -191,6 +192,7 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
           <RequestQueue
             requests={requests}
             projectId={projectId}
+            deviceSessionId={deviceSessionId}
           />
 
           {/* In Call Section */}

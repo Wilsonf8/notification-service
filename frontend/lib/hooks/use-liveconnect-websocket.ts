@@ -183,6 +183,7 @@ interface ConversationStartedEvent extends BaseWebSocketEvent {
   roomName: string;
   token: string;
   liveKitUrl: string;
+  originDeviceSessionId?: string;
 }
 
 /** Call started broadcast event from backend */
@@ -228,6 +229,7 @@ export interface UseLiveConnectWebSocketReturn {
   error: string | null;
   sendHeartbeat: () => void;
   reconnect: () => void;
+  deviceSessionId: string;
 }
 
 /** State setter type for visitors */
@@ -266,6 +268,7 @@ export function useLiveConnectWebSocket(
   const reconnectDelayRef = useRef(INITIAL_RECONNECT_DELAY);
   const enabledRef = useRef(enabled);
   const connectRef = useRef<() => void>(() => {});
+  const deviceSessionIdRef = useRef(crypto.randomUUID());
 
   // Keep enabled ref in sync
   useEffect(() => {
@@ -491,8 +494,13 @@ export function useLiveConnectWebSocket(
         break;
 
       case "conversation_started": {
-        // Open call window when visitor accepts rep's ping
         const startedEvent = event as ConversationStartedEvent;
+        if (startedEvent.originDeviceSessionId) {
+          // Accept-initiated: HTTP response already opened the call on the accepting device.
+          // All other devices should ignore this event.
+          break;
+        }
+        // No originDeviceSessionId means visitor-initiated (e.g., visitorAcceptsPing) — open on all devices
         const callUrl = `/call/${startedEvent.roomName}?token=${encodeURIComponent(startedEvent.token)}&conversation=${startedEvent.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(startedEvent.liveKitUrl)}&visitor=${startedEvent.visitorId}`;
         window.open(callUrl, "_blank", "width=900,height=600");
         break;
@@ -623,5 +631,6 @@ export function useLiveConnectWebSocket(
     error,
     sendHeartbeat,
     reconnect,
+    deviceSessionId: deviceSessionIdRef.current,
   };
 }

@@ -248,14 +248,16 @@ public class LiveConnectDashboardController {
      * @param projectId the project ID
      * @param requestId the request ID
      * @param userId the authenticated user's ID (must be a rep)
+     * @param deviceSessionId the device session ID of the accepting client (optional)
      * @return accept response with conversation details
      */
     @PostMapping("/requests/{requestId}/accept")
     public ResponseEntity<AcceptRequestResponse> acceptRequest(
             @PathVariable UUID projectId,
             @PathVariable UUID requestId,
-            @AuthenticationPrincipal UUID userId) {
-        return ResponseEntity.ok(requestService.acceptRequest(projectId, requestId, userId));
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(required = false) String deviceSessionId) {
+        return ResponseEntity.ok(requestService.acceptRequest(projectId, requestId, userId, deviceSessionId));
     }
 
     /**

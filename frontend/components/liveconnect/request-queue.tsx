@@ -21,13 +21,14 @@ import type { LiveConnectRequest } from "@/lib/types";
 interface RequestQueueProps {
   requests: LiveConnectRequest[];
   projectId: string;
+  deviceSessionId?: string;
 }
 
 /**
  * Request queue component.
  * Displays pending call requests with countdown timers.
  */
-export function RequestQueue({ requests, projectId }: RequestQueueProps) {
+export function RequestQueue({ requests, projectId, deviceSessionId }: RequestQueueProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -50,6 +51,7 @@ export function RequestQueue({ requests, projectId }: RequestQueueProps) {
                 key={request.id}
                 request={request}
                 projectId={projectId}
+                deviceSessionId={deviceSessionId}
               />
             ))}
           </div>
@@ -63,12 +65,13 @@ export function RequestQueue({ requests, projectId }: RequestQueueProps) {
 interface RequestItemProps {
   request: LiveConnectRequest;
   projectId: string;
+  deviceSessionId?: string;
 }
 
 /**
  * Individual request item with countdown and actions.
  */
-function RequestItem({ request, projectId }: RequestItemProps) {
+function RequestItem({ request, projectId, deviceSessionId }: RequestItemProps) {
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDismissing, setIsDismissing] = useState(false);
@@ -104,7 +107,7 @@ function RequestItem({ request, projectId }: RequestItemProps) {
   const handleAccept = async () => {
     try {
       setIsAccepting(true);
-      const response = await acceptRequest(projectId, request.id);
+      const response = await acceptRequest(projectId, request.id, deviceSessionId);
       // Navigate to the call page with rep auth params including LiveKit URL
       const callUrl = `/call/${response.roomName}?token=${encodeURIComponent(response.token)}&conversation=${response.conversationId}&project=${projectId}&liveKitUrl=${encodeURIComponent(response.liveKitUrl)}&visitor=${response.visitorId}`;
       window.open(callUrl, "_blank", "width=900,height=600");

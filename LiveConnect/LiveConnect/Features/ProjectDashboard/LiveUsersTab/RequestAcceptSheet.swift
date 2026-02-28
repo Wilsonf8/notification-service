@@ -204,7 +204,7 @@ struct RequestAcceptSheet: View {
 
         do {
             let response: AcceptedCallResponse = try await APIClient.shared.post(
-                Endpoints.acceptRequest(projectId: projectId, requestId: requestId)
+                Endpoints.acceptRequest(projectId: projectId, requestId: requestId, deviceSessionId: UUID().uuidString)
             )
 
             // Dismiss sheet and start call

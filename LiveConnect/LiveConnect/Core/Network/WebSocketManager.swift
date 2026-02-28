@@ -102,6 +102,7 @@ private struct ConversationStartedDTO: Codable {
     let roomName: String
     let token: String
     let liveKitUrl: String
+    let originDeviceSessionId: String?
 }
 
 /// DTO for message_received event from backend.
@@ -139,6 +140,9 @@ enum ConnectionState: Sendable {
 @MainActor
 @Observable
 final class WebSocketManager: WebSocketDelegate {
+    /// Unique device session ID for this client instance, used for multi-device call routing.
+    let deviceSessionId = UUID().uuidString
+
     /// Current connection state.
     private(set) var connectionState: ConnectionState = .disconnected
 
@@ -386,7 +390,8 @@ final class WebSocketManager: WebSocketDelegate {
                     visitorId: dto.visitorId,
                     roomName: dto.roomName,
                     token: dto.token,
-                    liveKitUrl: dto.liveKitUrl
+                    liveKitUrl: dto.liveKitUrl,
+                    originDeviceSessionId: dto.originDeviceSessionId
                 )
                 onConversationStarted?(response)
 

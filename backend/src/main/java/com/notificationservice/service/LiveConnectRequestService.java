@@ -94,13 +94,14 @@ public class LiveConnectRequestService {
      * @param projectId the project ID
      * @param requestId the request ID
      * @param userId the requesting user's ID (must be a rep)
+     * @param deviceSessionId the device session ID of the accepting client (null for backward compat)
      * @return accept response with conversation details
      * @throws ResourceNotFoundException if project, request not found, or user is not a rep
      * @throws IllegalArgumentException if project is not LIVECONNECT type, request is not pending,
      *                                   rep is not available, or rep already in a call
      */
     @Transactional
-    public AcceptRequestResponse acceptRequest(UUID projectId, UUID requestId, UUID userId) {
+    public AcceptRequestResponse acceptRequest(UUID projectId, UUID requestId, UUID userId, String deviceSessionId) {
         getAndValidateProject(projectId, userId);
         LiveConnectRep rep = verifyRepAccess(projectId, userId);
 
@@ -189,13 +190,14 @@ public class LiveConnectRequestService {
                 request.getVisitor().getName() != null ? request.getVisitor().getName() : "Visitor"
         );
 
-        // Broadcast to rep with rep's token
+        // Broadcast to rep with rep's token (includes deviceSessionId so clients know which device accepted)
         ConversationStartedEvent repEvent = new ConversationStartedEvent(
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
                 repToken,
-                liveKitTokenService.getLiveKitUrl()
+                liveKitTokenService.getLiveKitUrl(),
+                deviceSessionId
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 
@@ -470,13 +472,14 @@ public class LiveConnectRequestService {
                 request.getVisitor().getName() != null ? request.getVisitor().getName() : "Visitor"
         );
 
-        // Broadcast to rep with rep's token
+        // Broadcast to rep with rep's token (null deviceSessionId = open on all devices)
         ConversationStartedEvent repEvent = new ConversationStartedEvent(
                 conversation.getId(),
                 request.getVisitor().getId(),
                 roomName,
                 repToken,
-                liveKitTokenService.getLiveKitUrl()
+                liveKitTokenService.getLiveKitUrl(),
+                null
         );
         broadcaster.sendToRep(rep.getUser().getId(), repEvent);
 
