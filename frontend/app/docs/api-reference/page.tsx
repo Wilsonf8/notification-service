@@ -15,7 +15,7 @@ export default function ApiReferencePage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">API Reference</h1>
         <p className="mt-2 text-muted-foreground">
-          Events, methods, and programmatic control for the Hooman widget.
+          Events, methods, and programmatic control for the hooman.live widget.
         </p>
       </div>
 
@@ -23,7 +23,7 @@ export default function ApiReferencePage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">Widget States</h2>
         <p className="text-muted-foreground">
-          The Hooman widget transitions through several states during its lifecycle.
+          The hooman.live widget transitions through several states during its lifecycle.
         </p>
 
         <div className="overflow-x-auto">

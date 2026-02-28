@@ -164,7 +164,7 @@ export function DashboardSidebar() {
       <div className="flex h-14 items-center border-b border-border px-4">
         <Link href="/dashboard" className="flex items-center gap-2">
           <span className="text-lg font-semibold text-sidebar-foreground">
-            Hooman
+            hooman.live
           </span>
         </Link>
       </div>

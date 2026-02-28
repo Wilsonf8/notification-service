@@ -55,7 +55,7 @@ export function DocsHeader() {
                   onClick={() => setSheetOpen(false)}
                 >
                   <IconArrowLeft className="h-4 w-4" />
-                  <span className="text-sm">Back to Hooman</span>
+                  <span className="text-sm">Back to hooman.live</span>
                 </Link>
               </SheetTitle>
             </SheetHeader>

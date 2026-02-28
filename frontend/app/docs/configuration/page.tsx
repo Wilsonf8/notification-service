@@ -23,7 +23,7 @@ export default function ConfigurationPage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Configuration</h1>
         <p className="mt-2 text-muted-foreground">
-          Customize the Hooman widget appearance and behavior.
+          Customize the hooman.live widget appearance and behavior.
         </p>
       </div>
 

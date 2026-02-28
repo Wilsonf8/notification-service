@@ -106,7 +106,7 @@ export default function OverviewPage({ params }: OverviewPageProps) {
       <div>
         <h1 className="text-xl md:text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome to Hooman. Manage your customer engagement projects.
+          Welcome to hooman.live. Manage your customer engagement projects.
         </p>
       </div>
 

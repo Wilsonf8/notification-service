@@ -85,7 +85,7 @@ export function DocsSidebar() {
       <div className="flex h-14 items-center border-b border-border px-4">
         <Link href="/" className="flex items-center gap-2 text-sidebar-foreground hover:text-primary transition-colors">
           <IconArrowLeft className="h-4 w-4" />
-          <span className="text-sm">Back to Hooman</span>
+          <span className="text-sm">Back to hooman.live</span>
         </Link>
       </div>
       <div className="border-b border-border px-4 py-3">

@@ -154,7 +154,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
           <p className="text-muted-foreground">
             {limits
               ? `${projects.length} / ${limits.maxProjects} projects`
-              : "Manage your Hooman projects"}
+              : "Manage your hooman.live projects"}
           </p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -170,7 +170,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             <DialogHeader>
               <DialogTitle>Create Project</DialogTitle>
               <DialogDescription>
-                Create a new Hooman project for real-time customer engagement.
+                Create a new hooman.live project for real-time customer engagement.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
@@ -215,7 +215,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
             <IconFolder className="h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-medium">No projects yet</h3>
             <p className="mt-2 text-sm text-muted-foreground text-center max-w-sm">
-              Create your first Hooman project to start engaging with customers.
+              Create your first hooman.live project to start engaging with customers.
             </p>
             <Button className="mt-4 gap-2" onClick={() => setIsCreateOpen(true)}>
               <IconPlus className="h-4 w-4" />
@@ -234,7 +234,7 @@ export default function ProjectsPage({ params }: ProjectsPageProps) {
                     <IconVideo className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <CardDescription>
-                    Hooman · Created {new Date(project.createdAt).toLocaleDateString()}
+                    hooman.live · Created {new Date(project.createdAt).toLocaleDateString()}
                   </CardDescription>
                 </CardHeader>
               </Card>

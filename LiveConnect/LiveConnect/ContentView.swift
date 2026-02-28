@@ -85,7 +85,7 @@ struct ContentView: View {
                 .font(.system(size: 60))
                 .foregroundStyle(.yellow)
 
-            Text("Hooman")
+            Text("hooman.live")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(.white)
 

@@ -612,7 +612,7 @@ export default function WidgetPage() {
                           </div>
                         </div>
                         <div style={{ padding: "8px 14px", textAlign: "center", fontSize: 10, opacity: 0.5, color: textColor, borderTop: `1px solid color-mix(in srgb, ${backgroundColor}, white 14%)` }}>
-                          Powered by Hooman
+                          Powered by hooman.live
                         </div>
                       </div>
                     )}

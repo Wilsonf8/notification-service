@@ -725,7 +725,7 @@ export default function BillingPage({
             <div>
               <CardTitle>Subscription</CardTitle>
               <CardDescription>
-                Manage your organization&apos;s Hooman subscription
+                Manage your organization&apos;s hooman.live subscription
               </CardDescription>
             </div>
             <Badge
@@ -844,7 +844,7 @@ export default function BillingPage({
               <p className="text-sm text-muted-foreground">
                 {subscription?.status === "CANCELED"
                   ? "Your subscription has been canceled. Subscribe again to re-activate your widgets."
-                  : "Subscribe to activate Hooman widgets for all projects in this organization."}
+                  : "Subscribe to activate hooman.live widgets for all projects in this organization."}
               </p>
             </div>
           )}
@@ -857,7 +857,7 @@ export default function BillingPage({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <IconCreditCard className="h-5 w-5" />
-              Hooman Plan
+              hooman.live Plan
             </CardTitle>
             <CardDescription>
               Unlimited projects and widgets for your entire organization

@@ -818,7 +818,7 @@ export default function WidgetPage() {
                             borderTop: `1px solid color-mix(in srgb, ${backgroundColor}, white 14%)`,
                           }}
                         >
-                          Powered by Hooman
+                          Powered by hooman.live
                         </div>
                       </div>
                     )}

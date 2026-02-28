@@ -294,7 +294,7 @@ export default function EmbedPage() {
                 <DialogHeader>
                   <DialogTitle>Create Embed Key</DialogTitle>
                   <DialogDescription>
-                    Create a key to embed the Hooman widget on your website.
+                    Create a key to embed the hooman.live widget on your website.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -565,7 +565,7 @@ export default function EmbedPage() {
         <CardHeader>
           <CardTitle>Embed Code</CardTitle>
           <CardDescription>
-            Add this code snippet to your website to embed the Hooman widget
+            Add this code snippet to your website to embed the hooman.live widget
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

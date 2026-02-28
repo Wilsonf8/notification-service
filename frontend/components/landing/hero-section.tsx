@@ -18,7 +18,7 @@ export function HeroSection() {
         {/* Left column: Hero content */}
         <div className="text-center">
           <h1 className="text-5xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-            Hooman
+            hooman.live
           </h1>
           <p className="mt-6 text-lg text-muted-foreground sm:text-xl">
             Real-time customer engagement platform

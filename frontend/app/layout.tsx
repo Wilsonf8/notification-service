@@ -9,7 +9,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hooman",
+  title: "hooman.live",
   description: "Real-time customer engagement platform",
 };
 
