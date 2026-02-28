@@ -248,6 +248,15 @@ final class ProjectDashboardViewModel {
         webSocketManager.disconnect()
     }
 
+    /// Reconnects WebSocket if the rep was previously connected.
+    /// Used when the app returns to the foreground after being backgrounded.
+    /// - Parameter projectId: The project UUID to reconnect to.
+    func reconnectIfNeeded(projectId: UUID) async {
+        guard currentRep != nil, !webSocketManager.isConnected else { return }
+        setupWebSocketHandlers()
+        webSocketManager.connect(projectId: projectId)
+    }
+
     /// Clears the incoming call after it's been handled.
     func clearIncomingCall() {
         incomingCall = nil

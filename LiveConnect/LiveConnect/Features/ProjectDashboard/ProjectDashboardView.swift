@@ -37,6 +37,7 @@ struct ProjectDashboardView: View {
     @State private var showAccountSheet = false
     @State private var activeCall: AcceptedCallResponse?
     @State private var activeCallVisitorName: String?
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -93,6 +94,18 @@ struct ProjectDashboardView: View {
             .onChange(of: NotificationRouter.shared.pendingNavigation) { _, navigation in
                 if case .conversationDetail = navigation {
                     selectedTab = .conversations
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .background:
+                    viewModel.disconnect()
+                case .active:
+                    Task {
+                        await viewModel.reconnectIfNeeded(projectId: projectId)
+                    }
+                default:
+                    break
                 }
             }
     }

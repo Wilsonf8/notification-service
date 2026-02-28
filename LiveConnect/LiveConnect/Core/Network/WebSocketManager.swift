@@ -167,6 +167,9 @@ final class WebSocketManager: WebSocketDelegate {
     /// Base delay for exponential backoff (seconds).
     private let baseReconnectDelay: TimeInterval = 1.0
 
+    /// Periodic heartbeat task to keep the server aware this client is alive.
+    private var heartbeatTask: Task<Void, Never>?
+
     /// JSON decoder for parsing messages.
     private let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -219,6 +222,7 @@ final class WebSocketManager: WebSocketDelegate {
 
     /// Disconnects the WebSocket.
     func disconnect() {
+        stopHeartbeat()
         socket?.disconnect()
         socket = nil
         connectionState = .disconnected
@@ -261,6 +265,24 @@ final class WebSocketManager: WebSocketDelegate {
         socket = WebSocket(request: request)
         socket?.delegate = self
         socket?.connect()
+    }
+
+    /// Starts the periodic heartbeat timer.
+    private func startHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(30))
+                guard connectionState == .connected, let socket else { continue }
+                socket.write(string: "{\"type\":\"heartbeat\"}")
+            }
+        }
+    }
+
+    /// Stops the periodic heartbeat timer.
+    private func stopHeartbeat() {
+        heartbeatTask?.cancel()
+        heartbeatTask = nil
     }
 
     /// Attempts to reconnect with exponential backoff.
@@ -430,6 +452,7 @@ final class WebSocketManager: WebSocketDelegate {
                 print("WebSocket: Connected successfully")
                 connectionState = .connected
                 reconnectAttempts = 0
+                startHeartbeat()
 
             case .disconnected(let reason, let code):
                 print("WebSocket disconnected: \(reason) (code: \(code))")
