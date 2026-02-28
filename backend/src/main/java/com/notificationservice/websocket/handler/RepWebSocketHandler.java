@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.RepPresence;
 import com.notificationservice.repository.LiveConnectRepRepository;
+import com.notificationservice.service.LiveConnectRequestService;
 import com.notificationservice.websocket.session.RepSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
 
     private final RepSessionManager sessionManager;
     private final LiveConnectRepRepository repRepository;
+    private final LiveConnectRequestService requestService;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -98,6 +100,8 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             // Set to OFFLINE only if this was the last connection and not in a call
             if (newConnections == 0 && rep.getPresence() != RepPresence.IN_CALL) {
                 rep.setPresence(RepPresence.OFFLINE);
+                // Withdraw any pending pings this rep sent to visitors
+                requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
             }
 
             repRepository.save(rep);

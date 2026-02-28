@@ -411,7 +411,14 @@ public class LiveConnectRequestService {
             throw new IllegalStateException("Ping has no associated rep");
         }
 
-        // Verify rep is still available
+        // Verify rep is still online (not disconnected)
+        if (rep.getPresence() == RepPresence.OFFLINE) {
+            request.setStatus(RequestStatus.EXPIRED);
+            requestRepository.save(request);
+            throw new IllegalArgumentException("Rep is no longer available");
+        }
+
+        // Verify rep is not already in a call
         if (rep.getCurrentConversation() != null) {
             request.setStatus(RequestStatus.EXPIRED);
             requestRepository.save(request);
@@ -545,6 +552,20 @@ public class LiveConnectRequestService {
         LiveConnectVisitor visitor = request.getVisitor();
         visitor.setPingCooldownUntil(OffsetDateTime.now().plusSeconds(PING_COOLDOWN_SECONDS));
         visitorRepository.save(visitor);
+    }
+
+    /**
+     * Withdraws all pending pings for a rep who has disconnected.
+     * Called when a rep's last WebSocket connection closes.
+     *
+     * @param repId the rep's ID
+     * @param projectId the project ID for broadcasting
+     */
+    @Transactional
+    public void withdrawPendingPingsOnDisconnect(UUID repId, UUID projectId) {
+        LiveConnectRep rep = repRepository.findById(repId).orElse(null);
+        if (rep == null) return;
+        withdrawPendingPingsForRep(rep, projectId, null);
     }
 
     /**
