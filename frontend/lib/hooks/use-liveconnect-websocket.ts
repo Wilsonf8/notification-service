@@ -10,6 +10,7 @@ import type {
   LiveConnectVisitor,
   LiveConnectRequest,
   LiveConnectMessage,
+  LiveConnectRep,
   ActiveCall,
 } from "@/lib/types";
 
@@ -50,6 +51,7 @@ type WebSocketEventType =
   | "call_ended_broadcast"
   | "queue_updated"
   | "rep_availability_changed"
+  | "rep_status_changed"
   | "conversation_started"
   | "pong";
 
@@ -175,6 +177,17 @@ interface RepAvailabilityChangedEvent extends BaseWebSocketEvent {
   hasAvailableReps: boolean;
 }
 
+/** Rep status changed event from backend (individual rep presence/availability update) */
+interface RepStatusChangedEvent extends BaseWebSocketEvent {
+  type: "rep_status_changed";
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  availability: "AVAILABLE" | "UNAVAILABLE";
+  presence: "OFFLINE" | "ONLINE" | "IN_CALL";
+}
+
 /** Conversation started event from backend */
 interface ConversationStartedEvent extends BaseWebSocketEvent {
   type: "conversation_started";
@@ -222,6 +235,7 @@ type WebSocketEvent =
   | QueueUpdatedEvent
   | PongEvent
   | RepAvailabilityChangedEvent
+  | RepStatusChangedEvent
   | ConversationStartedEvent;
 
 /** Hook return type */
@@ -242,6 +256,9 @@ type SetRequests = React.Dispatch<React.SetStateAction<LiveConnectRequest[]>>;
 /** State setter type for active calls */
 type SetActiveCalls = React.Dispatch<React.SetStateAction<ActiveCall[]>>;
 
+/** State setter type for reps */
+type SetReps = React.Dispatch<React.SetStateAction<LiveConnectRep[]>>;
+
 /**
  * Custom hook for managing WebSocket connection to LiveConnect dashboard.
  * Updates visitors, requests, and active calls state via provided setters for real-time updates.
@@ -251,6 +268,7 @@ type SetActiveCalls = React.Dispatch<React.SetStateAction<ActiveCall[]>>;
  * @param setVisitors - State setter for visitors array
  * @param setRequests - State setter for requests array
  * @param setActiveCalls - State setter for active calls array
+ * @param setReps - State setter for reps array (real-time presence updates)
  * @returns Object containing connection status and control functions
  */
 export function useLiveConnectWebSocket(
@@ -258,7 +276,8 @@ export function useLiveConnectWebSocket(
   enabled: boolean = true,
   setVisitors?: SetVisitors,
   setRequests?: SetRequests,
-  setActiveCalls?: SetActiveCalls
+  setActiveCalls?: SetActiveCalls,
+  setReps?: SetReps
 ): UseLiveConnectWebSocketReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -508,6 +527,26 @@ export function useLiveConnectWebSocket(
         break;
       }
 
+      case "rep_status_changed": {
+        const repEvent = event as RepStatusChangedEvent;
+        setReps?.((prev) => {
+          const idx = prev.findIndex((r) => r.id === repEvent.id);
+          const updatedRep: LiveConnectRep = {
+            id: repEvent.id,
+            userId: repEvent.userId,
+            name: repEvent.name,
+            email: repEvent.email,
+            availability: repEvent.availability,
+            presence: repEvent.presence,
+          };
+          if (idx !== -1) {
+            return prev.map((r) => (r.id === repEvent.id ? updatedRep : r));
+          }
+          return [...prev, updatedRep];
+        });
+        break;
+      }
+
       case "pong":
         // Heartbeat acknowledged
         break;
@@ -534,7 +573,7 @@ export function useLiveConnectWebSocket(
       default:
         console.warn("[WS] Unknown event type:", (event as BaseWebSocketEvent).type);
     }
-  }, [projectId, setVisitors, setRequests, setActiveCalls]);
+  }, [projectId, setVisitors, setRequests, setActiveCalls, setReps]);
 
   /**
    * Connects to the WebSocket server.

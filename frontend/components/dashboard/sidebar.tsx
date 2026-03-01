@@ -47,7 +47,7 @@ export function getProjectNavItems(projectId: string, isAdmin: boolean): NavItem
     { label: "Live Users", href: `/dashboard/p/${projectId}`, icon: IconUsers },
     { label: "Conversations", href: `/dashboard/p/${projectId}/conversations`, icon: IconMessageCircle },
     { label: "CRM", href: `/dashboard/p/${projectId}/crm`, icon: IconAddressBook },
-    { label: "Reps", href: `/dashboard/p/${projectId}/reps`, icon: IconUserCog, adminOnly: true },
+    { label: "Reps", href: `/dashboard/p/${projectId}/reps`, icon: IconUserCog },
     { label: "Embed", href: `/dashboard/p/${projectId}/embed`, icon: IconCode },
     { label: "Widget", href: `/dashboard/p/${projectId}/widget`, icon: IconPalette },
     { label: "Settings", href: `/dashboard/p/${projectId}/settings`, icon: IconSettings },

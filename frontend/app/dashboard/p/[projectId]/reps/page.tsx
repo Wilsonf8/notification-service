@@ -19,6 +19,7 @@ import { getOrganizationMembers } from "@/lib/api/organizations";
 import { RepList } from "@/components/liveconnect/rep-list";
 import { AddRepDialog } from "@/components/liveconnect/add-rep-dialog";
 import { useTierLimits } from "@/lib/hooks/use-tier-limits";
+import { useLiveConnectWebSocket } from "@/lib/hooks/use-liveconnect-websocket";
 import type { LiveConnectRep, OrganizationMember } from "@/lib/types";
 
 /**
@@ -33,6 +34,16 @@ export default function RepsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Real-time rep status updates via WebSocket
+  useLiveConnectWebSocket(
+    projectId,
+    true,
+    undefined,
+    undefined,
+    undefined,
+    setReps
+  );
+
   /**
    * Fetches reps and team members.
    */
@@ -40,12 +51,17 @@ export default function RepsPage() {
     try {
       setLoading(true);
       setError(null);
-      const [repsData, membersData] = await Promise.all([
-        getReps(projectId),
-        getOrganizationMembers(orgSlug),
-      ]);
-      setReps(repsData);
-      setTeamMembers(membersData);
+      if (isAdmin) {
+        const [repsData, membersData] = await Promise.all([
+          getReps(projectId),
+          getOrganizationMembers(orgSlug),
+        ]);
+        setReps(repsData);
+        setTeamMembers(membersData);
+      } else {
+        const repsData = await getReps(projectId);
+        setReps(repsData);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -56,18 +72,6 @@ export default function RepsPage() {
   useEffect(() => {
     fetchData();
   }, [projectId, orgSlug]);
-
-  if (!isAdmin) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            You don&apos;t have permission to manage reps.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -85,12 +89,12 @@ export default function RepsPage() {
             <div>
               <CardTitle>Sales Reps</CardTitle>
               <CardDescription>
-                {limits
+                {isAdmin && limits
                   ? `${reps.length} / ${limits.maxRepsPerProject} reps`
                   : "Team members who can handle video calls for this project"}
               </CardDescription>
             </div>
-            {(!limits || reps.length < limits.maxRepsPerProject) && (
+            {isAdmin && (!limits || reps.length < limits.maxRepsPerProject) && (
               <AddRepDialog
                 projectId={projectId}
                 teamMembers={teamMembers}
@@ -106,6 +110,7 @@ export default function RepsPage() {
             projectId={projectId}
             onRepRemoved={fetchData}
             loading={loading}
+            readOnly={!isAdmin}
           />
         </CardContent>
       </Card>

@@ -39,8 +39,10 @@ import { cn } from "@/lib/utils";
 interface RepListProps {
   reps: LiveConnectRep[];
   projectId: string;
-  onRepRemoved: () => void;
+  onRepRemoved?: () => void;
   loading?: boolean;
+  /** When true, hides the Actions column and delete buttons */
+  readOnly?: boolean;
 }
 
 /**
@@ -79,7 +81,7 @@ function getStatusLabel(rep: LiveConnectRep): string {
  * Rep list component.
  * Shows a table of project reps with their status.
  */
-export function RepList({ reps, projectId, onRepRemoved, loading }: RepListProps) {
+export function RepList({ reps, projectId, onRepRemoved, loading, readOnly }: RepListProps) {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   /**
@@ -89,7 +91,7 @@ export function RepList({ reps, projectId, onRepRemoved, loading }: RepListProps
     try {
       setRemovingId(repUserId);
       await removeRep(projectId, repUserId);
-      onRepRemoved();
+      onRepRemoved?.();
     } catch (err) {
       console.error("Failed to remove rep:", err);
     } finally {
@@ -123,7 +125,7 @@ export function RepList({ reps, projectId, onRepRemoved, loading }: RepListProps
           <TableHead>Rep</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Status</TableHead>
-          <TableHead className="w-[80px]">Actions</TableHead>
+          {!readOnly && <TableHead className="w-[80px]">Actions</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -146,43 +148,45 @@ export function RepList({ reps, projectId, onRepRemoved, loading }: RepListProps
                 <span className="text-sm">{getStatusLabel(rep)}</span>
               </div>
             </TableCell>
-            <TableCell>
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={removingId === rep.userId}
-                    />
-                  }
-                >
-                  {removingId === rep.userId ? (
-                    <IconLoader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <IconTrash className="h-4 w-4 text-destructive" />
-                  )}
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Remove Rep</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to remove {rep.name} from this project?
-                      They will no longer be able to handle calls for this project.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => handleRemove(rep.userId)}
-                    >
-                      Remove Rep
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </TableCell>
+            {!readOnly && (
+              <TableCell>
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        disabled={removingId === rep.userId}
+                      />
+                    }
+                  >
+                    {removingId === rep.userId ? (
+                      <IconLoader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <IconTrash className="h-4 w-4 text-destructive" />
+                    )}
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove Rep</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to remove {rep.name} from this project?
+                        They will no longer be able to handle calls for this project.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => handleRemove(rep.userId)}
+                      >
+                        Remove Rep
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>

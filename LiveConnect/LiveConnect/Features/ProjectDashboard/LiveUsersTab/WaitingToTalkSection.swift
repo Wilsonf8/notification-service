@@ -109,14 +109,11 @@ private struct RequestCard: View {
     }
 
     private func updateTimeWaiting() {
-        let now = Date()
-        let created = request.expiresAt.addingTimeInterval(-60) // Assume 60s expiry
-        let interval = now.timeIntervalSince(created)
-
-        if interval < 60 {
-            timeWaiting = "\(Int(interval))s waiting"
+        let remaining = request.expiresAt.timeIntervalSinceNow
+        if remaining > 0 {
+            timeWaiting = "\(Int(remaining))s left"
         } else {
-            timeWaiting = "\(Int(interval / 60))m waiting"
+            timeWaiting = "Expired"
         }
     }
 }
