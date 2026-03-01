@@ -90,9 +90,9 @@ struct CrmVisitorListResponse: Codable, Sendable {
 struct CrmVisitorDetail: Codable, Identifiable, Sendable {
     let id: UUID
     let visitorId: String
-    let name: String?
-    let email: String?
-    let phone: String?
+    var name: String?
+    var email: String?
+    var phone: String?
     let countryCode: String?
     let country: String?
     let region: String?

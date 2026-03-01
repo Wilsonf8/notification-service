@@ -80,7 +80,12 @@ struct CrmVisitorDetailView: View {
 
                 // Collapsible sections
                 sectionGroup("CONTACT INFO", isExpanded: $isContactInfoExpanded) {
-                    CrmContactInfoSection(detail: detail)
+                    CrmContactInfoSection(
+                        detail: detail,
+                        onSave: { name, email, phone in
+                            try await viewModel.updateContact(name: name, email: email, phone: phone)
+                        }
+                    )
                 }
 
                 sectionGroup("ENGAGEMENT", isExpanded: $isEngagementExpanded) {

@@ -218,6 +218,23 @@ final class CrmVisitorDetailViewModel {
 
     // MARK: - Mutations
 
+    /// Updates the visitor's contact information.
+    /// Only non-nil fields are sent; the backend ignores null fields.
+    /// - Parameters:
+    ///   - name: The new name, or nil to leave unchanged.
+    ///   - email: The new email, or nil to leave unchanged.
+    ///   - phone: The new phone, or nil to leave unchanged.
+    func updateContact(name: String?, email: String?, phone: String?) async throws {
+        let request = UpdateVisitorContactRequest(name: name, email: email, phone: phone)
+        try await APIClient.shared.patch(
+            Endpoints.crmUpdateVisitorContact(projectId: projectId, visitorId: visitorId),
+            body: request
+        )
+        if let name { detail?.name = name }
+        if let email { detail?.email = email }
+        if let phone { detail?.phone = phone }
+    }
+
     /// Updates the visitor's pipeline stage.
     /// - Parameter stage: The new stage.
     func updateStage(_ stage: PipelineStage) async {
