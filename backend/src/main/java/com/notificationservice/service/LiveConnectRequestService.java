@@ -29,6 +29,7 @@ import com.notificationservice.websocket.event.CallStartingEvent;
 import com.notificationservice.websocket.event.ConversationStartedEvent;
 import com.notificationservice.websocket.event.RequestAcceptedByOtherEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
+import com.notificationservice.websocket.event.RepStatusChangedEvent;
 import com.notificationservice.websocket.event.PingWithdrawnEvent;
 import com.notificationservice.websocket.event.RequestCancelledEvent;
 import com.notificationservice.websocket.event.RequestDismissedEvent;
@@ -161,6 +162,9 @@ public class LiveConnectRequestService {
         rep.setPresence(RepPresence.IN_CALL);
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
+
+        // Broadcast rep status change to all reps in the project
+        broadcastRepStatusChanged(rep, projectId);
 
         // Withdraw any pending pings this rep has to other visitors
         withdrawPendingPingsForRep(rep, projectId, null);
@@ -451,8 +455,11 @@ public class LiveConnectRequestService {
         rep.setCallStartedAt(OffsetDateTime.now());
         repRepository.save(rep);
 
-        // Withdraw any other pending pings this rep has (excluding the one being accepted)
+        // Broadcast rep status change to all reps in the project
         UUID projectId = request.getProject().getId();
+        broadcastRepStatusChanged(rep, projectId);
+
+        // Withdraw any other pending pings this rep has (excluding the one being accepted)
         withdrawPendingPingsForRep(rep, projectId, requestId);
 
         // Update visitor engagement state to IN_CALL
@@ -602,6 +609,18 @@ public class LiveConnectRequestService {
             RequestCancelledEvent repEvent = new RequestCancelledEvent(ping.getId());
             broadcaster.broadcastToProject(projectId, repEvent);
         }
+    }
+
+    private void broadcastRepStatusChanged(LiveConnectRep rep, UUID projectId) {
+        RepStatusChangedEvent event = new RepStatusChangedEvent(
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                rep.getUser().getEmail(),
+                rep.getAvailability().name(),
+                rep.getPresence().name()
+        );
+        broadcaster.broadcastToProject(projectId, event);
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {

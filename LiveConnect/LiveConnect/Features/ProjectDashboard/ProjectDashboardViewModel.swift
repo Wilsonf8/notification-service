@@ -154,7 +154,7 @@ final class ProjectDashboardViewModel {
 
             // Update local state
             if let rep = currentRep {
-                currentRep = Rep(
+                let updatedRep = Rep(
                     id: rep.id,
                     userId: rep.userId,
                     name: rep.name,
@@ -162,6 +162,12 @@ final class ProjectDashboardViewModel {
                     availability: newAvailability,
                     presence: rep.presence
                 )
+                currentRep = updatedRep
+
+                // Also update the reps array for immediate local feedback
+                if let index = reps.firstIndex(where: { $0.id == rep.id }) {
+                    reps[index] = updatedRep
+                }
             }
         } catch {
             self.error = error

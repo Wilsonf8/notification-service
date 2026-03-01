@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.RepPresence;
 import com.notificationservice.repository.LiveConnectRepRepository;
+import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
 import com.notificationservice.websocket.session.RepSessionManager;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
 
     private final RepSessionManager sessionManager;
     private final LiveConnectRepRepository repRepository;
+    private final LiveConnectRepService repService;
     private final LiveConnectRequestService requestService;
     private final ObjectMapper objectMapper;
 
@@ -56,6 +58,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             rep.setActiveConnections(rep.getActiveConnections() + 1);
             rep.setLastHeartbeat(OffsetDateTime.now());
             repRepository.save(rep);
+            repService.broadcastRepStatusChanged(rep);
             log.info("Rep connected: userId={}, projectId={}, activeConnections={}",
                     userId, projectId, rep.getActiveConnections());
         });
@@ -98,13 +101,18 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             rep.setActiveConnections(newConnections);
 
             // Set to OFFLINE only if this was the last connection and not in a call
+            boolean wentOffline = false;
             if (newConnections == 0 && rep.getPresence() != RepPresence.IN_CALL) {
                 rep.setPresence(RepPresence.OFFLINE);
+                wentOffline = true;
                 // Withdraw any pending pings this rep sent to visitors
                 requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
             }
 
             repRepository.save(rep);
+            if (wentOffline) {
+                repService.broadcastRepStatusChanged(rep);
+            }
             log.info("Rep disconnected: userId={}, projectId={}, activeConnections={}, presence={}",
                     userId, projectId, newConnections, rep.getPresence());
         });

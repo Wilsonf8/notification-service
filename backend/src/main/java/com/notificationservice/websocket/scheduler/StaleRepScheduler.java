@@ -3,6 +3,7 @@ package com.notificationservice.websocket.scheduler;
 import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.RepPresence;
 import com.notificationservice.repository.LiveConnectRepRepository;
+import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import java.util.List;
 public class StaleRepScheduler {
 
     private final LiveConnectRepRepository repRepository;
+    private final LiveConnectRepService repService;
     private final LiveConnectRequestService requestService;
 
     /**
@@ -45,6 +47,7 @@ public class StaleRepScheduler {
             rep.setPresence(RepPresence.OFFLINE);
             rep.setActiveConnections(0);
             repRepository.save(rep);
+            repService.broadcastRepStatusChanged(rep);
 
             requestService.withdrawPendingPingsOnDisconnect(
                     rep.getId(), rep.getProject().getId()

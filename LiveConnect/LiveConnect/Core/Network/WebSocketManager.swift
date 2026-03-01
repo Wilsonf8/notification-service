@@ -22,6 +22,7 @@ enum WebSocketEvent: String, Sendable {
     case messageReceived = "message_received"
     case repAvailabilityChanged = "rep_availability_changed"
     case repPresenceChanged = "rep_presence_changed"
+    case repStatusChanged = "rep_status_changed"
     case conversationStarted = "conversation_started"
     case requestAcceptedByOther = "request_accepted_by_other"
 }
@@ -430,7 +431,7 @@ final class WebSocketManager: WebSocketDelegate {
                 )
                 onMessageReceived?(message)
 
-            case .repAvailabilityChanged, .repPresenceChanged:
+            case .repAvailabilityChanged, .repPresenceChanged, .repStatusChanged:
                 let rep = try decoder.decode(Rep.self, from: data)
                 onRepUpdated?(rep)
 

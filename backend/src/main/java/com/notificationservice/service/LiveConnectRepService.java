@@ -15,6 +15,7 @@ import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.repository.UserRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
+import com.notificationservice.websocket.event.RepStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -145,6 +146,9 @@ public class LiveConnectRepService {
         RepAvailabilityChangedEvent event = new RepAvailabilityChangedEvent(hasAvailableReps);
         broadcaster.broadcastToProjectVisitors(projectId, event);
 
+        // Broadcast rep status change to all reps in the project
+        broadcastRepStatusChanged(savedRep);
+
         return toDto(savedRep);
     }
 
@@ -170,6 +174,10 @@ public class LiveConnectRepService {
         rep.setCallStartedAt(null);
 
         LiveConnectRep savedRep = repRepository.save(rep);
+
+        // Broadcast rep status change to all reps in the project
+        broadcastRepStatusChanged(savedRep);
+
         return toDto(savedRep);
     }
 
@@ -188,6 +196,7 @@ public class LiveConnectRepService {
             rep.setPresence(RepPresence.OFFLINE);
             rep.setActiveConnections(0);
             repRepository.save(rep);
+            broadcastRepStatusChanged(rep);
             requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
         });
     }
@@ -203,6 +212,23 @@ public class LiveConnectRepService {
     public LiveConnectRep verifyRepAccess(UUID projectId, UUID userId) {
         return repRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("You are not a rep for this project"));
+    }
+
+    /**
+     * Broadcasts a rep status change event to all reps in the project.
+     *
+     * @param rep the rep whose status changed
+     */
+    public void broadcastRepStatusChanged(LiveConnectRep rep) {
+        RepStatusChangedEvent event = new RepStatusChangedEvent(
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                rep.getUser().getEmail(),
+                rep.getAvailability().name(),
+                rep.getPresence().name()
+        );
+        broadcaster.broadcastToProject(rep.getProject().getId(), event);
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {

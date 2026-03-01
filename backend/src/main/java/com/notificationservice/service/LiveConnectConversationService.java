@@ -29,6 +29,7 @@ import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
 import com.notificationservice.websocket.event.MessageReceivedEvent;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
+import com.notificationservice.websocket.event.RepStatusChangedEvent;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.session.VisitorSessionManager;
 
@@ -295,6 +296,17 @@ public class LiveConnectConversationService {
         rep.setCurrentConversation(null);
         rep.setPresence(RepPresence.ONLINE);
         repRepository.save(rep);
+
+        // Broadcast rep status change to all reps in the project
+        RepStatusChangedEvent repStatusEvent = new RepStatusChangedEvent(
+                rep.getId(),
+                rep.getUser().getId(),
+                rep.getUser().getUsername(),
+                rep.getUser().getEmail(),
+                rep.getAvailability().name(),
+                rep.getPresence().name()
+        );
+        broadcaster.broadcastToProject(conversation.getProject().getId(), repStatusEvent);
 
         // Update visitor engagement state back to BROWSING
         visitorSessionManager.setVisitorState(conversation.getVisitor().getId(), VisitorSessionManager.VisitorEngagementState.BROWSING);

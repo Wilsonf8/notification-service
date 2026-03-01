@@ -13,6 +13,7 @@ import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.websocket.event.CallEndedBroadcastEvent;
 import com.notificationservice.websocket.event.CallEndedEvent;
+import com.notificationservice.websocket.event.RepStatusChangedEvent;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import io.livekit.server.WebhookReceiver;
 import livekit.LivekitWebhook;
@@ -154,6 +155,17 @@ public class LiveKitWebhookController {
             rep.setPresence(RepPresence.ONLINE);
             rep.setCallStartedAt(null);
             repRepository.save(rep);
+
+            // Broadcast rep status change to all reps in the project
+            RepStatusChangedEvent repStatusEvent = new RepStatusChangedEvent(
+                    rep.getId(),
+                    rep.getUser().getId(),
+                    rep.getUser().getUsername(),
+                    rep.getUser().getEmail(),
+                    rep.getAvailability().name(),
+                    rep.getPresence().name()
+            );
+            broadcaster.broadcastToProject(conversation.getProject().getId(), repStatusEvent);
         }
 
         // Broadcast to visitor
