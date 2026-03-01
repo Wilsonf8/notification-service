@@ -6,6 +6,7 @@
 import { h } from 'preact';
 import { useEffect, useState, useCallback, useRef } from 'preact/hooks';
 import { useDraggable } from '../hooks/useDraggable';
+import { usePinchResize } from '../hooks/usePinchResize';
 import {
   widgetState,
   WidgetStateType,
@@ -47,6 +48,9 @@ import {
   saveActiveCall,
   clearActiveCall,
   getActiveCall,
+  clearPanelPosition,
+  savePipSize,
+  getPipSize,
 } from '../storage';
 import { Button, type AvailabilityStatus } from './Button';
 import { Panel } from './Panel';
@@ -130,6 +134,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     typeof window !== 'undefined' && window.matchMedia('(max-width: 480px)').matches
   );
 
+  /** Whether the video is in PiP (Picture-in-Picture) floating mode */
+  const [isPipMode, setIsPipMode] = useState<boolean>(false);
+
   // Mobile detection via matchMedia listener
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 480px)');
@@ -138,14 +145,84 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
+  // Exit PiP mode when viewport becomes non-mobile
+  useEffect(() => {
+    if (!isMobile && isPipMode) {
+      setIsPipMode(false);
+    }
+  }, [isMobile, isPipMode]);
+
   // Sync chat visibility ref for use in event handler closures
   useEffect(() => {
     isChatVisibleRef.current = isChatVisible;
   }, [isChatVisible]);
 
-  // Draggable panel hook (disabled on mobile where panel is full-width)
+  // Default PiP position: bottom-right with 16px margin
+  const pipDefaultPosition = useCallback(() => {
+    const vw = window.visualViewport?.width ?? window.innerWidth;
+    const vh = window.visualViewport?.height ?? window.innerHeight;
+    const savedSize = getPipSize();
+    const size = savedSize ?? 160;
+    return { x: vw - size - 16, y: vh - size - 16 };
+  }, []);
+
+  // Pinch-to-resize hook (only active in PiP mode)
+  const { containerRef: pinchContainerRef, size: pipSize, isPinchingRef, setSize: setPipSize } =
+    usePinchResize({
+      disabled: !isPipMode,
+      initialSize: getPipSize() ?? 160,
+      onSizeChange: (size) => savePipSize(size),
+    });
+
+  // Draggable panel hook — disabled on mobile unless in PiP mode
   const { containerRef: dragContainerRef, handleRef: dragHandleRef, isDragging, dragStyle } =
-    useDraggable({ disabled: isMobile });
+    useDraggable({
+      disabled: isMobile && !isPipMode,
+      suppressRef: isPinchingRef,
+      defaultPosition: isPipMode ? pipDefaultPosition() : undefined,
+    });
+
+  /**
+   * Merges multiple refs onto a single element.
+   * @param el - The DOM element (or null on unmount)
+   */
+  const mergedPanelRef = useCallback((el: HTMLDivElement | null) => {
+    // Assign to dragContainerRef
+    (dragContainerRef as { current: HTMLDivElement | null }).current = el;
+    // Assign to pinchContainerRef
+    (pinchContainerRef as { current: HTMLDivElement | null }).current = el;
+  }, [dragContainerRef, pinchContainerRef]);
+
+  // Viewport resize listener — re-clamp PiP position (iOS Safari address bar)
+  useEffect(() => {
+    if (!isPipMode) return;
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const onResize = (): void => {
+      // The drag hook will re-clamp on next interaction;
+      // we trigger a position save to keep it in bounds
+      const el = dragContainerRef.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const vw = viewport.width;
+      const vh = viewport.height;
+      const padding = 8;
+
+      // Only intervene if element is out of bounds
+      if (rect.right > vw - padding || rect.bottom > vh - padding) {
+        const clampedX = Math.max(padding, Math.min(rect.left, vw - rect.width - padding));
+        const clampedY = Math.max(padding, Math.min(rect.top, vh - rect.height - padding));
+        el.style.left = `${clampedX}px`;
+        el.style.top = `${clampedY}px`;
+      }
+    };
+
+    viewport.addEventListener('resize', onResize);
+    return () => viewport.removeEventListener('resize', onResize);
+  }, [isPipMode, dragContainerRef]);
 
   // ============================================================================
   // Data Channel Chat Setup
@@ -505,6 +582,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   const handleCallEnded = useCallback((event: CallEndedEvent): void => {
     // Call ended, transition back to collapsed state
 
+    // Reset PiP mode
+    setIsPipMode(false);
+
     // Disconnect from LiveKit
     disconnectFromRoom();
 
@@ -700,6 +780,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
    * Handles end call button click.
    */
   const handleEndCall = useCallback(async (): Promise<void> => {
+    // Reset PiP mode
+    setIsPipMode(false);
+
     // Disconnect from LiveKit
     await disconnectFromRoom();
 
@@ -713,6 +796,25 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     // Return to collapsed state
     collapse();
   }, []);
+
+  /**
+   * Handles minimize button click — enters PiP mode.
+   * Clears panel position so PiP starts at its default position.
+   */
+  const handleMinimize = useCallback((): void => {
+    clearPanelPosition();
+    setIsPipMode(true);
+  }, []);
+
+  /**
+   * Handles expand button click in PiP — returns to full-width.
+   * Saves PiP size and clears panel position.
+   */
+  const handleExpandPip = useCallback((): void => {
+    savePipSize(pipSize);
+    clearPanelPosition();
+    setIsPipMode(false);
+  }, [pipSize]);
 
   /**
    * Handles pop out button click.
@@ -931,9 +1033,14 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       return (
         <div class="lc-widget">
           <div
-            ref={dragContainerRef}
-            class={`lc-panel lc-panel--${position}${isDragging ? ' lc-panel--dragging' : ''}`}
-            style={{ height: '500px', ...dragStyle }}
+            ref={mergedPanelRef}
+            class={`lc-panel lc-panel--${position}${isDragging ? ' lc-panel--dragging' : ''}${isPipMode ? ' lc-panel--pip' : ''}`}
+            style={{
+              ...(isPipMode
+                ? { width: `${pipSize}px`, height: `${pipSize}px` }
+                : { height: '500px' }),
+              ...dragStyle,
+            }}
           >
             <VideoCall
               conversationId={state.conversationId}
@@ -947,6 +1054,9 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
               isChatVisible={isChatVisible}
               hasUnreadChat={hasUnreadChat}
               dragHandleRef={dragHandleRef}
+              isPipMode={isPipMode}
+              onMinimize={handleMinimize}
+              onExpandPip={handleExpandPip}
               chatOverlay={isChatVisible ? (
                 <ChatPanel
                   messages={chatMessages}

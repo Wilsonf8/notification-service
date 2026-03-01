@@ -13,6 +13,10 @@ import { savePanelPosition, getPanelPosition, clearPanelPosition } from '../stor
 interface UseDraggableOptions {
   /** When true, dragging is disabled and position resets */
   disabled?: boolean;
+  /** When current === true, pointerdown events are ignored (e.g. during pinch) */
+  suppressRef?: RefObject<boolean>;
+  /** Default position used when no saved position exists (e.g. PiP initial placement) */
+  defaultPosition?: { x: number; y: number };
 }
 
 /**
@@ -83,7 +87,7 @@ function clampToViewport(
  * ```
  */
 export function useDraggable(options: UseDraggableOptions = {}): UseDraggableReturn {
-  const { disabled = false } = options;
+  const { disabled = false, suppressRef, defaultPosition } = options;
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -115,7 +119,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     }
   }, [disabled]);
 
-  // Restore saved position on mount
+  // Restore saved position on mount (or use defaultPosition for PiP)
   useEffect(() => {
     if (disabled) return;
     const saved = getPanelPosition();
@@ -123,8 +127,12 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       setPosition(saved);
       positionRef.current = saved;
       setHasDragged(true);
+    } else if (defaultPosition) {
+      setPosition(defaultPosition);
+      positionRef.current = defaultPosition;
+      setHasDragged(true);
     }
-  }, [disabled]);
+  }, [disabled, defaultPosition]);
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {
@@ -162,6 +170,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     (e: PointerEvent) => {
       if (disabled) return;
       if (e.button !== 0) return; // Only primary button
+      if (suppressRef?.current) return; // Suppress during pinch
 
       const container = containerRef.current;
       if (!container) return;
@@ -180,7 +189,7 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
     },
-    [disabled, onPointerMove, onPointerUp]
+    [disabled, suppressRef, onPointerMove, onPointerUp]
   );
 
   // Attach pointerdown and dragstart listeners on the handle.

@@ -1636,6 +1636,113 @@
   .lc-video__drag-handle::before {
     display: none;
   }
+
+  /* ==========================================
+     PiP (Picture-in-Picture) Mode
+     ========================================== */
+
+  /* Override full-width mobile rules when in PiP mode */
+  .lc-panel--pip {
+    width: auto;
+    max-width: none;
+    max-height: none;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    top: auto !important;
+    border: 1px solid var(--lc-border);
+    box-shadow: var(--lc-shadow-xl);
+    touch-action: none;
+    overflow: hidden;
+    animation: none;
+  }
+
+  /* Video fills PiP container */
+  .lc-panel--pip .lc-video {
+    min-height: auto;
+    height: 100%;
+  }
+
+  /* PiP drag surface — covers entire video for single-finger drag */
+  .lc-video__pip-drag-surface {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 25;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .lc-video__pip-drag-surface:active {
+    cursor: grabbing;
+  }
+
+  /* PiP simplified controls overlay (bottom) */
+  .lc-video__pip-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--lc-spacing-sm);
+    padding: var(--lc-spacing-sm);
+    background: linear-gradient(transparent, rgba(12, 10, 9, 0.85));
+    z-index: 30;
+    transition: opacity var(--lc-transition-normal), visibility var(--lc-transition-normal);
+  }
+
+  .lc-video__pip-controls--hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+  /* PiP control buttons (smaller than main controls) */
+  .lc-video__pip-control {
+    width: 36px;
+    height: 36px;
+    background-color: var(--lc-bg-secondary);
+    border: 1px solid var(--lc-border);
+    border-radius: var(--lc-radius);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--lc-text);
+    transition:
+      background-color var(--lc-transition-fast),
+      border-color var(--lc-transition-fast);
+  }
+
+  .lc-video__pip-control .lc-video__control-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .lc-video__pip-control:hover {
+    background-color: var(--lc-bg-tertiary);
+    border-color: var(--lc-border-hover);
+  }
+
+  .lc-video__pip-control--danger {
+    background-color: var(--lc-error);
+    border-color: var(--lc-error);
+  }
+
+  .lc-video__pip-control--danger:hover {
+    background-color: #dc2626;
+    border-color: #dc2626;
+  }
+
+  .lc-video__pip-control--muted {
+    background-color: var(--lc-error-bg);
+    border-color: var(--lc-error);
+    color: var(--lc-error);
+  }
 }
 
 /* Landscape orientation adjustments */

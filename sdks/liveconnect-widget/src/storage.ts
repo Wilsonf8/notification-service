@@ -20,6 +20,9 @@ export const STORAGE_KEY_ACTIVE_CALL = 'lc_active_call';
 /** Storage key for draggable panel position (persisted per tab via sessionStorage) */
 export const STORAGE_KEY_PANEL_POSITION = 'lc_panel_position';
 
+/** Storage key for PiP mode size (persisted per tab via sessionStorage) */
+export const STORAGE_KEY_PIP_SIZE = 'lc_pip_size';
+
 /** Default max age for active call state (60 seconds) */
 const DEFAULT_CALL_MAX_AGE_MS = 60_000;
 
@@ -447,4 +450,41 @@ export function getPanelPosition(): { x: number; y: number } | null {
  */
 export function clearPanelPosition(): void {
   safeSessionRemoveItem(STORAGE_KEY_PANEL_POSITION);
+}
+
+// ============================================================================
+// PiP Size Persistence (sessionStorage)
+// ============================================================================
+
+/**
+ * Saves the PiP mode size to sessionStorage.
+ * @param size - The PiP square dimension in pixels
+ * @returns True if the operation succeeded
+ */
+export function savePipSize(size: number): boolean {
+  return safeSessionSetItem(STORAGE_KEY_PIP_SIZE, String(size));
+}
+
+/**
+ * Gets the saved PiP size from sessionStorage.
+ * @returns The saved size in pixels or null if not found or invalid
+ */
+export function getPipSize(): number | null {
+  const raw = safeSessionGetItem(STORAGE_KEY_PIP_SIZE);
+  if (!raw) return null;
+
+  const size = Number(raw);
+  if (!Number.isFinite(size) || size <= 0) {
+    clearPipSize();
+    return null;
+  }
+
+  return size;
+}
+
+/**
+ * Clears the saved PiP size from sessionStorage.
+ */
+export function clearPipSize(): void {
+  safeSessionRemoveItem(STORAGE_KEY_PIP_SIZE);
 }

@@ -61,6 +61,12 @@ interface VideoCallProps {
   dragHandleRef?: Ref<HTMLDivElement>;
   /** Optional chat overlay content to render inside the video container */
   chatOverlay?: ComponentChildren;
+  /** Whether the widget is in PiP (Picture-in-Picture) mode */
+  isPipMode?: boolean;
+  /** Handler for minimize button (enter PiP mode) */
+  onMinimize?: () => void;
+  /** Handler for expand button (exit PiP mode) */
+  onExpandPip?: () => void;
 }
 
 // ============================================================================
@@ -357,6 +363,60 @@ function CameraFlipIcon(): h.JSX.Element {
 }
 
 /**
+ * Minimize icon (Tabler arrows-diagonal-minimize-2).
+ * Used in full-width control bar to enter PiP mode.
+ * @returns SVG element
+ */
+function MinimizeIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M18 10h-4v-4" />
+      <path d="M20 4l-6 6" />
+      <path d="M6 14h4v4" />
+      <path d="M4 20l6 -6" />
+    </svg>
+  );
+}
+
+/**
+ * Expand icon (Tabler arrows-diagonal).
+ * Used in PiP control overlay to return to full-width.
+ * @returns SVG element
+ */
+function ExpandIcon(): h.JSX.Element {
+  return (
+    <svg
+      class="lc-video__control-icon"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M16 4l4 0l0 4" />
+      <path d="M14 10l6 -6" />
+      <path d="M8 20l-4 0l0 -4" />
+      <path d="M4 20l6 -6" />
+    </svg>
+  );
+}
+
+/**
  * Dots icon (overflow menu trigger).
  * @returns SVG element
  */
@@ -458,6 +518,9 @@ export function VideoCall({
   hasUnreadChat,
   dragHandleRef,
   chatOverlay,
+  isPipMode = false,
+  onMinimize,
+  onExpandPip,
 }: VideoCallProps): h.JSX.Element {
   // Video element refs
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -478,6 +541,10 @@ export function VideoCall({
   const [isOverflowOpen, setIsOverflowOpen] = useState<boolean>(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const overflowRef = useRef<HTMLDivElement>(null);
+
+  // PiP controls auto-hide state
+  const [isPipControlsVisible, setIsPipControlsVisible] = useState<boolean>(false);
+  const pipHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Local state copies of signals (for rendering)
   const [isMicOn, setIsMicOn] = useState<boolean>(micEnabled.value);
@@ -678,10 +745,47 @@ export function VideoCall({
   }, [isOverflowOpen]);
 
   /**
+   * Handles tap on PiP surface to toggle simplified controls.
+   * Shows controls for 3 seconds then auto-hides.
+   */
+  const handlePipTap = useCallback((): void => {
+    if (pipHideTimerRef.current) {
+      clearTimeout(pipHideTimerRef.current);
+      pipHideTimerRef.current = null;
+    }
+
+    if (isPipControlsVisible) {
+      setIsPipControlsVisible(false);
+    } else {
+      setIsPipControlsVisible(true);
+      pipHideTimerRef.current = setTimeout(() => {
+        setIsPipControlsVisible(false);
+        pipHideTimerRef.current = null;
+      }, 3000);
+    }
+  }, [isPipControlsVisible]);
+
+  // Reset PiP controls visibility when exiting PiP mode
+  useEffect(() => {
+    if (!isPipMode) {
+      setIsPipControlsVisible(false);
+      if (pipHideTimerRef.current) {
+        clearTimeout(pipHideTimerRef.current);
+        pipHideTimerRef.current = null;
+      }
+    }
+  }, [isPipMode]);
+
+  /**
    * Effect to clear hide timer on unmount.
    */
   useEffect(() => {
-    return () => clearHideTimer();
+    return () => {
+      clearHideTimer();
+      if (pipHideTimerRef.current) {
+        clearTimeout(pipHideTimerRef.current);
+      }
+    };
   }, []);
 
   /**
@@ -850,39 +954,85 @@ export function VideoCall({
       )}
 
       {/* Info bar (top) — also serves as the drag handle for panel repositioning */}
-      <div ref={dragHandleRef} class="lc-video__info lc-video__drag-handle">
-        <div class="lc-video__participant">
-          <span class="lc-video__participant-name">{participantName}</span>
+      {!isPipMode && (
+        <div ref={dragHandleRef} class="lc-video__info lc-video__drag-handle">
+          <div class="lc-video__participant">
+            <span class="lc-video__participant-name">{participantName}</span>
+          </div>
+          <div
+            class="lc-video__duration"
+            aria-label={`Call duration: ${formatDuration(callDuration)}`}
+            aria-live="off"
+          >
+            {formatDuration(callDuration)}
+          </div>
         </div>
-        <div
-          class="lc-video__duration"
-          aria-label={`Call duration: ${formatDuration(callDuration)}`}
-          aria-live="off"
-        >
-          {formatDuration(callDuration)}
-        </div>
-      </div>
+      )}
 
-      {/* Local video PIP (bottom-right) */}
-      <video
-        ref={localVideoRef}
-        class={`lc-video__local ${!isCameraOn ? 'lc-video__local--hidden' : ''}`}
-        autoPlay
-        playsInline
-        muted
-        aria-label="Your video"
-      />
+      {/* Local video PIP (bottom-right) — hidden in PiP mode */}
+      {!isPipMode && (
+        <video
+          ref={localVideoRef}
+          class={`lc-video__local ${!isCameraOn ? 'lc-video__local--hidden' : ''}`}
+          autoPlay
+          playsInline
+          muted
+          aria-label="Your video"
+        />
+      )}
 
-      {/* Chat overlay (left side of video, z-index 20) */}
-      {chatOverlay && (
+      {/* Chat overlay (left side of video, z-index 20) — hidden in PiP mode */}
+      {!isPipMode && chatOverlay && (
         <div class={`lc-video__chat-overlay${isKeyboardOpen ? ' lc-video__chat-overlay--keyboard-open' : ''}`}>
           {chatOverlay}
         </div>
       )}
 
-      {/* Control bar (bottom) — auto-hides after inactivity */}
+      {/* PiP drag surface — covers video for single-finger drag */}
+      {isPipMode && (
+        <div
+          class="lc-video__pip-drag-surface"
+          ref={dragHandleRef}
+          onClick={handlePipTap}
+        />
+      )}
+
+      {/* PiP simplified controls — shown on tap, auto-hides after 3s */}
+      {isPipMode && (
+        <div class={`lc-video__pip-controls${isPipControlsVisible ? '' : ' lc-video__pip-controls--hidden'}`}>
+          <button
+            type="button"
+            class="lc-video__pip-control"
+            onClick={() => onExpandPip?.()}
+            aria-label="Expand to full size"
+            title="Expand"
+          >
+            <ExpandIcon />
+          </button>
+          <button
+            type="button"
+            class="lc-video__pip-control lc-video__pip-control--danger"
+            onClick={handleEndCall}
+            aria-label="End call"
+            title="End Call"
+          >
+            <PhoneHangUpIcon />
+          </button>
+          <button
+            type="button"
+            class={`lc-video__pip-control${!isMicOn ? ' lc-video__pip-control--muted' : ''}`}
+            onClick={() => handleToggleMic()}
+            aria-label={isMicOn ? 'Mute microphone' : 'Unmute microphone'}
+            title={isMicOn ? 'Mute' : 'Unmute'}
+          >
+            {isMicOn ? <MicrophoneIcon /> : <MicrophoneOffIcon />}
+          </button>
+        </div>
+      )}
+
+      {/* Control bar (bottom) — auto-hides after inactivity, hidden in PiP mode */}
       <div
-        class={`lc-video__controls ${isToolbarVisible ? '' : 'lc-video__controls--hidden'}`}
+        class={`lc-video__controls ${isToolbarVisible && !isPipMode ? '' : 'lc-video__controls--hidden'}`}
         role="toolbar"
         aria-label="Call controls"
       >
@@ -940,6 +1090,20 @@ export function VideoCall({
             <span class="lc-video__unread-dot" aria-label="Unread messages" />
           )}
         </button>
+
+        {/* Minimize to PiP — shown only on mobile */}
+        {isMobile && onMinimize && (
+          <button
+            type="button"
+            class="lc-video__control"
+            onClick={() => onMinimize()}
+            onKeyDown={(e) => handleKeyDown(e, () => onMinimize())}
+            aria-label="Minimize to picture-in-picture"
+            title="Minimize"
+          >
+            <MinimizeIcon />
+          </button>
+        )}
 
         {/* Camera flip — promoted to main bar on mobile for quick access */}
         {isMobile && isFlipAvailable && isCameraOn && (
