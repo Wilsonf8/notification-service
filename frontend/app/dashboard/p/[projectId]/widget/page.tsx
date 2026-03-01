@@ -486,7 +486,7 @@ export default function WidgetPage() {
                   <Label>Border Radius</Label>
                   <span className="text-xs text-muted-foreground font-mono">{borderRadius}px</span>
                 </div>
-                <Slider value={borderRadius} onValueChange={(v) => setBorderRadius(v as number)} min={0} max={24} />
+                <Slider value={borderRadius} onValueChange={(v) => setBorderRadius(v as number)} min={0} max={28} />
               </div>
               <div className="space-y-2">
                 <Label>Font Family</Label>
@@ -625,7 +625,7 @@ export default function WidgetPage() {
                         bottom: widgetPosition.includes("bottom") ? 16 : "auto",
                         left: widgetPosition.includes("left") ? 16 : "auto",
                         right: widgetPosition.includes("right") ? 16 : "auto",
-                        width: 48, height: 48,
+                        width: 56, height: 56,
                         backgroundColor: widgetColor,
                         border: "none",
                         borderRadius: `${borderRadius}px`,
