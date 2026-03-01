@@ -56,6 +56,21 @@ struct VisitorDetailPanel: View {
                             }
                         }
 
+                        // Ping button
+                        if visitor.isPingable {
+                            Button(action: onPing) {
+                                HStack {
+                                    Image(systemName: "bell.badge")
+                                    Text("Ping Visitor")
+                                }
+                                .font(.headline)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(.yellow)
+                                .foregroundStyle(.black)
+                            }
+                        }
+
                         // Details
                         VStack(spacing: 16) {
                             DetailRow(
@@ -165,22 +180,6 @@ struct VisitorDetailPanel: View {
                             .background(Color.white.opacity(0.05))
                         }
 
-                        Spacer()
-
-                        // Action buttons
-                        if visitor.isPingable {
-                            Button(action: onPing) {
-                                HStack {
-                                    Image(systemName: "bell.badge")
-                                    Text("Ping Visitor")
-                                }
-                                .font(.headline)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(.yellow)
-                                .foregroundStyle(.black)
-                            }
-                        }
                     }
                     .padding()
                 }
