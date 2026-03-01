@@ -129,10 +129,11 @@ export default function RepsPage() {
             <strong>Status meanings:</strong>
           </p>
           <ul className="list-inside list-disc space-y-1">
-            <li><strong>Available</strong> - Online and ready to take calls</li>
-            <li><strong>Online (Unavailable)</strong> - Online but not accepting new calls</li>
+            <li><strong>Online</strong> - Connected and logged in</li>
             <li><strong>In Call</strong> - Currently on a video call</li>
             <li><strong>Offline</strong> - Not currently logged in</li>
+            <li><strong>Available</strong> - Ready to take calls</li>
+            <li><strong>Unavailable</strong> - Not accepting new calls</li>
           </ul>
         </CardContent>
       </Card>

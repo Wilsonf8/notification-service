@@ -46,34 +46,20 @@ interface RepListProps {
 }
 
 /**
- * Gets status color class based on presence.
+ * Gets presence color class.
  */
-function getStatusColor(rep: LiveConnectRep): string {
-  if (rep.presence === "IN_CALL") {
-    return "text-yellow-500";
-  }
-  if (rep.presence === "ONLINE" && rep.availability === "AVAILABLE") {
-    return "text-green-500";
-  }
-  if (rep.presence === "ONLINE") {
-    return "text-blue-500";
-  }
+function getPresenceColor(rep: LiveConnectRep): string {
+  if (rep.presence === "IN_CALL") return "text-yellow-500";
+  if (rep.presence === "ONLINE") return "text-green-500";
   return "text-muted-foreground";
 }
 
 /**
- * Gets status label based on presence and availability.
+ * Gets presence label.
  */
-function getStatusLabel(rep: LiveConnectRep): string {
-  if (rep.presence === "IN_CALL") {
-    return "In Call";
-  }
-  if (rep.presence === "ONLINE" && rep.availability === "AVAILABLE") {
-    return "Available";
-  }
-  if (rep.presence === "ONLINE") {
-    return "Online (Unavailable)";
-  }
+function getPresenceLabel(rep: LiveConnectRep): string {
+  if (rep.presence === "IN_CALL") return "In Call";
+  if (rep.presence === "ONLINE") return "Online";
   return "Offline";
 }
 
@@ -143,9 +129,14 @@ export function RepList({ reps, projectId, onRepRemoved, loading, readOnly }: Re
               <span className="text-muted-foreground">{rep.email}</span>
             </TableCell>
             <TableCell>
-              <div className="flex items-center gap-1.5">
-                <IconCircleFilled className={cn("h-3 w-3", getStatusColor(rep))} />
-                <span className="text-sm">{getStatusLabel(rep)}</span>
+              <div className="flex flex-col gap-0.5">
+                <div className="flex items-center gap-1.5">
+                  <IconCircleFilled className={cn("h-2.5 w-2.5", getPresenceColor(rep))} />
+                  <span className="text-sm">{getPresenceLabel(rep)}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {rep.availability === "AVAILABLE" ? "Available" : "Unavailable"}
+                </span>
               </div>
             </TableCell>
             {!readOnly && (
