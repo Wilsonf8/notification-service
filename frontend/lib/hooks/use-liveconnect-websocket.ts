@@ -555,8 +555,8 @@ export function useLiveConnectWebSocket(
 
     clearTimers();
 
-    // Build WebSocket URL with token in query param
-    const wsUrl = `${WS_URL}/api/projects/${projectId}/liveconnect/ws?token=${encodeURIComponent(token)}`;
+    // Build WebSocket URL with token and deviceSessionId in query params
+    const wsUrl = `${WS_URL}/api/projects/${projectId}/liveconnect/ws?token=${encodeURIComponent(token)}&deviceSessionId=${encodeURIComponent(deviceSessionIdRef.current)}`;
 
     try {
       const ws = new WebSocket(wsUrl);

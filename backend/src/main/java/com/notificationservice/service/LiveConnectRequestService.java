@@ -576,6 +576,37 @@ public class LiveConnectRequestService {
     }
 
     /**
+     * Withdraws all pending pings that were initiated from a specific device session.
+     * Called when a device disconnects so visitors don't see stale pings from that device.
+     *
+     * @param deviceSessionId the device session ID that originated the pings
+     * @param projectId the project ID for broadcasting
+     */
+    @Transactional
+    public void withdrawPendingPingsByDeviceSession(String deviceSessionId, UUID projectId) {
+        List<LiveConnectRequest> pendingPings = requestRepository.findPendingPingsByDeviceSessionId(deviceSessionId);
+
+        for (LiveConnectRequest ping : pendingPings) {
+            ping.setStatus(RequestStatus.CANCELLED);
+            requestRepository.save(ping);
+
+            // Reset visitor engagement back to BROWSING
+            visitorSessionManager.setVisitorState(
+                    ping.getVisitor().getId(),
+                    VisitorSessionManager.VisitorEngagementState.BROWSING
+            );
+
+            // Notify the visitor their incoming ping was withdrawn
+            PingWithdrawnEvent visitorEvent = new PingWithdrawnEvent(ping.getId());
+            broadcaster.sendToVisitor(ping.getVisitor().getId(), visitorEvent);
+
+            // Notify reps so the request is removed from their queue
+            RequestCancelledEvent repEvent = new RequestCancelledEvent(ping.getId());
+            broadcaster.broadcastToProject(projectId, repEvent);
+        }
+    }
+
+    /**
      * Withdraws all pending pings by a rep, excluding the specified request.
      * Called when a rep enters a call so other visitors don't see stale incoming pings.
      *

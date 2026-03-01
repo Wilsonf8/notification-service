@@ -84,9 +84,17 @@ public class RepHandshakeInterceptor implements HandshakeInterceptor {
                 return false;
             }
 
+            // Extract deviceSessionId from query params (fallback to random UUID for backwards compatibility)
+            String deviceSessionId = UriComponentsBuilder.fromUri(request.getURI())
+                    .build().getQueryParams().getFirst("deviceSessionId");
+            if (deviceSessionId == null || deviceSessionId.isBlank()) {
+                deviceSessionId = UUID.randomUUID().toString();
+            }
+
             // Store attributes for use in handler
             attributes.put("projectId", projectId);
             attributes.put("userId", userId);
+            attributes.put("deviceSessionId", deviceSessionId);
 
             log.debug("Rep handshake successful: projectId={}, userId={}", projectId, userId);
             return true;

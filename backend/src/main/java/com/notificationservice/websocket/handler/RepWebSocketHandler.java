@@ -95,6 +95,12 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
         // Remove session
         sessionManager.removeSession(projectId, userId, session);
 
+        // Withdraw pings originated from this specific device session
+        String deviceSessionId = (String) session.getAttributes().get("deviceSessionId");
+        if (deviceSessionId != null) {
+            requestService.withdrawPendingPingsByDeviceSession(deviceSessionId, projectId);
+        }
+
         // Update rep presence in database
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
             int newConnections = Math.max(0, rep.getActiveConnections() - 1);
@@ -105,7 +111,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             if (newConnections == 0 && rep.getPresence() != RepPresence.IN_CALL) {
                 rep.setPresence(RepPresence.OFFLINE);
                 wentOffline = true;
-                // Withdraw any pending pings this rep sent to visitors
+                // Withdraw any remaining pending pings (safety net)
                 requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
             }
 

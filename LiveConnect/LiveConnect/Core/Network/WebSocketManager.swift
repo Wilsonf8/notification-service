@@ -250,6 +250,7 @@ final class WebSocketManager: WebSocketDelegate {
             } else {
                 urlString += "?token=\(token)"
             }
+            urlString += "&deviceSessionId=\(deviceSessionId)"
         }
 
         guard let url = URL(string: urlString) else {
