@@ -3,7 +3,7 @@
  * Used to let visitors reposition the video call panel by grabbing the top info bar.
  */
 
-import { useRef, useState, useEffect, useCallback } from 'preact/hooks';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'preact/hooks';
 import type { RefObject, Ref } from 'preact';
 import { savePanelPosition, getPanelPosition, clearPanelPosition } from '../storage';
 
@@ -89,6 +89,14 @@ function clampToViewport(
 export function useDraggable(options: UseDraggableOptions = {}): UseDraggableReturn {
   const { disabled = false, suppressRef, defaultPosition } = options;
 
+  // Stabilize defaultPosition by value (not reference) so the position-restore
+  // effect doesn't re-run when callers pass new object literals with same coordinates.
+  const stableDefaultPosition = useMemo(
+    () => defaultPosition,
+    // eslint-disable-next-line react-hooks/exhaustive-deps — intentional value comparison
+    [defaultPosition?.x, defaultPosition?.y]
+  );
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Callback ref for the drag handle — sets state when the element mounts/unmounts
@@ -119,20 +127,23 @@ export function useDraggable(options: UseDraggableOptions = {}): UseDraggableRet
     }
   }, [disabled]);
 
-  // Restore saved position on mount (or use defaultPosition for PiP)
+  // Restore saved position on mount (or use defaultPosition for PiP).
+  // Uses stableDefaultPosition to avoid re-running on reference-only changes.
   useEffect(() => {
     if (disabled) return;
+    if (isDraggingRef.current) return; // Never override an active drag
+
     const saved = getPanelPosition();
     if (saved) {
       setPosition(saved);
       positionRef.current = saved;
       setHasDragged(true);
-    } else if (defaultPosition) {
-      setPosition(defaultPosition);
-      positionRef.current = defaultPosition;
+    } else if (stableDefaultPosition) {
+      setPosition(stableDefaultPosition);
+      positionRef.current = stableDefaultPosition;
       setHasDragged(true);
     }
-  }, [disabled, defaultPosition]);
+  }, [disabled, stableDefaultPosition]);
 
   const onPointerMove = useCallback(
     (e: PointerEvent) => {

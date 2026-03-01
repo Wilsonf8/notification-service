@@ -4,7 +4,7 @@
  */
 
 import { h } from 'preact';
-import { useEffect, useState, useCallback, useRef } from 'preact/hooks';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'preact/hooks';
 import { useDraggable } from '../hooks/useDraggable';
 import { usePinchResize } from '../hooks/usePinchResize';
 import {
@@ -178,12 +178,20 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
       onSizeChange: (size) => savePipSize(size),
     });
 
+  // Memoize PiP default position — only recompute when entering PiP mode.
+  // Prevents new object reference on every render from re-triggering
+  // the position-restore effect in useDraggable.
+  const pipDefaultPos = useMemo(
+    () => (isPipMode ? pipDefaultPosition() : undefined),
+    [isPipMode, pipDefaultPosition]
+  );
+
   // Draggable panel hook — disabled on mobile unless in PiP mode
   const { containerRef: dragContainerRef, handleRef: dragHandleRef, isDragging, dragStyle } =
     useDraggable({
       disabled: isMobile && !isPipMode,
       suppressRef: isPinchingRef,
-      defaultPosition: isPipMode ? pipDefaultPosition() : undefined,
+      defaultPosition: pipDefaultPos,
     });
 
   /**
