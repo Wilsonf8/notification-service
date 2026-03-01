@@ -23,6 +23,9 @@ export const STORAGE_KEY_PANEL_POSITION = 'lc_panel_position';
 /** Storage key for PiP mode size (persisted per tab via sessionStorage) */
 export const STORAGE_KEY_PIP_SIZE = 'lc_pip_size';
 
+/** Storage key for PiP mode active state (persisted per tab via sessionStorage) */
+export const STORAGE_KEY_PIP_MODE = 'lc_pip_mode';
+
 /** Default max age for active call state (60 seconds) */
 const DEFAULT_CALL_MAX_AGE_MS = 60_000;
 
@@ -487,4 +490,32 @@ export function getPipSize(): number | null {
  */
 export function clearPipSize(): void {
   safeSessionRemoveItem(STORAGE_KEY_PIP_SIZE);
+}
+
+// ============================================================================
+// PiP Mode Persistence (sessionStorage)
+// ============================================================================
+
+/**
+ * Saves the PiP mode active state to sessionStorage.
+ * @param active - Whether PiP mode is active
+ * @returns True if the operation succeeded
+ */
+export function savePipMode(active: boolean): boolean {
+  return safeSessionSetItem(STORAGE_KEY_PIP_MODE, active ? '1' : '0');
+}
+
+/**
+ * Gets the saved PiP mode state from sessionStorage.
+ * @returns True if PiP mode was active, false if not found or inactive
+ */
+export function getPipMode(): boolean {
+  return safeSessionGetItem(STORAGE_KEY_PIP_MODE) === '1';
+}
+
+/**
+ * Clears the saved PiP mode state from sessionStorage.
+ */
+export function clearPipMode(): void {
+  safeSessionRemoveItem(STORAGE_KEY_PIP_MODE);
 }

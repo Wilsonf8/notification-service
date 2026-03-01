@@ -51,6 +51,9 @@ import {
   clearPanelPosition,
   savePipSize,
   getPipSize,
+  savePipMode,
+  getPipMode,
+  clearPipMode,
 } from '../storage';
 import { Button, type AvailabilityStatus } from './Button';
 import { Panel } from './Panel';
@@ -135,7 +138,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   );
 
   /** Whether the video is in PiP (Picture-in-Picture) floating mode */
-  const [isPipMode, setIsPipMode] = useState<boolean>(false);
+  const [isPipMode, setIsPipMode] = useState<boolean>(getPipMode());
 
   // Mobile detection via matchMedia listener
   useEffect(() => {
@@ -149,6 +152,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   useEffect(() => {
     if (!isMobile && isPipMode) {
       setIsPipMode(false);
+      savePipMode(false);
     }
   }, [isMobile, isPipMode]);
 
@@ -584,6 +588,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
     // Reset PiP mode
     setIsPipMode(false);
+    clearPipMode();
 
     // Disconnect from LiveKit
     disconnectFromRoom();
@@ -782,6 +787,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   const handleEndCall = useCallback(async (): Promise<void> => {
     // Reset PiP mode
     setIsPipMode(false);
+    clearPipMode();
 
     // Disconnect from LiveKit
     await disconnectFromRoom();
@@ -804,6 +810,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
   const handleMinimize = useCallback((): void => {
     clearPanelPosition();
     setIsPipMode(true);
+    savePipMode(true);
   }, []);
 
   /**
@@ -814,6 +821,7 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
     savePipSize(pipSize);
     clearPanelPosition();
     setIsPipMode(false);
+    savePipMode(false);
   }, [pipSize]);
 
   /**
