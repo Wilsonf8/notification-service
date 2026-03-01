@@ -15,6 +15,9 @@
    CSS Variables - Theme Configuration
    ============================================ */
 :host {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+
   /* Primary colors - derived from --lc-bg via color-mix */
   --lc-bg: #0c0a09;             /* stone-950 (default, overridden at runtime) */
   --lc-bg-secondary: color-mix(in srgb, var(--lc-bg), white 8%);
@@ -1604,8 +1607,24 @@
     padding: var(--lc-spacing-sm);
   }
 
+  .lc-chat__input {
+    font-size: var(--lc-font-size-lg); /* 16px — prevents iOS auto-zoom */
+  }
+
   .lc-video__chat-overlay {
     width: 65%; /* wider on mobile for readability */
+  }
+
+  .lc-video__chat-overlay--keyboard-open {
+    width: 100%;
+    border-right: none;
+  }
+
+  .lc-video__overflow-menu {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(100% + 12px);
   }
 
   /* Disable drag handle on mobile (panel is full-width) */

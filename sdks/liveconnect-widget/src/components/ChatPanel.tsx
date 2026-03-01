@@ -5,6 +5,7 @@
 
 import { h } from 'preact';
 import { useState, useRef, useEffect } from 'preact/hooks';
+import { useVisualViewport } from '../hooks/useVisualViewport';
 
 /**
  * Represents a chat message in the conversation.
@@ -166,6 +167,19 @@ export function ChatPanel({
 
   // Ref for the input field
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Visual viewport tracking for keyboard-aware scrolling
+  const { isKeyboardOpen } = useVisualViewport();
+
+  /**
+   * Scroll to bottom when the on-screen keyboard opens so the
+   * latest messages remain visible above the keyboard.
+   */
+  useEffect(() => {
+    if (isKeyboardOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [isKeyboardOpen]);
 
   /**
    * Auto-scroll to bottom when new messages arrive.

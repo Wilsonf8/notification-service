@@ -6,6 +6,7 @@
 import { h, type ComponentChildren } from 'preact';
 import { useRef, useEffect, useState, useCallback } from 'preact/hooks';
 import type { Ref } from 'preact';
+import { useVisualViewport } from '../hooks/useVisualViewport';
 import {
   micEnabled,
   cameraEnabled,
@@ -486,6 +487,22 @@ export function VideoCall({
   const [isBlurAvailable, setIsBlurAvailable] = useState<boolean>(blurSupported.value);
   const [isFlipAvailable, setIsFlipAvailable] = useState<boolean>(canFlipCamera.value);
 
+  // Visual viewport tracking for keyboard-aware chat overlay
+  const { isKeyboardOpen } = useVisualViewport();
+
+  /** Whether the viewport is mobile-sized (promotes camera flip to main bar) */
+  const [isMobile, setIsMobile] = useState<boolean>(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 480px)').matches
+  );
+
+  // Mobile detection via matchMedia listener
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 480px)');
+    const onChange = (e: MediaQueryListEvent): void => setIsMobile(e.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
   /**
    * Effect to cleanup video elements when component unmounts.
    */
@@ -858,7 +875,7 @@ export function VideoCall({
 
       {/* Chat overlay (left side of video, z-index 20) */}
       {chatOverlay && (
-        <div class="lc-video__chat-overlay">
+        <div class={`lc-video__chat-overlay${isKeyboardOpen ? ' lc-video__chat-overlay--keyboard-open' : ''}`}>
           {chatOverlay}
         </div>
       )}
@@ -924,6 +941,20 @@ export function VideoCall({
           )}
         </button>
 
+        {/* Camera flip — promoted to main bar on mobile for quick access */}
+        {isMobile && isFlipAvailable && isCameraOn && (
+          <button
+            type="button"
+            class="lc-video__control"
+            onClick={() => handleFlipCamera()}
+            onKeyDown={(e) => handleKeyDown(e, handleFlipCamera)}
+            aria-label="Flip camera"
+            title="Flip Camera"
+          >
+            <CameraFlipIcon />
+          </button>
+        )}
+
         {/* Overflow menu trigger */}
         <div class="lc-video__overflow-wrapper" ref={overflowRef}>
           <button
@@ -956,8 +987,8 @@ export function VideoCall({
                 {isScreenShareOn ? <ScreenShareOffIcon /> : <ScreenShareIcon />}
               </button>
 
-              {/* Camera flip (only shown when multiple cameras and camera is on) */}
-              {isFlipAvailable && isCameraOn && (
+              {/* Camera flip (hidden on mobile — promoted to main bar) */}
+              {!isMobile && isFlipAvailable && isCameraOn && (
                 <button
                   type="button"
                   class="lc-video__control"
