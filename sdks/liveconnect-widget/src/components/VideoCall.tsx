@@ -971,16 +971,14 @@ export function VideoCall({
       )}
 
       {/* Local video PIP (bottom-right) — hidden in PiP mode */}
-      {!isPipMode && (
-        <video
-          ref={localVideoRef}
-          class={`lc-video__local ${!isCameraOn ? 'lc-video__local--hidden' : ''}`}
-          autoPlay
-          playsInline
-          muted
-          aria-label="Your video"
-        />
-      )}
+      <video
+        ref={localVideoRef}
+        class={`lc-video__local${!isCameraOn || isPipMode ? ' lc-video__local--hidden' : ''}`}
+        autoPlay
+        playsInline
+        muted
+        aria-label="Your video"
+      />
 
       {/* Chat overlay (left side of video, z-index 20) — hidden in PiP mode */}
       {!isPipMode && chatOverlay && (
