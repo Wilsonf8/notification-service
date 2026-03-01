@@ -708,6 +708,7 @@ export function VideoCall({
    * @param event - Touch event
    */
   const handleTouchStart = useCallback((event: TouchEvent): void => {
+    if (isPipMode) return;
     const target = event.target as HTMLElement;
     // Don't toggle if tapping on a button or control
     if (target.closest('.lc-video__controls') || target.closest('.lc-video__overflow-menu')) {
@@ -719,7 +720,7 @@ export function VideoCall({
     } else {
       showToolbar();
     }
-  }, [isToolbarVisible, clearHideTimer, showToolbar]);
+  }, [isPipMode, isToolbarVisible, clearHideTimer, showToolbar]);
 
   /**
    * Effect to restart hide timer when overflow menu closes.
