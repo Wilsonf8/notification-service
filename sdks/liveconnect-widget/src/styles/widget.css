@@ -1547,7 +1547,7 @@
    Mobile / Responsive Styles
    ============================================ */
 @media (max-width: 480px) {
-  .lc-panel {
+  .lc-panel:not(.lc-panel--pip) {
     width: 100%;
     max-width: 100%;
     left: 0 !important;
@@ -1646,10 +1646,6 @@
     width: auto;
     max-width: none;
     max-height: none;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    top: auto !important;
     border: 1px solid var(--lc-border);
     box-shadow: var(--lc-shadow-xl);
     touch-action: none;
