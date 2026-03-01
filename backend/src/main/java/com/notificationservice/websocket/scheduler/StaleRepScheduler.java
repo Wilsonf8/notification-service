@@ -47,7 +47,7 @@ public class StaleRepScheduler {
             rep.setPresence(RepPresence.OFFLINE);
             rep.setActiveConnections(0);
             repRepository.save(rep);
-            repService.broadcastRepStatusChanged(rep);
+            repService.broadcastRepStatusChanged(rep.getId());
 
             requestService.withdrawPendingPingsOnDisconnect(
                     rep.getId(), rep.getProject().getId()

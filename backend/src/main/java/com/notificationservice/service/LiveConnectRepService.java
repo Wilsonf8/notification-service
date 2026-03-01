@@ -147,7 +147,7 @@ public class LiveConnectRepService {
         broadcaster.broadcastToProjectVisitors(projectId, event);
 
         // Broadcast rep status change to all reps in the project
-        broadcastRepStatusChanged(savedRep);
+        broadcastRepStatusChanged(savedRep.getId());
 
         return toDto(savedRep);
     }
@@ -176,7 +176,7 @@ public class LiveConnectRepService {
         LiveConnectRep savedRep = repRepository.save(rep);
 
         // Broadcast rep status change to all reps in the project
-        broadcastRepStatusChanged(savedRep);
+        broadcastRepStatusChanged(savedRep.getId());
 
         return toDto(savedRep);
     }
@@ -196,7 +196,7 @@ public class LiveConnectRepService {
             rep.setPresence(RepPresence.OFFLINE);
             rep.setActiveConnections(0);
             repRepository.save(rep);
-            broadcastRepStatusChanged(rep);
+            broadcastRepStatusChanged(rep.getId());
             requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
         });
     }
@@ -216,19 +216,24 @@ public class LiveConnectRepService {
 
     /**
      * Broadcasts a rep status change event to all reps in the project.
+     * Opens its own transaction to ensure lazy associations can be loaded,
+     * which is necessary when called from non-transactional contexts (e.g., WebSocket handlers).
      *
-     * @param rep the rep whose status changed
+     * @param repId the ID of the rep whose status changed
      */
-    public void broadcastRepStatusChanged(LiveConnectRep rep) {
-        RepStatusChangedEvent event = new RepStatusChangedEvent(
-                rep.getId(),
-                rep.getUser().getId(),
-                rep.getUser().getUsername(),
-                rep.getUser().getEmail(),
-                rep.getAvailability().name(),
-                rep.getPresence().name()
-        );
-        broadcaster.broadcastToProject(rep.getProject().getId(), event);
+    @Transactional(readOnly = true)
+    public void broadcastRepStatusChanged(UUID repId) {
+        repRepository.findById(repId).ifPresent(rep -> {
+            RepStatusChangedEvent event = new RepStatusChangedEvent(
+                    rep.getId(),
+                    rep.getUser().getId(),
+                    rep.getUser().getUsername(),
+                    rep.getUser().getEmail(),
+                    rep.getAvailability().name(),
+                    rep.getPresence().name()
+            );
+            broadcaster.broadcastToProject(rep.getProject().getId(), event);
+        });
     }
 
     private Project getAndValidateProject(UUID projectId, UUID userId) {

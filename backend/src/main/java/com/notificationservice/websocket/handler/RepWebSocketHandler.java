@@ -58,7 +58,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             rep.setActiveConnections(rep.getActiveConnections() + 1);
             rep.setLastHeartbeat(OffsetDateTime.now());
             repRepository.save(rep);
-            repService.broadcastRepStatusChanged(rep);
+            repService.broadcastRepStatusChanged(rep.getId());
             log.info("Rep connected: userId={}, projectId={}, activeConnections={}",
                     userId, projectId, rep.getActiveConnections());
         });
@@ -111,7 +111,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
 
             repRepository.save(rep);
             if (wentOffline) {
-                repService.broadcastRepStatusChanged(rep);
+                repService.broadcastRepStatusChanged(rep.getId());
             }
             log.info("Rep disconnected: userId={}, projectId={}, activeConnections={}, presence={}",
                     userId, projectId, newConnections, rep.getPresence());
