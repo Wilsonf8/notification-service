@@ -116,6 +116,27 @@
   --sidebar-ring: oklch(0.553 0.013 58.071);
 }
 
+@keyframes pointing-arrow-glow {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 0px oklch(0.795 0.184 86.047));
+  }
+  50% {
+    opacity: 0.85;
+    filter: drop-shadow(0 0 8px oklch(0.795 0.184 86.047));
+  }
+}
+
+.pointing-arrow-pulse {
+  animation: pointing-arrow-glow 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pointing-arrow-pulse {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

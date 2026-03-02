@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { IconVideo, IconCode } from "@tabler/icons-react";
+import { PointingArrow } from "@/components/landing/pointing-arrow";
 
 /**
  * Displays the main hero section with title, description, CTA button,
@@ -36,6 +37,11 @@ export function HeroSection() {
             >
               Docs
             </Link>
+          </div>
+
+          {/* Arrow pointing toward the widget FAB */}
+          <div className="mt-8 flex justify-center">
+            <PointingArrow />
           </div>
         </div>
 
