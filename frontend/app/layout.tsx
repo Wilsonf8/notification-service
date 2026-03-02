@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
+import { LiveConnectDemo } from "@/components/liveconnect-demo";
 import "./globals.css";
 
 const jetbrainsMono = JetBrains_Mono({
@@ -22,6 +23,7 @@ export default function RootLayout({
     <html lang="en" className={jetbrainsMono.variable} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <Providers>{children}</Providers>
+        <LiveConnectDemo />
       </body>
     </html>
   );
