@@ -74,8 +74,7 @@ struct ProjectSettingsView: View {
                         }
                     }
                 } else {
-                    ProgressView()
-                        .tint(.white)
+                    DotWaveLoader(.regular)
                 }
             }
             .padding()

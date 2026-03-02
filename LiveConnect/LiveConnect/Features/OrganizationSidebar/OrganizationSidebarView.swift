@@ -18,8 +18,7 @@ struct OrganizationSidebarView: View {
                 Color.black.ignoresSafeArea()
 
                 if viewModel.isLoading && viewModel.organizations.isEmpty {
-                    ProgressView()
-                        .tint(.white)
+                    ShimmerRow(count: 3)
                 } else if let error = viewModel.error, viewModel.organizations.isEmpty {
                     errorView(error)
                 } else {

@@ -83,8 +83,7 @@ struct CrmVisitorListView: View {
                 // Content
                 ZStack {
                     if viewModel.isLoading && viewModel.visitors.isEmpty {
-                        ProgressView()
-                            .tint(.white)
+                        ShimmerRow(count: 3)
                     } else if let error = viewModel.error, viewModel.visitors.isEmpty {
                         errorView(error)
                     } else if viewModel.visitors.isEmpty {
@@ -128,8 +127,7 @@ struct CrmVisitorListView: View {
                 }
 
                 if viewModel.isLoadingMore {
-                    ProgressView()
-                        .tint(.white)
+                    ShimmerRow(count: 2)
                         .padding()
                 }
             }

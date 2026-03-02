@@ -134,9 +134,7 @@ struct CrmContactInfoSection: View {
         case .idle:
             EmptyView()
         case .saving:
-            ProgressView()
-                .scaleEffect(0.6)
-                .tint(.secondary)
+            DotWaveLoader(.compact)
         case .saved:
             Image(systemName: "checkmark")
                 .font(.caption2)

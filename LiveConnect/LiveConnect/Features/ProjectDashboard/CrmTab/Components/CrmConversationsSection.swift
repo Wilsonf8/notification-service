@@ -45,8 +45,7 @@ struct CrmConversationsSection: View {
             }
 
             if isLoading {
-                ProgressView()
-                    .tint(.white)
+                ShimmerRow(count: 2)
                     .frame(maxWidth: .infinity)
             }
         }

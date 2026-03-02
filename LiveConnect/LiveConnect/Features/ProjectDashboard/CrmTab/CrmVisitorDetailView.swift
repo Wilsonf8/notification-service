@@ -47,8 +47,7 @@ struct CrmVisitorDetailView: View {
             Color.black.ignoresSafeArea()
 
             if viewModel.isLoadingDetail && viewModel.detail == nil {
-                ProgressView()
-                    .tint(.white)
+                DotWaveLoader(.regular)
             } else if let error = viewModel.detailError, viewModel.detail == nil {
                 errorView(error)
             } else if let detail = viewModel.detail {
@@ -202,9 +201,7 @@ struct CrmVisitorDetailView: View {
                 .padding(.top, 4)
 
             if viewModel.isAssigningRep {
-                ProgressView()
-                    .tint(.white)
-                    .controlSize(.small)
+                DotWaveLoader(.compact)
             } else {
                 Menu {
                     if detail.assignedRep != nil {

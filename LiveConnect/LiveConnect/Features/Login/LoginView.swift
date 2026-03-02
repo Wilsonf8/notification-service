@@ -131,8 +131,7 @@ private struct SignInButton: View {
         } label: {
             HStack(spacing: 12) {
                 if isLoading {
-                    ProgressView()
-                        .tint(foregroundColor)
+                    DotWaveLoader(.compact)
                 } else {
                     Image(systemName: icon)
                         .font(.title2)

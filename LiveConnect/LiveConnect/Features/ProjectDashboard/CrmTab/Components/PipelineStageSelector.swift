@@ -29,9 +29,7 @@ struct PipelineStageSelector: View {
                     } label: {
                         Group {
                             if updatingStage == stage {
-                                ProgressView()
-                                    .tint(stage == currentStage ? .black : .white)
-                                    .controlSize(.mini)
+                                DotWaveLoader(.compact)
                             } else {
                                 Text(stage.label.uppercased())
                                     .font(.system(size: 10, weight: .bold, design: .monospaced))

@@ -53,9 +53,7 @@ struct CrmNotesSection: View {
                     onAdd(content)
                 } label: {
                     if isSubmitting {
-                        ProgressView()
-                            .tint(.black)
-                            .controlSize(.small)
+                        DotWaveLoader(.compact)
                     } else {
                         Image(systemName: "arrow.up.circle.fill")
                             .font(.title2)
@@ -86,8 +84,7 @@ struct CrmNotesSection: View {
             }
 
             if isLoading {
-                ProgressView()
-                    .tint(.white)
+                ShimmerRow(count: 2)
                     .frame(maxWidth: .infinity)
             }
         }

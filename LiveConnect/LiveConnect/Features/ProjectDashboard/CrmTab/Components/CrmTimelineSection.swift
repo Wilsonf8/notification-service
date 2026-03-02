@@ -38,8 +38,7 @@ struct CrmTimelineSection: View {
             }
 
             if isLoading {
-                ProgressView()
-                    .tint(.white)
+                ShimmerRow(count: 2)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
             }

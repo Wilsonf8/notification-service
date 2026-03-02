@@ -81,16 +81,11 @@ struct ContentView: View {
 
     private var splashView: some View {
         VStack(spacing: 24) {
-            Image(systemName: "video.fill")
-                .font(.system(size: 60))
-                .foregroundStyle(.yellow)
+            PulsingLogoLoader()
 
             Text("hooman.live")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(.white)
-
-            ProgressView()
-                .tint(.white)
         }
     }
 
@@ -105,8 +100,7 @@ struct ContentView: View {
         } else if !sidebarViewModel.hasFinishedInitialLoad {
             // Loading organizations and projects
             VStack(spacing: 24) {
-                ProgressView()
-                    .tint(.white)
+                DotWaveLoader(.regular)
 
                 Text("Loading projects...")
                     .font(.subheadline)

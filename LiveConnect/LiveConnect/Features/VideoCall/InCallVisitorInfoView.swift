@@ -168,8 +168,7 @@ struct InCallVisitorInfoView: View {
 
     private var loadingView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .tint(.white)
+            DotWaveLoader(.regular)
             Text("Loading visitor info...")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -248,9 +247,7 @@ struct InCallVisitorInfoView: View {
         case .idle:
             EmptyView()
         case .saving:
-            ProgressView()
-                .scaleEffect(0.6)
-                .tint(.secondary)
+            DotWaveLoader(.compact)
         case .saved:
             Image(systemName: "checkmark")
                 .font(.caption2)

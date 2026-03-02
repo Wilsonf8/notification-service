@@ -80,8 +80,7 @@ struct NotificationSettingsView: View {
         .disabled(isLoading)
         .overlay {
             if isLoading {
-                ProgressView()
-                    .tint(.white)
+                DotWaveLoader(.regular)
             }
         }
         .task { await load() }

@@ -31,8 +31,7 @@ struct ConversationsListView: View {
     var body: some View {
         ZStack {
             if isLoading && conversations.isEmpty {
-                ProgressView()
-                    .tint(.white)
+                ShimmerRow(count: 3)
             } else if let error, conversations.isEmpty {
                 errorView(error)
             } else if conversations.isEmpty {
@@ -78,8 +77,7 @@ struct ConversationsListView: View {
                 }
 
                 if isLoading && !conversations.isEmpty {
-                    ProgressView()
-                        .tint(.white)
+                    ShimmerRow(count: 2)
                         .padding()
                 }
             }

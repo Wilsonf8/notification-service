@@ -104,8 +104,7 @@ struct RequestAcceptSheet: View {
                 } label: {
                     HStack {
                         if isAccepting {
-                            ProgressView()
-                                .tint(.black)
+                            DotWaveLoader(.compact)
                         } else {
                             Image(systemName: "video.fill")
                         }
@@ -138,8 +137,7 @@ struct RequestAcceptSheet: View {
 
     private var loadingView: some View {
         VStack(spacing: 16) {
-            ProgressView()
-                .tint(.white)
+            DotWaveLoader(.regular)
             Text("Loading request...")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)

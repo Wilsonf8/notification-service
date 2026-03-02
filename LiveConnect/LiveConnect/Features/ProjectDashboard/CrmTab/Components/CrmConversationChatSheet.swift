@@ -30,8 +30,7 @@ struct CrmConversationChatSheet: View {
                 Color.black.ignoresSafeArea()
 
                 if isLoading && messages.isEmpty {
-                    ProgressView()
-                        .tint(.white)
+                    ShimmerRow(count: 3)
                 } else if let error, messages.isEmpty {
                     errorView(error)
                 } else if messages.isEmpty {
