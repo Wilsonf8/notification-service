@@ -674,6 +674,7 @@
   padding-top: 44px;   /* clear info bar */
   padding-bottom: 76px; /* clear controls */
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 }
 
 /* Override chat styles when inside the overlay */
@@ -979,6 +980,7 @@
 
 .lc-chat__input {
   flex: 1;
+  min-width: 0;
   padding: var(--lc-spacing-sm) var(--lc-spacing-md);
   background-color: var(--lc-bg);
   border: 1px solid var(--lc-border);
