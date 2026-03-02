@@ -77,6 +77,12 @@ import type {
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useTierLimits } from "@/lib/hooks/use-tier-limits";
+import { HexColorPicker } from "react-colorful";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 /** Font family options with their CSS stacks */
 const FONT_OPTIONS: { value: WidgetFontFamily; label: string }[] = [
@@ -320,7 +326,8 @@ export default function WidgetPage() {
   };
 
   /**
-   * Renders a color picker row with swatch and hex input.
+   * Renders a color picker row with a clickable swatch (opens a popover
+   * with an sRGB hex picker) and a manual hex input.
    */
   const renderColorPicker = (
     label: string,
@@ -331,14 +338,19 @@ export default function WidgetPage() {
     <div className="space-y-2">
       <Label>{label}</Label>
       <div className="flex items-center gap-3">
-        <div className="relative">
-          <input
-            type="color"
-            value={value}
-            onChange={(e) => onChange(e.target.value.toUpperCase())}
-            className="h-9 w-9 cursor-pointer border border-border bg-transparent p-0.5"
+        <Popover>
+          <PopoverTrigger
+            className="h-9 w-9 cursor-pointer border border-border"
+            style={{ backgroundColor: value }}
+            aria-label={`Pick ${label.toLowerCase()}`}
           />
-        </div>
+          <PopoverContent className="w-auto p-3" align="start">
+            <HexColorPicker
+              color={value}
+              onChange={(c) => onChange(c.toUpperCase())}
+            />
+          </PopoverContent>
+        </Popover>
         <Input
           value={value}
           onChange={(e) => {
