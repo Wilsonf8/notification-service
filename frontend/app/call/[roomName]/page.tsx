@@ -323,15 +323,6 @@ function CallPageContent() {
   }, [endConversationOnBackend]);
 
   /**
-   * Handles participant disconnection.
-   */
-  const handleParticipantDisconnected = useCallback((participant: RemoteParticipant) => {
-    console.log('[CallPage] Participant disconnected:', participant.identity);
-    remoteVideoTrackRef.current = null;
-    setCallState((prev) => ({ ...prev, hasRemoteVideo: false }));
-  }, []);
-
-  /**
    * Cleans up all resources.
    */
   const cleanup = useCallback(() => {
@@ -363,6 +354,28 @@ function CallPageContent() {
       roomRef.current = null;
     }
   }, []);
+
+  /**
+   * Handles participant disconnection.
+   */
+  const handleParticipantDisconnected = useCallback((participant: RemoteParticipant) => {
+    console.log('[CallPage] Participant disconnected:', participant.identity);
+    remoteVideoTrackRef.current = null;
+    setCallState((prev) => ({ ...prev, hasRemoteVideo: false }));
+
+    // If this is a visitor's pop-out and the rep left, end the call for the visitor
+    if (!isRepCall) {
+      const room = roomRef.current;
+      if (room && room.remoteParticipants.size === 0) {
+        console.log('[CallPage] Rep left the call, ending visitor call');
+        cleanup();
+        setCallState((prev) => ({ ...prev, status: 'disconnected' }));
+        setTimeout(() => {
+          window.close();
+        }, 1500);
+      }
+    }
+  }, [isRepCall, cleanup]);
 
   /**
    * Connects to the LiveKit room.
