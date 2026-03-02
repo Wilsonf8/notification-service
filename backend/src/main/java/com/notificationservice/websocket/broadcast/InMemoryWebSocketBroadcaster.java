@@ -6,6 +6,7 @@ import com.notificationservice.websocket.session.RepSessionManager;
 import com.notificationservice.websocket.session.VisitorSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -17,9 +18,10 @@ import java.util.UUID;
 /**
  * In-memory implementation of WebSocketBroadcaster.
  * Suitable for single-instance deployments. For horizontal scaling,
- * replace with a Redis Pub/Sub implementation.
+ * enable the Redis broadcaster with {@code app.websocket.broadcaster=redis}.
  */
 @Component
+@ConditionalOnProperty(name = "app.websocket.broadcaster", havingValue = "in-memory", matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class InMemoryWebSocketBroadcaster implements WebSocketBroadcaster {
@@ -93,9 +95,9 @@ public class InMemoryWebSocketBroadcaster implements WebSocketBroadcaster {
         for (WebSocketSession session : sessions) {
             if (session.isOpen()) {
                 try {
-                    synchronized (session) {
-                        session.sendMessage(textMessage);
-                    }
+                    // Sessions are wrapped with ConcurrentWebSocketSessionDecorator
+                    // at registration time, so sends are non-blocking and buffered.
+                    session.sendMessage(textMessage);
                 } catch (IOException e) {
                     log.warn("Failed to send message to session {}: {}", session.getId(), e.getMessage());
                 }

@@ -96,7 +96,15 @@ public class LiveConnectRateLimitService {
     private void checkLimit(String key, int limit, long duration, TimeUnit unit, String message) {
         Long count = redisTemplate.opsForValue().increment(key);
         if (count != null && count == 1) {
+            // Set TTL on first increment
             redisTemplate.expire(key, duration, unit);
+        } else if (count != null) {
+            // Safety: if key has no TTL (crash between increment and expire on first call),
+            // re-apply the TTL to prevent permanent lockout.
+            Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+            if (ttl != null && ttl < 0) {
+                redisTemplate.expire(key, duration, unit);
+            }
         }
         if (count != null && count > limit) {
             throw new RateLimitExceededException(message);

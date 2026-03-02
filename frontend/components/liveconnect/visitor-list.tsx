@@ -4,6 +4,7 @@
  */
 "use client";
 
+import { memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   IconUser,
@@ -149,9 +150,10 @@ function DeviceIcon({ deviceType }: { deviceType: string | null }) {
 }
 
 /**
- * Individual visitor item.
+ * Individual visitor item. Memoized to prevent re-renders when
+ * other visitors update (e.g., page_change events for unrelated visitors).
  */
-function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
+const VisitorItem = memo(function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
   const locationText = [visitor.city, visitor.country]
     .filter(Boolean)
     .join(", ");
@@ -213,4 +215,4 @@ function VisitorItem({ visitor, isSelected, onClick }: VisitorItemProps) {
       </span>
     </button>
   );
-}
+});

@@ -43,7 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Service for managing LiveConnect conversations.
@@ -104,9 +107,22 @@ public class LiveConnectConversationService {
             conversationPage = conversationRepository.findByProjectId(projectId, pageable);
         }
 
+        // Batch-load message counts to avoid N+1 queries
+        List<LiveConnectConversation> conversations = conversationPage.getContent();
+        Set<UUID> conversationIds = conversations.stream()
+                .map(LiveConnectConversation::getId)
+                .collect(Collectors.toSet());
+        Map<UUID, Long> messageCounts = conversationIds.isEmpty()
+                ? Map.of()
+                : messageRepository.countByConversationIds(conversationIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> (UUID) row[0],
+                                row -> (Long) row[1]
+                        ));
+
         return new ConversationListResponse(
-                conversationPage.getContent().stream()
-                        .map(this::toConversationDto)
+                conversations.stream()
+                        .map(c -> toConversationDto(c, messageCounts.getOrDefault(c.getId(), 0L)))
                         .toList(),
                 conversationPage.getNumber(),
                 conversationPage.getSize(),
@@ -454,8 +470,24 @@ public class LiveConnectConversationService {
     public ConversationListResponse getVisitorConversations(UUID projectId, UUID visitorId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<LiveConnectConversation> conversationPage = conversationRepository.findByVisitorIdPaged(visitorId, pageable);
+
+        // Batch-load message counts to avoid N+1 queries
+        List<LiveConnectConversation> conversations = conversationPage.getContent();
+        Set<UUID> conversationIds = conversations.stream()
+                .map(LiveConnectConversation::getId)
+                .collect(Collectors.toSet());
+        Map<UUID, Long> messageCounts = conversationIds.isEmpty()
+                ? Map.of()
+                : messageRepository.countByConversationIds(conversationIds).stream()
+                        .collect(Collectors.toMap(
+                                row -> (UUID) row[0],
+                                row -> (Long) row[1]
+                        ));
+
         return new ConversationListResponse(
-                conversationPage.getContent().stream().map(this::toConversationDto).toList(),
+                conversations.stream()
+                        .map(c -> toConversationDto(c, messageCounts.getOrDefault(c.getId(), 0L)))
+                        .toList(),
                 conversationPage.getNumber(),
                 conversationPage.getSize(),
                 conversationPage.getTotalElements(),
@@ -480,7 +512,20 @@ public class LiveConnectConversationService {
         return project;
     }
 
+    /**
+     * Converts a conversation entity to DTO, loading message count from DB.
+     * Use the overload with pre-loaded messageCount for batch operations.
+     */
     private LiveConnectConversationDto toConversationDto(LiveConnectConversation conversation) {
+        long messageCount = messageRepository.countByConversationId(conversation.getId());
+        return toConversationDto(conversation, messageCount);
+    }
+
+    /**
+     * Converts a conversation entity to DTO with a pre-loaded message count.
+     * Avoids N+1 queries when called in a loop with batch-loaded counts.
+     */
+    private LiveConnectConversationDto toConversationDto(LiveConnectConversation conversation, long messageCount) {
         LiveConnectVisitor visitor = conversation.getVisitor();
         LiveConnectRep rep = conversation.getRep();
 
@@ -528,8 +573,6 @@ public class LiveConnectConversationService {
                     rep.getCreatedAt()
             );
         }
-
-        long messageCount = messageRepository.countByConversationId(conversation.getId());
 
         return new LiveConnectConversationDto(
                 conversation.getId(),

@@ -424,7 +424,14 @@ export function useLiveConnectWebSocket(
       }
 
       case "request_expired": {
-        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
+        // Clean up visitor snapshot to prevent memory leak
+        setRequests?.((prev) => {
+          const expired = prev.find((r) => r.id === event.requestId);
+          if (expired) {
+            visitorSnapshotRef.current.delete(expired.visitorId);
+          }
+          return prev.filter((r) => r.id !== event.requestId);
+        });
         break;
       }
 
@@ -476,7 +483,14 @@ export function useLiveConnectWebSocket(
       }
 
       case "request_accepted_by_other": {
-        setRequests?.((prev) => prev.filter((r) => r.id !== event.requestId));
+        // Clean up visitor snapshot to prevent memory leak
+        setRequests?.((prev) => {
+          const accepted = prev.find((r) => r.id === event.requestId);
+          if (accepted) {
+            visitorSnapshotRef.current.delete(accepted.visitorId);
+          }
+          return prev.filter((r) => r.id !== event.requestId);
+        });
         break;
       }
 

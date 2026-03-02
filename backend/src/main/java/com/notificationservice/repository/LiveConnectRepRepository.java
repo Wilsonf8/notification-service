@@ -4,9 +4,11 @@ import com.notificationservice.entity.LiveConnectRep;
 import com.notificationservice.entity.RepAvailability;
 import com.notificationservice.entity.RepPresence;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -61,4 +63,14 @@ public interface LiveConnectRepRepository extends JpaRepository<LiveConnectRep, 
            "AND r.availability = 'AVAILABLE' " +
            "AND r.currentConversation IS NULL")
     boolean hasAnyAvailableReps(UUID projectId);
+
+    /**
+     * Batch updates lastHeartbeat for multiple reps in a single query.
+     *
+     * @param repIds the rep IDs to update
+     * @param now    the timestamp to set
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectRep r SET r.lastHeartbeat = :now WHERE r.id IN :repIds")
+    void batchUpdateLastHeartbeat(Collection<UUID> repIds, OffsetDateTime now);
 }

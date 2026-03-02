@@ -17,6 +17,7 @@ import com.notificationservice.service.PushNotificationService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorJoinedEvent;
 import com.notificationservice.websocket.event.VisitorUpdatedEvent;
+import com.notificationservice.websocket.ratelimit.WebSocketRateLimiter;
 import com.notificationservice.websocket.scheduler.HeartbeatBatchProcessor;
 import com.notificationservice.websocket.session.VisitorConnectionGracePeriodManager;
 import com.notificationservice.websocket.session.VisitorSessionManager;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
@@ -60,6 +62,7 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
     private final ProjectRepository projectRepository;
     private final HeartbeatBatchProcessor heartbeatBatchProcessor;
     private final LiveConnectPageViewRepository pageViewRepository;
+    private final WebSocketRateLimiter webSocketRateLimiter;
 
     /** Tracks current page start time per visitor for duration calculation. */
     private final ConcurrentHashMap<UUID, PageTrackingState> pageTrackingState = new ConcurrentHashMap<>();
@@ -69,8 +72,18 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
      */
     private record PageTrackingState(String url, String title, UUID projectId, OffsetDateTime startedAt) {}
 
+    /** Send timeout in milliseconds for ConcurrentWebSocketSessionDecorator. */
+    private static final int SEND_TIME_LIMIT_MS = 5000;
+    /** Buffer size limit in bytes for ConcurrentWebSocketSessionDecorator. */
+    private static final int BUFFER_SIZE_LIMIT = 64 * 1024;
+
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(WebSocketSession rawSession) {
+        // Wrap with ConcurrentWebSocketSessionDecorator for non-blocking sends.
+        // This prevents one slow client from blocking broadcasts to others.
+        WebSocketSession session = new ConcurrentWebSocketSessionDecorator(
+                rawSession, SEND_TIME_LIMIT_MS, BUFFER_SIZE_LIMIT);
+
         UUID projectId = (UUID) session.getAttributes().get("projectId");
         UUID visitorId = (UUID) session.getAttributes().get("visitorId");
 
@@ -211,6 +224,12 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // Per-connection rate limiting
+        if (!webSocketRateLimiter.allowMessage(session.getId())) {
+            log.warn("[WidgetWS] Rate limited session: {}, visitorId={}", session.getId(), visitorId);
+            return;
+        }
+
         try {
             JsonNode json = objectMapper.readTree(message.getPayload());
             String type = json.has("type") ? json.get("type").asText() : null;
@@ -235,6 +254,9 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
             log.debug("[WidgetWS] Close for session without visitorId: {}", session.getId());
             return;
         }
+
+        // Cleanup rate limiter state for closed session
+        webSocketRateLimiter.removeSession(session.getId());
 
         // Remove session from VisitorSessionManager
         sessionManager.removeSession(visitorId, session);

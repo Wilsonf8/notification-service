@@ -1,11 +1,12 @@
 /**
  * Request queue component for pending call requests.
  * Shows countdown timers and accept/dismiss actions.
+ * Uses a single shared timer instead of per-item intervals.
  * @module components/liveconnect/request-queue
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,8 +28,18 @@ interface RequestQueueProps {
 /**
  * Request queue component.
  * Displays pending call requests with countdown timers.
+ * Uses a single setInterval for all items instead of one per item.
  */
 export function RequestQueue({ requests, projectId, deviceSessionId }: RequestQueueProps) {
+  // Single timer drives a tick counter that forces all items to re-render together
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (requests.length === 0) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [requests.length]);
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -52,6 +63,7 @@ export function RequestQueue({ requests, projectId, deviceSessionId }: RequestQu
                 request={request}
                 projectId={projectId}
                 deviceSessionId={deviceSessionId}
+                tick={tick}
               />
             ))}
           </div>
@@ -66,31 +78,21 @@ interface RequestItemProps {
   request: LiveConnectRequest;
   projectId: string;
   deviceSessionId?: string;
+  tick: number;
 }
 
 /**
  * Individual request item with countdown and actions.
+ * Memoized to prevent unnecessary re-renders from sibling updates.
  */
-function RequestItem({ request, projectId, deviceSessionId }: RequestItemProps) {
-  const [timeLeft, setTimeLeft] = useState<number>(0);
+const RequestItem = memo(function RequestItem({ request, projectId, deviceSessionId, tick }: RequestItemProps) {
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDismissing, setIsDismissing] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
 
-  // Calculate and update time remaining
-  useEffect(() => {
-    const updateTimeLeft = () => {
-      const expiresAt = new Date(request.expiresAt).getTime();
-      const now = Date.now();
-      const remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
-      setTimeLeft(remaining);
-    };
-
-    updateTimeLeft();
-    const interval = setInterval(updateTimeLeft, 1000);
-
-    return () => clearInterval(interval);
-  }, [request.expiresAt]);
+  // Calculate time remaining from tick (driven by parent's single timer)
+  const expiresAt = new Date(request.expiresAt).getTime();
+  const timeLeft = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
 
   /**
    * Formats seconds as MM:SS.
@@ -185,4 +187,4 @@ function RequestItem({ request, projectId, deviceSessionId }: RequestItemProps) 
       )}
     </div>
   );
-}
+});

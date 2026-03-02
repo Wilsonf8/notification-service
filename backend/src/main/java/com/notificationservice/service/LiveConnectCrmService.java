@@ -232,11 +232,14 @@ public class LiveConnectCrmService {
      */
     @Transactional(readOnly = true)
     public TimelineResponse getTimeline(UUID visitorId, int page, int size) {
-        // Gather all event types
+        // Limit per-source fetch to only what's needed for the merge-sort window.
+        // We need at most (page+1)*size items from each source to correctly
+        // determine which items appear on the requested page.
+        int fetchLimit = (page + 1) * size;
         List<TimelineEventDto> allEvents = new ArrayList<>();
 
         // Visits
-        visitRepository.findByVisitorIdOrderByStartedAtDesc(visitorId, PageRequest.of(0, 200))
+        visitRepository.findByVisitorIdOrderByStartedAtDesc(visitorId, PageRequest.of(0, fetchLimit))
                 .forEach(visit -> allEvents.add(new TimelineEventDto(
                         "VISIT",
                         visit.getId(),
@@ -250,7 +253,7 @@ public class LiveConnectCrmService {
                 )));
 
         // Page views
-        pageViewRepository.findByVisitorIdOrderByVisitedAtDesc(visitorId, PageRequest.of(0, 200))
+        pageViewRepository.findByVisitorIdOrderByVisitedAtDesc(visitorId, PageRequest.of(0, fetchLimit))
                 .forEach(pv -> allEvents.add(new TimelineEventDto(
                         "PAGE_VIEW",
                         UUID.nameUUIDFromBytes(("pv-" + pv.getId()).getBytes()),
@@ -262,7 +265,7 @@ public class LiveConnectCrmService {
                 )));
 
         // Conversations
-        conversationRepository.findByVisitorId(visitorId)
+        conversationRepository.findByVisitorIdPaged(visitorId, PageRequest.of(0, fetchLimit))
                 .forEach(conv -> allEvents.add(new TimelineEventDto(
                         conv.getType() == ConversationType.VIDEO_CALL ? "CALL" : "CONTACT_FORM",
                         conv.getId(),
@@ -275,7 +278,7 @@ public class LiveConnectCrmService {
                 )));
 
         // Notes
-        noteRepository.findByVisitorIdOrderByCreatedAtDesc(visitorId, PageRequest.of(0, 200))
+        noteRepository.findByVisitorIdOrderByCreatedAtDesc(visitorId, PageRequest.of(0, fetchLimit))
                 .forEach(note -> allEvents.add(new TimelineEventDto(
                         "NOTE",
                         note.getId(),

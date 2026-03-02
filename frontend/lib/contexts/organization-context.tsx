@@ -11,6 +11,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -154,14 +155,14 @@ export function OrganizationProvider({ children }: OrganizationProviderProps) {
     refreshOrgs();
   }, [refreshOrgs]);
 
-  const value: OrganizationContextValue = {
+  const value = useMemo<OrganizationContextValue>(() => ({
     organizations,
     currentOrg,
     isLoading,
     error,
     switchOrg,
     refreshOrgs,
-  };
+  }), [organizations, currentOrg, isLoading, error, switchOrg, refreshOrgs]);
 
   return (
     <OrganizationContext.Provider value={value}>

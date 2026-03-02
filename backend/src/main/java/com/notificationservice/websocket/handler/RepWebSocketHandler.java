@@ -7,6 +7,8 @@ import com.notificationservice.entity.RepPresence;
 import com.notificationservice.repository.LiveConnectRepRepository;
 import com.notificationservice.service.LiveConnectRepService;
 import com.notificationservice.service.LiveConnectRequestService;
+import com.notificationservice.websocket.ratelimit.WebSocketRateLimiter;
+import com.notificationservice.websocket.scheduler.RepHeartbeatBatchProcessor;
 import com.notificationservice.websocket.session.RepSessionManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.ConcurrentWebSocketSessionDecorator;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.time.OffsetDateTime;
@@ -32,10 +35,21 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
     private final LiveConnectRepRepository repRepository;
     private final LiveConnectRepService repService;
     private final LiveConnectRequestService requestService;
+    private final RepHeartbeatBatchProcessor repHeartbeatBatchProcessor;
+    private final WebSocketRateLimiter webSocketRateLimiter;
     private final ObjectMapper objectMapper;
 
+    /** Send timeout in milliseconds for ConcurrentWebSocketSessionDecorator. */
+    private static final int SEND_TIME_LIMIT_MS = 5000;
+    /** Buffer size limit in bytes for ConcurrentWebSocketSessionDecorator. */
+    private static final int BUFFER_SIZE_LIMIT = 64 * 1024;
+
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) {
+    public void afterConnectionEstablished(WebSocketSession rawSession) {
+        // Wrap with ConcurrentWebSocketSessionDecorator for non-blocking sends.
+        WebSocketSession session = new ConcurrentWebSocketSessionDecorator(
+                rawSession, SEND_TIME_LIMIT_MS, BUFFER_SIZE_LIMIT);
+
         UUID projectId = (UUID) session.getAttributes().get("projectId");
         UUID userId = (UUID) session.getAttributes().get("userId");
 
@@ -52,10 +66,10 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
         // Register session
         sessionManager.addSession(projectId, userId, session);
 
-        // Update rep presence in database
+        // Update rep presence in database (use session manager count for atomicity)
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
             rep.setPresence(RepPresence.ONLINE);
-            rep.setActiveConnections(rep.getActiveConnections() + 1);
+            rep.setActiveConnections(sessionManager.getSessionCount(userId));
             rep.setLastHeartbeat(OffsetDateTime.now());
             repRepository.save(rep);
             repService.broadcastRepStatusChanged(rep.getId());
@@ -68,6 +82,12 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) {
         UUID projectId = (UUID) session.getAttributes().get("projectId");
         UUID userId = (UUID) session.getAttributes().get("userId");
+
+        // Per-connection rate limiting
+        if (!webSocketRateLimiter.allowMessage(session.getId())) {
+            log.warn("Rate limited rep session: {}, userId={}", session.getId(), userId);
+            return;
+        }
 
         try {
             JsonNode json = objectMapper.readTree(message.getPayload());
@@ -92,6 +112,9 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // Cleanup rate limiter state for closed session
+        webSocketRateLimiter.removeSession(session.getId());
+
         // Remove session
         sessionManager.removeSession(projectId, userId, session);
 
@@ -101,9 +124,9 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             requestService.withdrawPendingPingsByDeviceSession(deviceSessionId, projectId);
         }
 
-        // Update rep presence in database
+        // Update rep presence in database (use session manager count for atomicity)
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
-            int newConnections = Math.max(0, rep.getActiveConnections() - 1);
+            int newConnections = sessionManager.getSessionCount(userId);
             rep.setActiveConnections(newConnections);
 
             // Set to OFFLINE only if this was the last connection and not in a call
@@ -132,8 +155,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
 
     private void handleHeartbeat(UUID projectId, UUID userId) {
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
-            rep.setLastHeartbeat(OffsetDateTime.now());
-            repRepository.save(rep);
+            repHeartbeatBatchProcessor.recordHeartbeat(rep.getId());
             log.trace("Heartbeat received from rep: userId={}", userId);
         });
     }

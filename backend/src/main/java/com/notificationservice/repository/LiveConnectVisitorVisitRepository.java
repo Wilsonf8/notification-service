@@ -4,6 +4,7 @@ import com.notificationservice.entity.LiveConnectVisitorVisit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.OffsetDateTime;
@@ -95,6 +96,17 @@ public interface LiveConnectVisitorVisitRepository extends JpaRepository<LiveCon
      */
     @Query("SELECT v.visitor.id, MAX(v.endedAt) FROM LiveConnectVisitorVisit v WHERE v.visitor.id IN :visitorIds AND v.endedAt IS NOT NULL GROUP BY v.visitor.id")
     List<Object[]> findLatestCompletedEndedAtByVisitorIds(Set<UUID> visitorIds);
+
+    /**
+     * Deletes completed visits older than the given threshold.
+     * Only deletes visits that have ended (endedAt IS NOT NULL).
+     *
+     * @param threshold the cutoff timestamp
+     * @return number of deleted rows
+     */
+    @Modifying
+    @Query("DELETE FROM LiveConnectVisitorVisit v WHERE v.endedAt IS NOT NULL AND v.endedAt < :threshold")
+    int deleteCompletedOlderThan(OffsetDateTime threshold);
 
     /**
      * Returns total visit count and latest completed endedAt in a single query.

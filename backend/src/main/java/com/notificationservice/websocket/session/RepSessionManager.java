@@ -39,28 +39,25 @@ public class RepSessionManager {
     }
 
     /**
-     * Removes a rep WebSocket session.
+     * Removes a rep WebSocket session. Uses compute() for atomic check-and-remove
+     * to prevent TOCTOU race conditions between isEmpty() and remove().
      *
      * @param projectId the project ID
      * @param userId the rep's user ID
      * @param session the WebSocket session
      */
     public void removeSession(UUID projectId, UUID userId, WebSocketSession session) {
-        Set<WebSocketSession> projectSet = projectSessions.get(projectId);
-        if (projectSet != null) {
-            projectSet.remove(session);
-            if (projectSet.isEmpty()) {
-                projectSessions.remove(projectId);
-            }
-        }
+        projectSessions.compute(projectId, (key, sessions) -> {
+            if (sessions == null) return null;
+            sessions.remove(session);
+            return sessions.isEmpty() ? null : sessions;
+        });
 
-        Set<WebSocketSession> userSet = userSessions.get(userId);
-        if (userSet != null) {
-            userSet.remove(session);
-            if (userSet.isEmpty()) {
-                userSessions.remove(userId);
-            }
-        }
+        userSessions.compute(userId, (key, sessions) -> {
+            if (sessions == null) return null;
+            sessions.remove(session);
+            return sessions.isEmpty() ? null : sessions;
+        });
         log.debug("Rep session removed: projectId={}, userId={}, sessionId={}", projectId, userId, session.getId());
     }
 

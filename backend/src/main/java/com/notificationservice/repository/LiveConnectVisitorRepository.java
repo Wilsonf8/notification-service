@@ -107,4 +107,14 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
                                         boolean hasBeenInCall, boolean hasContactForm, boolean hasContactInfo,
                                         boolean repUpdatedInfo, boolean onlineNow, OffsetDateTime onlineThreshold,
                                         Pageable pageable);
+
+    /**
+     * Finds visitors whose heartbeat has gone stale — they appear online
+     * (activeConnections > 0) but haven't sent a heartbeat recently.
+     *
+     * @param threshold the lastSeenAt cutoff time
+     * @return list of stale visitors
+     */
+    @Query("SELECT v FROM LiveConnectVisitor v WHERE v.activeConnections > 0 AND v.lastSeenAt < :threshold")
+    List<LiveConnectVisitor> findStaleOnlineVisitors(OffsetDateTime threshold);
 }

@@ -1,11 +1,12 @@
 /**
  * In Call section component for the LiveConnect dashboard.
  * Shows active calls with visitor name, rep name, and live duration timer.
+ * Uses a single shared timer instead of per-item intervals.
  * @module components/liveconnect/in-call-section
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IconPhone } from "@tabler/icons-react";
 import type { ActiveCall } from "@/lib/types";
@@ -18,8 +19,18 @@ interface InCallSectionProps {
 /**
  * In Call section component.
  * Displays active calls with live duration timers.
+ * Uses a single setInterval for all items instead of one per item.
  */
 export function InCallSection({ activeCalls }: InCallSectionProps) {
+  // Single timer drives a tick counter that forces all items to recalculate
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    if (activeCalls.length === 0) return;
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, [activeCalls.length]);
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -38,7 +49,7 @@ export function InCallSection({ activeCalls }: InCallSectionProps) {
         ) : (
           <div className="space-y-2">
             {activeCalls.map((call) => (
-              <InCallItem key={call.conversationId} call={call} />
+              <InCallItem key={call.conversationId} call={call} tick={tick} />
             ))}
           </div>
         )}
@@ -50,6 +61,7 @@ export function InCallSection({ activeCalls }: InCallSectionProps) {
 /** Props for the InCallItem component */
 interface InCallItemProps {
   call: ActiveCall;
+  tick: number;
 }
 
 /**
@@ -68,24 +80,13 @@ function formatDuration(seconds: number): string {
 
 /**
  * Individual call item with live duration timer.
+ * Memoized to prevent unnecessary re-renders from sibling updates.
  */
-function InCallItem({ call }: InCallItemProps) {
-  const [duration, setDuration] = useState<string>("0:00");
-
-  // Update duration every second
-  useEffect(() => {
-    const updateDuration = () => {
-      const startedAt = new Date(call.startedAt).getTime();
-      const now = Date.now();
-      const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
-      setDuration(formatDuration(elapsed));
-    };
-
-    updateDuration();
-    const interval = setInterval(updateDuration, 1000);
-
-    return () => clearInterval(interval);
-  }, [call.startedAt]);
+const InCallItem = memo(function InCallItem({ call, tick }: InCallItemProps) {
+  // Calculate duration from tick (driven by parent's single timer)
+  const startedAt = new Date(call.startedAt).getTime();
+  const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+  const duration = formatDuration(elapsed);
 
   return (
     <div className="flex items-center justify-between gap-4 border p-3">
@@ -110,4 +111,4 @@ function InCallItem({ call }: InCallItemProps) {
       </div>
     </div>
   );
-}
+});

@@ -55,31 +55,31 @@ public class VisitorSessionManager {
     }
 
     /**
-     * Removes a visitor WebSocket session.
+     * Removes a visitor WebSocket session. Uses compute() for atomic check-and-remove
+     * to prevent TOCTOU race conditions between isEmpty() and remove().
      *
      * @param visitorId the visitor's internal ID
      * @param session the WebSocket session
      */
     public void removeSession(UUID visitorId, WebSocketSession session) {
-        Set<WebSocketSession> sessions = visitorSessions.get(visitorId);
-        if (sessions != null) {
+        visitorSessions.compute(visitorId, (key, sessions) -> {
+            if (sessions == null) return null;
             sessions.remove(session);
             if (sessions.isEmpty()) {
                 UUID projectId = visitorProjects.remove(visitorId);
-                visitorSessions.remove(visitorId);
                 visitorStates.remove(visitorId);
-                // Remove from reverse index
+                // Remove from reverse index atomically
                 if (projectId != null) {
-                    Set<UUID> visitors = projectVisitors.get(projectId);
-                    if (visitors != null) {
+                    projectVisitors.compute(projectId, (pk, visitors) -> {
+                        if (visitors == null) return null;
                         visitors.remove(visitorId);
-                        if (visitors.isEmpty()) {
-                            projectVisitors.remove(projectId);
-                        }
-                    }
+                        return visitors.isEmpty() ? null : visitors;
+                    });
                 }
+                return null; // Remove entry
             }
-        }
+            return sessions;
+        });
         log.debug("Visitor session removed: visitorId={}, sessionId={}", visitorId, session.getId());
     }
 
