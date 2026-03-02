@@ -61,6 +61,7 @@ import {
   IconDiamond,
   IconFlame,
   IconLock,
+  IconColorPicker,
 } from "@tabler/icons-react";
 import type { Icon } from "@tabler/icons-react";
 import { toast } from "sonner";
@@ -228,6 +229,7 @@ export default function WidgetPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasEyeDropper = typeof window !== "undefined" && "EyeDropper" in window;
 
   const [savedSettings, setSavedSettings] = useState<LiveConnectSettings | null>(null);
 
@@ -326,8 +328,23 @@ export default function WidgetPage() {
   };
 
   /**
+   * Opens the browser's EyeDropper to sample a color from the screen.
+   * @param onChange - callback receiving the picked sRGB hex string
+   */
+  const openEyeDropper = async (onChange: (v: string) => void) => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const dropper = new (window as any).EyeDropper();
+      const result = await dropper.open();
+      onChange(result.sRGBHex.toUpperCase());
+    } catch {
+      // User cancelled or API unavailable — do nothing
+    }
+  };
+
+  /**
    * Renders a color picker row with a clickable swatch (opens a popover
-   * with an sRGB hex picker) and a manual hex input.
+   * with an sRGB hex picker), an eyedropper button, and a manual hex input.
    */
   const renderColorPicker = (
     label: string,
@@ -351,6 +368,17 @@ export default function WidgetPage() {
             />
           </PopoverContent>
         </Popover>
+        {hasEyeDropper && (
+          <button
+            type="button"
+            onClick={() => openEyeDropper(onChange)}
+            className="flex h-9 w-9 items-center justify-center border border-border bg-background text-foreground hover:bg-muted transition-colors"
+            aria-label={`Pick ${label.toLowerCase()} from screen`}
+            title="Pick color from screen"
+          >
+            <IconColorPicker className="h-4 w-4" />
+          </button>
+        )}
         <Input
           value={value}
           onChange={(e) => {
