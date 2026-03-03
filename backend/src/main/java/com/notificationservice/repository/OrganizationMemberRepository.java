@@ -25,4 +25,12 @@ public interface OrganizationMemberRepository extends JpaRepository<Organization
 
     @Query("SELECT m FROM OrganizationMember m WHERE m.organization.id = :orgId AND m.role = :role")
     List<OrganizationMember> findByOrganizationIdAndRole(UUID orgId, OrgRole role);
+
+    /**
+     * Finds all memberships for a user across all organizations.
+     * Used during account deletion to clean up team memberships.
+     * @param userId the user's ID
+     * @return all organization memberships for the user
+     */
+    List<OrganizationMember> findByUserId(UUID userId);
 }

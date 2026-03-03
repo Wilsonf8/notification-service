@@ -40,16 +40,19 @@ public class OAuth2UserProvisioningService {
                 .findByProviderAndProviderUserId(provider, userInfo.providerUserId());
 
         if (existingIdentity.isPresent()) {
-            // Identity exists - update user profile
             User user = existingIdentity.get().getUser();
-            user.setUsername(userInfo.username());
-            if (userInfo.email() != null) user.setEmail(userInfo.email());
-            if (userInfo.avatarUrl() != null) user.setAvatarUrl(userInfo.avatarUrl());
-            if (userInfo.firstName() != null) user.setFirstName(userInfo.firstName());
-            if (userInfo.lastName() != null) user.setLastName(userInfo.lastName());
-            userRepository.save(user);
+            // Skip profile update for soft-deleted users — let auth flow handle reactivation
+            if (!user.isDeleted()) {
+                user.setUsername(userInfo.username());
+                if (userInfo.email() != null) user.setEmail(userInfo.email());
+                if (userInfo.avatarUrl() != null) user.setAvatarUrl(userInfo.avatarUrl());
+                if (userInfo.firstName() != null) user.setFirstName(userInfo.firstName());
+                if (userInfo.lastName() != null) user.setLastName(userInfo.lastName());
+                userRepository.save(user);
+            }
         } else if (userInfo.email() != null && userInfo.emailVerified()) {
-            Optional<User> existingUser = userRepository.findByEmailIgnoreCase(userInfo.email());
+            // Check for existing user including soft-deleted accounts
+            Optional<User> existingUser = userRepository.findByEmailIgnoreCaseIncludingDeleted(userInfo.email());
 
             if (existingUser.isPresent()) {
                 // ACCOUNT LINKING: User exists with this email - link new identity
@@ -60,16 +63,19 @@ public class OAuth2UserProvisioningService {
                         .providerUserId(userInfo.providerUserId())
                         .email(userInfo.email())
                         .build());
-                if (userInfo.avatarUrl() != null && user.getAvatarUrl() == null) {
-                    user.setAvatarUrl(userInfo.avatarUrl());
+                // Skip profile update for soft-deleted users
+                if (!user.isDeleted()) {
+                    if (userInfo.avatarUrl() != null && user.getAvatarUrl() == null) {
+                        user.setAvatarUrl(userInfo.avatarUrl());
+                    }
+                    if (userInfo.firstName() != null && user.getFirstName() == null) {
+                        user.setFirstName(userInfo.firstName());
+                    }
+                    if (userInfo.lastName() != null && user.getLastName() == null) {
+                        user.setLastName(userInfo.lastName());
+                    }
+                    userRepository.save(user);
                 }
-                if (userInfo.firstName() != null && user.getFirstName() == null) {
-                    user.setFirstName(userInfo.firstName());
-                }
-                if (userInfo.lastName() != null && user.getLastName() == null) {
-                    user.setLastName(userInfo.lastName());
-                }
-                userRepository.save(user);
             } else {
                 createNewUserWithOrg(userInfo, provider);
             }

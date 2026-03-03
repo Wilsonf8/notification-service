@@ -68,4 +68,13 @@ public interface DeviceTokenRepository extends JpaRepository<DeviceToken, UUID> 
      */
     @Query("SELECT d FROM DeviceToken d WHERE d.user.id IN :userIds AND d.isValid = true")
     List<DeviceToken> findValidByUserIds(Collection<UUID> userIds);
+
+    /**
+     * Deletes all device tokens for a user.
+     * Used during account deletion.
+     * @param userId the user ID
+     */
+    @Modifying
+    @Query("DELETE FROM DeviceToken d WHERE d.user.id = :userId")
+    void deleteAllByUserId(UUID userId);
 }

@@ -1,6 +1,6 @@
 /**
  * User settings page.
- * Allows users to manage their account settings.
+ * Allows users to manage their account settings including account deletion.
  * @module app/dashboard/settings/page
  */
 "use client";
@@ -17,18 +17,43 @@ import {
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getCurrentUser } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  getCurrentUser,
+  deletionPreflight,
+  deleteAccount,
+} from "@/lib/api";
 import { removeToken } from "@/lib/auth";
+import type { DeletionPreflightResponse } from "@/lib/api/account";
 import type { User } from "@/lib/types";
+import { IconAlertTriangle, IconLoader2 } from "@tabler/icons-react";
 
 /**
  * User settings page component.
- * Displays account information and settings.
+ * Displays account information and account deletion with preflight checks.
  */
 export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Deletion flow state
+  const [preflightLoading, setPreflightLoading] = useState(false);
+  const [preflightResult, setPreflightResult] =
+    useState<DeletionPreflightResponse | null>(null);
+  const [showBlockersDialog, setShowBlockersDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -41,21 +66,53 @@ export default function SettingsPage() {
         setLoading(false);
       }
     };
-
     fetchUser();
   }, []);
 
   /**
-   * Handles account deletion.
-   * TODO: Add confirmation dialog and actual API call.
+   * Runs the preflight check and shows either the blockers dialog
+   * or the confirmation dialog depending on the result.
    */
-  const handleDeleteAccount = () => {
-    // TODO: Implement account deletion with confirmation
-    if (confirm("Are you sure you want to delete your account? This cannot be undone.")) {
-      removeToken();
-      router.push("/login");
+  const handleDeleteClick = async () => {
+    setPreflightLoading(true);
+    setDeleteError(null);
+    try {
+      const result = await deletionPreflight();
+      setPreflightResult(result);
+      if (result.canDelete) {
+        setShowConfirmDialog(true);
+      } else {
+        setShowBlockersDialog(true);
+      }
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to check deletion eligibility"
+      );
+    } finally {
+      setPreflightLoading(false);
     }
   };
+
+  /**
+   * Performs the actual account deletion after confirmation.
+   */
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteAccount();
+      removeToken();
+      router.push("/login");
+    } catch (err) {
+      setDeleteError(
+        err instanceof Error ? err.message : "Failed to delete account"
+      );
+      setDeleting(false);
+    }
+  };
+
+  const confirmPhrase = "delete my account";
+  const canConfirm = confirmText.toLowerCase() === confirmPhrase;
 
   if (loading) {
     return (
@@ -103,7 +160,9 @@ export default function SettingsPage() {
           </div>
           <div className="space-y-2">
             <p className="text-sm font-medium">Username</p>
-            <p className="text-sm text-muted-foreground">{user?.username || "Unknown"}</p>
+            <p className="text-sm text-muted-foreground">
+              {user?.username || "Unknown"}
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -118,15 +177,129 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Delete Account</p>
               <p className="text-sm text-muted-foreground">
-                Permanently delete your account and all projects
+                Your account will be deactivated for 30 days, then permanently
+                deleted along with all your personal projects and data.
               </p>
             </div>
-            <Button variant="destructive" onClick={handleDeleteAccount}>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteClick}
+              disabled={preflightLoading}
+              className="shrink-0 ml-4"
+            >
+              {preflightLoading && (
+                <IconLoader2 className="h-4 w-4 animate-spin" />
+              )}
               Delete Account
             </Button>
           </div>
+          {deleteError && (
+            <p className="mt-2 text-sm text-destructive">{deleteError}</p>
+          )}
         </CardContent>
       </Card>
+
+      {/* Blockers Dialog */}
+      <Dialog open={showBlockersDialog} onOpenChange={setShowBlockersDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <IconAlertTriangle className="h-4 w-4 text-destructive" />
+              Cannot Delete Account
+            </DialogTitle>
+            <DialogDescription>
+              You must transfer ownership of the following organizations before
+              deleting your account:
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2">
+            {preflightResult?.blockers.map((blocker) => (
+              <li
+                key={blocker.organizationId}
+                className="flex items-center justify-between bg-muted px-3 py-2 text-xs"
+              >
+                <span className="font-medium">{blocker.name}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowBlockersDialog(false);
+                    router.push(
+                      `/dashboard/${blocker.slug}/team`
+                    );
+                  }}
+                >
+                  Manage Team
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={showConfirmDialog}
+        onOpenChange={(open) => {
+          setShowConfirmDialog(open);
+          if (!open) {
+            setConfirmText("");
+            setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <IconAlertTriangle className="h-4 w-4 text-destructive" />
+              Delete Account
+            </DialogTitle>
+            <DialogDescription>
+              This will immediately remove you from all team organizations and
+              deactivate your account. After 30 days, your personal organization,
+              projects, and all associated data will be permanently deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="bg-muted p-3 text-xs space-y-1">
+              <p className="font-medium">What will happen:</p>
+              <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                <li>Your personal organization and projects will be deleted</li>
+                <li>You will be removed from all team organizations</li>
+                <li>Your team CRM data (notes, tags) will be preserved anonymously</li>
+                <li>Pending invitations will be revoked</li>
+              </ul>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground">
+                Type <span className="font-mono font-medium text-foreground">{confirmPhrase}</span> to confirm
+              </label>
+              <Input
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder={confirmPhrase}
+                autoComplete="off"
+              />
+            </div>
+          </div>
+          {deleteError && (
+            <p className="text-sm text-destructive">{deleteError}</p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={!canConfirm || deleting}
+            >
+              {deleting && (
+                <IconLoader2 className="h-4 w-4 animate-spin" />
+              )}
+              {deleting ? "Deleting..." : "Permanently Delete Account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -38,4 +38,12 @@ public interface LiveConnectVisitorTagRepository extends JpaRepository<LiveConne
      */
     @Query("SELECT COUNT(vt) > 0 FROM LiveConnectVisitorTag vt WHERE vt.visitor.id = :visitorId AND vt.tag.id = :tagId")
     boolean existsByVisitorIdAndTagId(UUID visitorId, UUID tagId);
+
+    /**
+     * Nullifies taggedByRep for all tags applied by the given rep IDs.
+     * @param repIds the rep IDs to nullify
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectVisitorTag vt SET vt.taggedByRep = NULL WHERE vt.taggedByRep.id IN :repIds")
+    void nullifyTaggedByRep(Collection<UUID> repIds);
 }

@@ -1,6 +1,7 @@
 package com.notificationservice.security;
 
 import com.notificationservice.entity.AuthProvider;
+import com.notificationservice.entity.User;
 import com.notificationservice.repository.UserIdentityRepository;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,18 +53,25 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         var identity = userIdentityRepository.findByProviderAndProviderUserId(provider, providerUserId)
                 .orElseThrow(() -> new RuntimeException("User identity not found after OAuth"));
 
-        String token = tokenProvider.generateToken(identity.getUser().getId());
+        User user = identity.getUser();
+        String token = tokenProvider.generateToken(user.getId());
 
         // Check if this is a mobile client request
         boolean isMobile = isMobileRequest(request, response);
         log.info("OAuth success - isMobile: {}", isMobile);
 
+        // Check if the account is pending deletion
+        boolean pendingDeletion = user.isDeleted();
+
         String targetUrl;
         if (isMobile) {
-            // Redirect to iOS app via custom URL scheme
-            targetUrl = UriComponentsBuilder.fromUriString("liveconnect://auth/callback")
-                    .queryParam("token", token)
-                    .build().toUriString();
+            var builder = UriComponentsBuilder.fromUriString("liveconnect://auth/callback")
+                    .queryParam("token", token);
+            if (pendingDeletion) {
+                builder.queryParam("pending_deletion", "true")
+                       .queryParam("deletion_date", user.getDeletedAt().plusDays(30).toInstant().toString());
+            }
+            targetUrl = builder.build().toUriString();
         } else {
             // Determine redirect URL from cookie or fall back to default
             String redirectOrigin = getRedirectOriginFromCookie(request);
@@ -72,9 +80,13 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
             // Clear the cookie
             clearRedirectCookie(response);
 
-            targetUrl = UriComponentsBuilder.fromUriString(baseUrl + "/auth/callback")
-                    .queryParam("token", token)
-                    .build().toUriString();
+            var builder = UriComponentsBuilder.fromUriString(baseUrl + "/auth/callback")
+                    .queryParam("token", token);
+            if (pendingDeletion) {
+                builder.queryParam("pending_deletion", "true")
+                       .queryParam("deletion_date", user.getDeletedAt().plusDays(30).toInstant().toString());
+            }
+            targetUrl = builder.build().toUriString();
         }
 
         log.info("OAuth redirecting to: {}", targetUrl);

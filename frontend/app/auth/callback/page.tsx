@@ -37,7 +37,18 @@ function AuthCallback() {
 
     if (token) {
       localStorage.setItem("token", token);
-      router.replace("/dashboard");
+
+      // Check if account is pending deletion
+      const pendingDeletion = searchParams.get("pending_deletion");
+      const deletionDate = searchParams.get("deletion_date");
+      if (pendingDeletion === "true") {
+        const params = deletionDate
+          ? `?deletion_date=${encodeURIComponent(deletionDate)}`
+          : "";
+        router.replace(`/auth/reactivate${params}`);
+      } else {
+        router.replace("/dashboard");
+      }
     } else {
       router.replace("/login?error=no_token");
     }

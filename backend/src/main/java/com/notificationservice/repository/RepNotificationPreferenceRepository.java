@@ -2,6 +2,7 @@ package com.notificationservice.repository;
 
 import com.notificationservice.entity.RepNotificationPreference;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -39,4 +40,12 @@ public interface RepNotificationPreferenceRepository extends JpaRepository<RepNo
      */
     @Query("SELECT p FROM RepNotificationPreference p WHERE p.rep.id IN :repIds")
     List<RepNotificationPreference> findByRepIds(Collection<UUID> repIds);
+
+    /**
+     * Deletes notification preferences for all given rep IDs.
+     * @param repIds the rep IDs to delete preferences for
+     */
+    @Modifying
+    @Query("DELETE FROM RepNotificationPreference p WHERE p.rep.id IN :repIds")
+    void deleteByRepIds(Collection<UUID> repIds);
 }

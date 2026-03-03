@@ -47,6 +47,17 @@ public class Organization {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
+    /**
+     * Checks if this organization has been soft-deleted.
+     * @return true if the organization is pending deletion
+     */
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
     @OneToMany(mappedBy = "organization", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrganizationMember> members = new ArrayList<>();

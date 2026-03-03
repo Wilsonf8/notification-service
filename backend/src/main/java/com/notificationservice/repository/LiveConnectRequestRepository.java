@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -127,4 +128,20 @@ public interface LiveConnectRequestRepository extends JpaRepository<LiveConnectR
            "COUNT(r) > 0 " +
            "FROM LiveConnectRequest r WHERE r.visitor.id = :visitorId")
     Object[] getVisitorRequestStats(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Nullifies initiatedByRep for all requests initiated by the given rep IDs.
+     * @param repIds the rep IDs to nullify
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectRequest r SET r.initiatedByRep = NULL WHERE r.initiatedByRep.id IN :repIds")
+    void nullifyInitiatedByRep(Collection<UUID> repIds);
+
+    /**
+     * Nullifies acceptedByRep for all requests accepted by the given rep IDs.
+     * @param repIds the rep IDs to nullify
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectRequest r SET r.acceptedByRep = NULL WHERE r.acceptedByRep.id IN :repIds")
+    void nullifyAcceptedByRep(Collection<UUID> repIds);
 }

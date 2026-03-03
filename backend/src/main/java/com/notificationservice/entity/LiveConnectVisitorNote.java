@@ -31,7 +31,7 @@ public class LiveConnectVisitorNote {
     private Project project;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_rep_id", nullable = false)
+    @JoinColumn(name = "author_rep_id")
     private LiveConnectRep authorRep;
 
     @Column(columnDefinition = "TEXT", nullable = false)

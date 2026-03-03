@@ -24,6 +24,10 @@ public class AuthController {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        if (user.isDeleted()) {
+            return ResponseEntity.status(403).build();
+        }
+
         return ResponseEntity.ok(new UserDto(
                 user.getId(),
                 user.getUsername(),

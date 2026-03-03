@@ -1,11 +1,14 @@
 package com.notificationservice.repository;
 
 import com.notificationservice.entity.LiveConnectMessage;
+import com.notificationservice.entity.MessageSenderType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,4 +45,14 @@ public interface LiveConnectMessageRepository extends JpaRepository<LiveConnectM
      */
     @Query("SELECT m.conversation.id, COUNT(m) FROM LiveConnectMessage m WHERE m.conversation.id IN :conversationIds GROUP BY m.conversation.id")
     List<Object[]> countByConversationIds(java.util.Collection<UUID> conversationIds);
+
+    /**
+     * Nullifies senderId for all messages sent by the given sender IDs with the given sender type.
+     * Used during account deletion to preserve messages while removing rep identity.
+     * @param senderIds the sender IDs to nullify
+     * @param senderType the sender type to match (e.g., REP)
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectMessage m SET m.senderId = NULL WHERE m.senderId IN :senderIds AND m.senderType = :senderType")
+    void nullifySenderIds(Collection<UUID> senderIds, MessageSenderType senderType);
 }

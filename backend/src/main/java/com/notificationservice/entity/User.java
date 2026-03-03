@@ -44,6 +44,17 @@ public class User {
     @Column(name = "updated_at")
     private OffsetDateTime updatedAt;
 
+    @Column(name = "deleted_at")
+    private OffsetDateTime deletedAt;
+
+    /**
+     * Checks if this user account has been soft-deleted.
+     * @return true if the account is pending deletion
+     */
+    public boolean isDeleted() {
+        return deletedAt != null;
+    }
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UserIdentity> identities = new ArrayList<>();

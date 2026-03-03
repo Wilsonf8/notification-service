@@ -4,6 +4,7 @@
  * @module lib/api
  */
 
+export * from "./account";
 export * from "./projects";
 export * from "./user";
 export * from "./users";

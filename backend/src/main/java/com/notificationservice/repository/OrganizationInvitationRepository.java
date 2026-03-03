@@ -39,4 +39,12 @@ public interface OrganizationInvitationRepository extends JpaRepository<Organiza
      * Checks if a pending invitation already exists for this org/user combination.
      */
     boolean existsByOrganizationIdAndInviteeIdAndStatus(UUID organizationId, UUID inviteeId, InvitationStatus status);
+
+    /**
+     * Finds pending invitations sent by a user.
+     * @param inviterId the inviter's user ID
+     * @param status the invitation status
+     * @return list of matching invitations
+     */
+    List<OrganizationInvitation> findByInviterIdAndStatus(UUID inviterId, InvitationStatus status);
 }

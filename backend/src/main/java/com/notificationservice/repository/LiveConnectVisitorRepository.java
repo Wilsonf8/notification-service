@@ -117,4 +117,21 @@ public interface LiveConnectVisitorRepository extends JpaRepository<LiveConnectV
      */
     @Query("SELECT v FROM LiveConnectVisitor v WHERE v.activeConnections > 0 AND v.lastSeenAt < :threshold")
     List<LiveConnectVisitor> findStaleOnlineVisitors(OffsetDateTime threshold);
+
+    /**
+     * Nullifies assigned_rep_id for all visitors assigned to the given rep IDs.
+     * Used during account deletion to preserve visitor data while removing rep references.
+     * @param repIds the rep IDs to nullify
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectVisitor v SET v.assignedRep = NULL WHERE v.assignedRep.id IN :repIds")
+    void nullifyAssignedRep(Collection<UUID> repIds);
+
+    /**
+     * Nullifies contactUpdatedByRep for all visitors updated by the given rep IDs.
+     * @param repIds the rep IDs to nullify
+     */
+    @Modifying
+    @Query("UPDATE LiveConnectVisitor v SET v.contactUpdatedByRep = NULL WHERE v.contactUpdatedByRep.id IN :repIds")
+    void nullifyContactUpdatedByRep(Collection<UUID> repIds);
 }
