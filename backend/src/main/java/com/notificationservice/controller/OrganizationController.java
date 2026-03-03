@@ -146,6 +146,23 @@ public class OrganizationController {
     }
 
     /**
+     * Transfers ownership of an organization to another member.
+     *
+     * @param slug the organization's URL slug
+     * @param request the transfer request with target member ID
+     * @param userId the authenticated user's ID (must be current OWNER)
+     * @return 200 OK on success
+     */
+    @PostMapping("/{slug}/transfer-ownership")
+    public ResponseEntity<Void> transferOwnership(
+            @PathVariable String slug,
+            @Valid @RequestBody TransferOwnershipRequest request,
+            @AuthenticationPrincipal UUID userId) {
+        organizationService.transferOwnership(slug, request.memberId(), userId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
      * Removes a member from an organization.
      *
      * @param slug the organization's URL slug

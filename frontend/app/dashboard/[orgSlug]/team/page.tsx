@@ -66,6 +66,7 @@ import {
   IconFolder,
   IconPlus,
   IconVideo,
+  IconCrown,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useOrganization } from "@/lib/contexts/organization-context";
@@ -79,6 +80,7 @@ import {
   leaveOrganization,
   deleteOrganization,
   updateOrganization,
+  transferOwnership,
 } from "@/lib/api/organizations";
 import {
   createInvitation,
@@ -139,6 +141,10 @@ export default function TeamPage({ params }: TeamPageProps) {
 
   // Leave org state
   const [leaving, setLeaving] = useState(false);
+
+  // Transfer ownership state
+  const [transferring, setTransferring] = useState(false);
+  const [transferTarget, setTransferTarget] = useState<OrganizationMember | null>(null);
 
   const isOwner = currentOrg?.userRole === "OWNER";
   const isAdmin = currentOrg?.userRole === "ADMIN";
@@ -263,6 +269,25 @@ export default function TeamPage({ params }: TeamPageProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete organization");
       setDeleting(false);
+    }
+  };
+
+  /**
+   * Handles transferring ownership to another member.
+   */
+  const handleTransferOwnership = async () => {
+    if (!transferTarget) return;
+
+    try {
+      setTransferring(true);
+      await transferOwnership(orgSlug, transferTarget.id);
+      await refreshOrgs();
+      await fetchData();
+      setTransferTarget(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to transfer ownership");
+    } finally {
+      setTransferring(false);
     }
   };
 
@@ -543,34 +568,46 @@ export default function TeamPage({ params }: TeamPageProps) {
                   {canManageMembers && (
                     <TableCell>
                       {member.role !== "OWNER" && (
-                        <AlertDialog>
-                          <AlertDialogTrigger
-                            render={
-                              <Button variant="ghost" size="icon-sm">
-                                <IconTrash className="h-4 w-4 text-destructive" />
-                              </Button>
-                            }
-                          />
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remove member</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to remove {member.username}{" "}
-                                from the team? They will lose access to all
-                                projects.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                variant="destructive"
-                                onClick={() => handleRemoveMember(member.id)}
-                              >
-                                Remove
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <div className="flex items-center gap-1">
+                          {isOwner && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              title="Transfer ownership"
+                              onClick={() => setTransferTarget(member)}
+                            >
+                              <IconCrown className="h-4 w-4 text-yellow-500" />
+                            </Button>
+                          )}
+                          <AlertDialog>
+                            <AlertDialogTrigger
+                              render={
+                                <Button variant="ghost" size="icon-sm">
+                                  <IconTrash className="h-4 w-4 text-destructive" />
+                                </Button>
+                              }
+                            />
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remove member</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to remove {member.username}{" "}
+                                  from the team? They will lose access to all
+                                  projects.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  variant="destructive"
+                                  onClick={() => handleRemoveMember(member.id)}
+                                >
+                                  Remove
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </TableCell>
                   )}
@@ -860,6 +897,30 @@ export default function TeamPage({ params }: TeamPageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Transfer Ownership Dialog */}
+      <AlertDialog open={!!transferTarget} onOpenChange={(open) => { if (!open) setTransferTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Transfer ownership</AlertDialogTitle>
+            <AlertDialogDescription>
+              Transfer ownership of <strong>{currentOrg.name}</strong> to{" "}
+              <strong>{transferTarget?.username}</strong>? You will be demoted to
+              Admin and will lose owner-level permissions.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={transferring}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleTransferOwnership}
+              disabled={transferring}
+            >
+              {transferring ? "Transferring..." : "Transfer Ownership"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Edit Name Dialog */}
       <Dialog open={isEditNameOpen} onOpenChange={setIsEditNameOpen}>

@@ -235,6 +235,55 @@ public class OrganizationService {
     }
 
     /**
+     * Transfers ownership of an organization to another member.
+     * Atomically updates the organization owner, promotes the target to OWNER,
+     * and demotes the caller to ADMIN.
+     *
+     * @param slug the organization's URL slug
+     * @param memberId the ID of the membership to transfer ownership to
+     * @param userId the ID of the requesting user (must be current OWNER)
+     * @throws AccessDeniedException if caller is not OWNER, org is personal, or target is invalid
+     * @throws ResourceNotFoundException if member not found
+     */
+    @Transactional
+    public void transferOwnership(String slug, UUID memberId, UUID userId) {
+        Organization org = findBySlugOrThrow(slug);
+
+        if (Boolean.TRUE.equals(org.getIsPersonal())) {
+            throw new AccessDeniedException("Cannot transfer ownership of a personal organization");
+        }
+
+        OrganizationMember callerMember = verifyRole(org.getId(), userId, OrgRole.OWNER);
+
+        OrganizationMember targetMember = organizationMemberRepository.findById(memberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+
+        if (!targetMember.getOrganization().getId().equals(org.getId())) {
+            throw new ResourceNotFoundException("Member not found in this organization");
+        }
+
+        if (targetMember.getId().equals(callerMember.getId())) {
+            throw new IllegalArgumentException("Cannot transfer ownership to yourself");
+        }
+
+        if (targetMember.getRole() == OrgRole.OWNER) {
+            throw new IllegalArgumentException("Target member is already the owner");
+        }
+
+        // Promote target to OWNER
+        targetMember.setRole(OrgRole.OWNER);
+        organizationMemberRepository.save(targetMember);
+
+        // Demote caller to ADMIN
+        callerMember.setRole(OrgRole.ADMIN);
+        organizationMemberRepository.save(callerMember);
+
+        // Update organization owner FK
+        org.setOwner(targetMember.getUser());
+        organizationRepository.save(org);
+    }
+
+    /**
      * Removes a member from an organization.
      *
      * @param slug the organization's URL slug

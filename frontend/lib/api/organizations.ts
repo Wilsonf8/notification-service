@@ -125,6 +125,18 @@ export async function removeMember(slug: string, memberId: string): Promise<void
 }
 
 /**
+ * Transfers ownership of an organization to another member.
+ * @param slug - The organization's URL slug
+ * @param memberId - The membership ID of the new owner
+ */
+export async function transferOwnership(slug: string, memberId: string): Promise<void> {
+  await apiFetch(`/api/organizations/${slug}/transfer-ownership`, {
+    method: "POST",
+    body: JSON.stringify({ memberId }),
+  });
+}
+
+/**
  * Allows the current user to leave an organization.
  * @param slug - The organization's URL slug
  */
