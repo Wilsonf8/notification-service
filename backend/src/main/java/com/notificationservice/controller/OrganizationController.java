@@ -159,7 +159,7 @@ public class OrganizationController {
             @Valid @RequestBody TransferOwnershipRequest request,
             @AuthenticationPrincipal UUID userId) {
         organizationService.transferOwnership(slug, request.memberId(), userId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     /**
