@@ -105,9 +105,11 @@ public class LiveConnectVisitorService {
 
         Map<UUID, Long> visitCountMap;
         Map<UUID, OffsetDateTime> previousVisitEndedAtMap;
+        Set<UUID> visitorIdsWithConversations;
         if (browsingVisitorIds.isEmpty()) {
             visitCountMap = Collections.emptyMap();
             previousVisitEndedAtMap = Collections.emptyMap();
+            visitorIdsWithConversations = Collections.emptySet();
         } else {
             visitCountMap = visitRepository.countByVisitorIds(browsingVisitorIds).stream()
                     .collect(Collectors.toMap(
@@ -119,12 +121,15 @@ public class LiveConnectVisitorService {
                             row -> (UUID) row[0],
                             row -> (OffsetDateTime) row[1]
                     ));
+            visitorIdsWithConversations = conversationRepository
+                    .findVisitorIdsWithAnyConversation(browsingVisitorIds);
         }
 
         List<LiveConnectVisitorDto> browsing = browsingVisitors.stream()
                 .map(v -> toVisitorDto(v, false,
                         visitCountMap.getOrDefault(v.getId(), 0L).intValue(),
-                        previousVisitEndedAtMap.get(v.getId())))
+                        previousVisitEndedAtMap.get(v.getId()),
+                        visitorIdsWithConversations.contains(v.getId())))
                 .toList();
 
         // Queue: pending requests, filtered to exclude this rep's dismissed requests
@@ -251,7 +256,8 @@ public class LiveConnectVisitorService {
     }
 
     private LiveConnectVisitorDto toVisitorDto(LiveConnectVisitor visitor, boolean hasActiveRequest,
-                                               int totalVisitCount, OffsetDateTime previousVisitEndedAt) {
+                                               int totalVisitCount, OffsetDateTime previousVisitEndedAt,
+                                               boolean hasHadConversation) {
         String currentPage = null;
         if (visitor.getMetadata() != null) {
             Object page = visitor.getMetadata().get("currentPage");
@@ -270,7 +276,7 @@ public class LiveConnectVisitorService {
                 || visitor.getPingCooldownUntil().isBefore(OffsetDateTime.now())
         );
 
-        boolean isFirstVisit = totalVisitCount <= 1;
+        boolean isFirstVisit = totalVisitCount <= 1 && !hasHadConversation;
 
         return new LiveConnectVisitorDto(
                 visitor.getId(),
@@ -298,7 +304,7 @@ public class LiveConnectVisitorService {
         LiveConnectVisitor visitor = request.getVisitor();
         return new LiveConnectRequestDto(
                 request.getId(),
-                toVisitorDto(visitor, true, 0, null),
+                toVisitorDto(visitor, true, 0, null, false),
                 request.getDirection().name(),
                 request.getStatus().name(),
                 request.getExpiresAt(),

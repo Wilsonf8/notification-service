@@ -2,6 +2,7 @@ package com.notificationservice.websocket.scheduler;
 
 import com.notificationservice.entity.LiveConnectVisitor;
 import com.notificationservice.repository.LiveConnectVisitorRepository;
+import com.notificationservice.service.LiveConnectVisitService;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
 import com.notificationservice.websocket.event.VisitorLeftEvent;
 import com.notificationservice.websocket.session.VisitorSessionManager;
@@ -30,6 +31,7 @@ public class StaleVisitorScheduler {
     private static final int STALE_THRESHOLD_SECONDS = 120;
 
     private final LiveConnectVisitorRepository visitorRepository;
+    private final LiveConnectVisitService visitService;
     private final VisitorSessionManager visitorSessionManager;
     private final WebSocketBroadcaster broadcaster;
 
@@ -50,6 +52,9 @@ public class StaleVisitorScheduler {
         }
 
         for (LiveConnectVisitor visitor : staleVisitors) {
+            // Close the open visit record so reconnection creates a new visit
+            visitService.recordDisconnection(visitor.getId());
+
             // Mark as disconnected
             visitor.setActiveConnections(0);
             visitor.setDisconnectedAt(null); // Skip grace period — already stale

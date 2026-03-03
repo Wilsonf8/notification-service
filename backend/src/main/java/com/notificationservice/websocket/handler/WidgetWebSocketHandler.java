@@ -143,7 +143,8 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
                     }
                     long totalVisitCount = visitData[0] != null ? ((Number) visitData[0]).longValue() : 0;
                     OffsetDateTime previousVisitEndedAt = (OffsetDateTime) visitData[1];
-                    boolean isFirstVisit = totalVisitCount <= 1;
+                    boolean hasHadConversation = conversationRepository.existsAnyByVisitorId(visitorId);
+                    boolean isFirstVisit = totalVisitCount <= 1 && !hasHadConversation;
 
                     VisitorJoinedEvent event = new VisitorJoinedEvent(
                             visitor.getId(),

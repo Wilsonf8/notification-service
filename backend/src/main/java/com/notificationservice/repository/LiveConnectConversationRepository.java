@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -100,6 +101,15 @@ public interface LiveConnectConversationRepository extends JpaRepository<LiveCon
            "COUNT(c) > 0 " +
            "FROM LiveConnectConversation c WHERE c.visitor.id = :visitorId")
     Object[] getVisitorConversationStats(UUID visitorId, OffsetDateTime since);
+
+    /**
+     * Finds visitor IDs that have had any conversation (batch check for isFirstVisit).
+     *
+     * @param visitorIds the set of visitor IDs to check
+     * @return set of visitor IDs that have at least one conversation
+     */
+    @Query("SELECT DISTINCT c.visitor.id FROM LiveConnectConversation c WHERE c.visitor.id IN :visitorIds")
+    Set<UUID> findVisitorIdsWithAnyConversation(Set<UUID> visitorIds);
 
     /**
      * Finds conversations for a specific visitor, paginated and ordered by most recent first.
