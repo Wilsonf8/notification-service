@@ -12,6 +12,9 @@ import java.util.UUID;
 public interface UserIdentityRepository extends JpaRepository<UserIdentity, UUID> {
     Optional<UserIdentity> findByProviderAndProviderUserId(AuthProvider provider, String providerUserId);
 
+    @Query("SELECT ui FROM UserIdentity ui JOIN FETCH ui.user WHERE ui.provider = :provider AND ui.providerUserId = :providerUserId")
+    Optional<UserIdentity> findByProviderAndProviderUserIdWithUser(AuthProvider provider, String providerUserId);
+
     List<UserIdentity> findByUserId(UUID userId);
 
     @Query("SELECT ui FROM UserIdentity ui WHERE ui.user.id = :userId AND ui.provider = :provider")

@@ -50,7 +50,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         AuthProvider provider = AuthProvider.valueOf(registrationId.toUpperCase());
         String providerUserId = extractProviderUserId(provider, oauth2User);
 
-        var identity = userIdentityRepository.findByProviderAndProviderUserId(provider, providerUserId)
+        var identity = userIdentityRepository.findByProviderAndProviderUserIdWithUser(provider, providerUserId)
                 .orElseThrow(() -> new RuntimeException("User identity not found after OAuth"));
 
         User user = identity.getUser();
