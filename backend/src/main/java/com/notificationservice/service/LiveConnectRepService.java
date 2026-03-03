@@ -14,6 +14,7 @@ import com.notificationservice.repository.OrganizationMemberRepository;
 import com.notificationservice.repository.ProjectRepository;
 import com.notificationservice.repository.UserRepository;
 import com.notificationservice.websocket.broadcast.WebSocketBroadcaster;
+import com.notificationservice.websocket.session.RepSessionManager;
 import com.notificationservice.websocket.event.RepAvailabilityChangedEvent;
 import com.notificationservice.websocket.event.RepStatusChangedEvent;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class LiveConnectRepService {
     private final WebSocketBroadcaster broadcaster;
     private final TierService tierService;
     private final LiveConnectRequestService requestService;
+    private final RepSessionManager repSessionManager;
 
     /**
      * Gets all reps for a project.
@@ -193,11 +195,18 @@ public class LiveConnectRepService {
     public void disconnectRep(UUID projectId, UUID userId) {
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
             if (rep.getPresence() == RepPresence.IN_CALL) return;
-            rep.setPresence(RepPresence.OFFLINE);
-            rep.setActiveConnections(0);
-            repRepository.save(rep);
-            broadcastRepStatusChanged(rep.getId());
-            requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
+
+            int sessionCount = repSessionManager.getProjectSessionCount(projectId, userId);
+            rep.setActiveConnections(sessionCount);
+
+            if (sessionCount == 0) {
+                rep.setPresence(RepPresence.OFFLINE);
+                repRepository.save(rep);
+                broadcastRepStatusChanged(rep.getId());
+                requestService.withdrawPendingPingsOnDisconnect(rep.getId(), projectId);
+            } else {
+                repRepository.save(rep);
+            }
         });
     }
 
