@@ -940,6 +940,23 @@ export function Widget({ config, shadowRoot }: WidgetProps): h.JSX.Element {
 
       // Connect to LiveKit room
       await connectToRoom(tokenResponse.url, tokenResponse.token);
+
+      // Restore message history from backend
+      try {
+        const messages = await api.getMessages(conversationId);
+        const restored: ChatMessage[] = messages.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          senderType: msg.senderType === 'REP' ? 'REP' as const : 'VISITOR' as const,
+          senderName: msg.senderName || (msg.senderType === 'REP' ? 'Rep' : 'You'),
+          sentAt: msg.createdAt,
+        }));
+        setChatMessages(restored);
+        // Seed dedup set so data channel doesn't re-add these
+        restored.forEach((m) => receivedMessageIds.current.add(normalizeMessageId(m.id)));
+      } catch (err) {
+        console.error('[LiveConnect Widget] Failed to load message history:', err);
+      }
     } catch (err) {
       console.error('[LiveConnect Widget] Failed to reconnect to call:', err);
       clearActiveCall();

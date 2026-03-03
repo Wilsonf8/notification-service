@@ -137,6 +137,24 @@ export interface AcceptPingResponse {
 }
 
 /**
+ * A message returned from the backend conversation messages endpoint.
+ */
+export interface LiveConnectMessageDto {
+  /** Unique message identifier */
+  id: string;
+  /** Who sent the message: USER (visitor), REP, or SYSTEM */
+  senderType: 'USER' | 'REP' | 'SYSTEM';
+  /** Sender's identifier (null for system messages) */
+  senderId: string | null;
+  /** Display name of the sender */
+  senderName: string;
+  /** Message text content */
+  content: string;
+  /** ISO 8601 timestamp when the message was created */
+  createdAt: string;
+}
+
+/**
  * Response from the /conversations/{id}/messages endpoint.
  */
 export interface SendMessageResponse {
@@ -422,6 +440,26 @@ export class ApiClient {
       `/v1/liveconnect/conversations/${encodeURIComponent(conversationId)}/messages`,
       {
         body: { content, messageId },
+        headers: {
+          'X-Session-Token': this.sessionToken!,
+        },
+      }
+    );
+  }
+
+  /**
+   * Fetches message history for a conversation.
+   * @param conversationId - The conversation ID
+   * @returns Array of messages ordered by creation time ascending
+   * @throws ApiError on failure or if no session token
+   */
+  public async getMessages(conversationId: string): Promise<LiveConnectMessageDto[]> {
+    this.requireSession();
+
+    return this.request<LiveConnectMessageDto[]>(
+      'GET',
+      `/v1/liveconnect/conversations/${encodeURIComponent(conversationId)}/messages`,
+      {
         headers: {
           'X-Session-Token': this.sessionToken!,
         },

@@ -187,7 +187,7 @@ public class LiveConnectConversationService {
         }
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<LiveConnectMessage> messagePage = messageRepository.findByConversationIdOrderByCreatedAtDesc(
+        Page<LiveConnectMessage> messagePage = messageRepository.findByConversationIdOrderByCreatedAtAscPaged(
                 conversationId, pageable);
 
         return new MessageListResponse(
