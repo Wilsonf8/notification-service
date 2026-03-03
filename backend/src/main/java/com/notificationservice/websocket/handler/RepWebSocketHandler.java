@@ -63,13 +63,18 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // Store decorated session in raw session attributes so afterConnectionClosed
+        // can retrieve the same object for removal (ConcurrentWebSocketSessionDecorator
+        // does not override equals/hashCode, so identity match is required).
+        rawSession.getAttributes().put("decoratedSession", session);
+
         // Register session
         sessionManager.addSession(projectId, userId, session);
 
         // Update rep presence in database (use session manager count for atomicity)
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
             rep.setPresence(RepPresence.ONLINE);
-            rep.setActiveConnections(sessionManager.getSessionCount(userId));
+            rep.setActiveConnections(sessionManager.getProjectSessionCount(projectId, userId));
             rep.setLastHeartbeat(OffsetDateTime.now());
             repRepository.save(rep);
             repService.broadcastRepStatusChanged(rep.getId());
@@ -115,8 +120,13 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
         // Cleanup rate limiter state for closed session
         webSocketRateLimiter.removeSession(session.getId());
 
+        // Retrieve the decorated session stored during connect — the session manager
+        // holds the decorated instance, so we must remove that exact object.
+        WebSocketSession decoratedSession = (WebSocketSession) session.getAttributes().get("decoratedSession");
+        WebSocketSession toRemove = decoratedSession != null ? decoratedSession : session;
+
         // Remove session
-        sessionManager.removeSession(projectId, userId, session);
+        sessionManager.removeSession(projectId, userId, toRemove);
 
         // Withdraw pings originated from this specific device session
         String deviceSessionId = (String) session.getAttributes().get("deviceSessionId");
@@ -126,7 +136,7 @@ public class RepWebSocketHandler extends TextWebSocketHandler {
 
         // Update rep presence in database (use session manager count for atomicity)
         repRepository.findByProjectIdAndUserId(projectId, userId).ifPresent(rep -> {
-            int newConnections = sessionManager.getSessionCount(userId);
+            int newConnections = sessionManager.getProjectSessionCount(projectId, userId);
             rep.setActiveConnections(newConnections);
 
             // Set to OFFLINE only if this was the last connection and not in a call

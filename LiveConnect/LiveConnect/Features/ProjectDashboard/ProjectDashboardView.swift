@@ -80,6 +80,7 @@ struct ProjectDashboardView: View {
             }
             .onChange(of: sidebarViewModel.selectedProjectId) { _, newProjectId in
                 if let newProjectId, newProjectId != projectId {
+                    viewModel.disconnect()
                     Task {
                         await viewModel.loadDashboard(projectId: newProjectId)
                     }

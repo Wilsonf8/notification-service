@@ -100,6 +100,11 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
         // Cancel any pending disconnection broadcast (visitor reconnected within grace period)
         gracePeriodManager.cancelPendingDisconnection(visitorId);
 
+        // Store decorated session in raw session attributes so afterConnectionClosed
+        // can retrieve the same object for removal (ConcurrentWebSocketSessionDecorator
+        // does not override equals/hashCode, so identity match is required).
+        rawSession.getAttributes().put("decoratedSession", session);
+
         // Register session with VisitorSessionManager
         sessionManager.addSession(visitorId, projectId, session);
 
@@ -258,8 +263,13 @@ public class WidgetWebSocketHandler extends TextWebSocketHandler {
         // Cleanup rate limiter state for closed session
         webSocketRateLimiter.removeSession(session.getId());
 
+        // Retrieve the decorated session stored during connect — the session manager
+        // holds the decorated instance, so we must remove that exact object.
+        WebSocketSession decoratedSession = (WebSocketSession) session.getAttributes().get("decoratedSession");
+        WebSocketSession toRemove = decoratedSession != null ? decoratedSession : session;
+
         // Remove session from VisitorSessionManager
-        sessionManager.removeSession(visitorId, session);
+        sessionManager.removeSession(visitorId, toRemove);
 
         // Check actual session count after removal
         int actualSessionCount = sessionManager.getSessionCount(visitorId);

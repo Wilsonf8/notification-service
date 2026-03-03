@@ -93,7 +93,7 @@ public class RepSessionManager {
     }
 
     /**
-     * Gets the count of active sessions for a user.
+     * Gets the count of active sessions for a user across all projects.
      *
      * @param userId the user ID
      * @return number of active sessions
@@ -101,5 +101,27 @@ public class RepSessionManager {
     public int getSessionCount(UUID userId) {
         Set<WebSocketSession> sessions = userSessions.get(userId);
         return sessions != null ? sessions.size() : 0;
+    }
+
+    /**
+     * Gets the count of active sessions for a user within a specific project.
+     *
+     * @param projectId the project ID
+     * @param userId the user ID
+     * @return number of active sessions for this user in this project
+     */
+    public int getProjectSessionCount(UUID projectId, UUID userId) {
+        Set<WebSocketSession> projSessions = projectSessions.get(projectId);
+        Set<WebSocketSession> usrSessions = userSessions.get(userId);
+        if (projSessions == null || usrSessions == null) {
+            return 0;
+        }
+        int count = 0;
+        for (WebSocketSession session : usrSessions) {
+            if (projSessions.contains(session)) {
+                count++;
+            }
+        }
+        return count;
     }
 }
