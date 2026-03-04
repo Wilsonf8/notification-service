@@ -159,7 +159,7 @@ struct ContentView: View {
                 .font(.headline)
                 .foregroundStyle(.white)
 
-            Text("There are no projects in your organizations yet.")
+            Text("Create and configure projects at hooman.live")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -171,6 +171,12 @@ struct ContentView: View {
             }
             .buttonStyle(.bordered)
             .tint(.yellow)
+
+            Button("Log Out") {
+                AuthManager.shared.signOut()
+            }
+            .foregroundStyle(.red)
+            .padding(.top, 8)
         }
         .padding()
     }
