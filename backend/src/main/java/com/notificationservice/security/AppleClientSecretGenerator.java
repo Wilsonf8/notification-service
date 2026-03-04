@@ -34,15 +34,29 @@ public class AppleClientSecretGenerator {
     private String privateKeyPem;
 
     private volatile String cachedSecret;
+    private volatile String cachedSubject;
     private volatile Instant cacheExpiry;
 
     /**
      * Generates (or returns cached) Apple client secret JWT.
+     * Uses the configured {@code oauth.apple.client-id} as the subject.
      *
      * @return the client secret JWT string
      */
     public String generateSecret() {
-        if (cachedSecret != null && Instant.now().isBefore(cacheExpiry)) {
+        return generateSecret(clientId);
+    }
+
+    /**
+     * Generates (or returns cached) Apple client secret JWT for a specific client ID.
+     * The web OAuth flow requires the Services ID as subject, which differs from the iOS bundle ID.
+     *
+     * @param targetClientId - the client ID to use as the JWT subject (e.g., Services ID for web flow)
+     * @return the client secret JWT string
+     */
+    public String generateSecret(String targetClientId) {
+        if (cachedSecret != null && Instant.now().isBefore(cacheExpiry)
+                && targetClientId.equals(cachedSubject)) {
             return cachedSecret;
         }
 
@@ -57,14 +71,15 @@ public class AppleClientSecretGenerator {
                     .issuedAt(Date.from(now))
                     .expiration(Date.from(expiry))
                     .audience().add("https://appleid.apple.com").and()
-                    .subject(clientId)
+                    .subject(targetClientId)
                     .header().keyId(keyId).and()
                     .signWith(privateKey, Jwts.SIG.ES256)
                     .compact();
 
             cachedSecret = secret;
+            cachedSubject = targetClientId;
             cacheExpiry = now.plusSeconds(4L * 30 * 24 * 3600); // Refresh after 4 months
-            log.info("Generated new Apple client secret, expires: {}", expiry);
+            log.info("Generated new Apple client secret for {}, expires: {}", targetClientId, expiry);
 
             return secret;
         } catch (Exception e) {
