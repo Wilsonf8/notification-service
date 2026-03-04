@@ -19,6 +19,7 @@ import { useLiveConnectWebSocket } from "@/lib/hooks/use-liveconnect-websocket";
 import { useRepPresence } from "@/lib/hooks/use-rep-presence";
 import { getVisitors, getReps, resetRepState } from "@/lib/api/liveconnect-dashboard";
 import type { ActiveCall, LiveConnectRep, LiveConnectVisitor, LiveConnectRequest, VisitorsResponse } from "@/lib/types";
+import Link from "next/link";
 import { AvailabilityToggle } from "./availability-toggle";
 import { InCallSection } from "./in-call-section";
 import { RequestQueue } from "./request-queue";
@@ -28,13 +29,14 @@ import { VisitorDetail } from "./visitor-detail";
 /** Props for the LiveUsersPanel component */
 interface LiveUsersPanelProps {
   projectId: string;
+  isAdmin: boolean;
 }
 
 /**
  * Live Users Panel component.
  * Main dashboard view for reps to see visitors and handle requests.
  */
-export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
+export function LiveUsersPanel({ projectId, isAdmin }: LiveUsersPanelProps) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentRep, setCurrentRep] = useState<LiveConnectRep | null>(null);
@@ -179,7 +181,31 @@ export function LiveUsersPanel({ projectId }: LiveUsersPanelProps) {
       {error && (
         <Card className="border-destructive">
           <CardContent className="py-4">
-            <p className="text-sm text-destructive">{error}</p>
+            {/not a rep/i.test(error) ? (
+              <p className="text-sm text-destructive">
+                You are not a rep for this project.{" "}
+                {isAdmin ? (
+                  <Link
+                    href={`/dashboard/p/${projectId}/reps`}
+                    className="underline hover:text-destructive/80"
+                  >
+                    Go to the Reps page
+                  </Link>
+                ) : (
+                  <>
+                    Ask an organization admin to add you as a rep.{" "}
+                    <Link
+                      href={`/dashboard/p/${projectId}/reps`}
+                      className="underline hover:text-destructive/80"
+                    >
+                      View Reps page
+                    </Link>
+                  </>
+                )}
+              </p>
+            ) : (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
           </CardContent>
         </Card>
       )}

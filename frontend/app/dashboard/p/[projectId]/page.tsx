@@ -12,7 +12,7 @@ import { LiveUsersPanel } from "@/components/liveconnect/live-users-panel";
  * Renders the LiveConnect Live Users panel.
  */
 export default function ProjectPage() {
-  const { projectId } = useProject();
+  const { projectId, isAdmin } = useProject();
 
-  return <LiveUsersPanel projectId={projectId} />;
+  return <LiveUsersPanel projectId={projectId} isAdmin={isAdmin} />;
 }
