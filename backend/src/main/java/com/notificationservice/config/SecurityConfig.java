@@ -92,6 +92,14 @@ public class SecurityConfig {
         repWsConfig.setAllowCredentials(true);
         source.registerCorsConfiguration("/api/projects/*/liveconnect/ws", repWsConfig);
 
+        // Allow Apple's form_post callback (Apple POSTs from appleid.apple.com)
+        CorsConfiguration appleCallbackConfig = new CorsConfiguration();
+        appleCallbackConfig.setAllowedOrigins(List.of("https://appleid.apple.com"));
+        appleCallbackConfig.setAllowedMethods(List.of("POST", "OPTIONS"));
+        appleCallbackConfig.setAllowedHeaders(List.of("*"));
+        appleCallbackConfig.setAllowCredentials(false);
+        source.registerCorsConfiguration("/login/oauth2/code/apple", appleCallbackConfig);
+
         // Restricted origins for other endpoints
         CorsConfiguration defaultConfig = new CorsConfiguration();
         List<String> origins = Arrays.asList(allowedOriginsConfig.split(","));
