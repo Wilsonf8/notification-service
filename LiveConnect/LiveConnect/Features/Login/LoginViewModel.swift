@@ -38,4 +38,10 @@ final class LoginViewModel {
     func signInWithGoogle(anchor: ASPresentationAnchor) async {
         await AuthManager.shared.signInWithGoogle(presentationAnchor: anchor)
     }
+
+    /// Handles a successful Apple Sign-In credential.
+    /// - Parameter credential: The Apple ID credential from ASAuthorizationController.
+    func signInWithApple(credential: ASAuthorizationAppleIDCredential) async {
+        await AuthManager.shared.signInWithApple(credential: credential)
+    }
 }

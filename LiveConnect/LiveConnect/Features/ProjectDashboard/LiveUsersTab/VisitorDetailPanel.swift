@@ -24,6 +24,21 @@ struct VisitorDetailPanel: View {
     /// Whether visit data is currently loading.
     @State private var isLoadingVisits = false
 
+    /// Whether the block confirmation alert is shown.
+    @State private var showBlockConfirmation = false
+
+    /// Whether the block success alert is shown.
+    @State private var showBlockSuccess = false
+
+    /// Whether the report confirmation alert is shown.
+    @State private var showReportConfirmation = false
+
+    /// Whether the report success alert is shown.
+    @State private var showReportSuccess = false
+
+    /// Error message from moderation actions.
+    @State private var moderationError: String?
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -68,6 +83,45 @@ struct VisitorDetailPanel: View {
                                 .padding()
                                 .background(.yellow)
                                 .foregroundStyle(.black)
+                            }
+                        }
+
+                        // Moderation actions
+                        HStack(spacing: 12) {
+                            Button {
+                                showReportConfirmation = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "exclamationmark.bubble")
+                                    Text("Report")
+                                }
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.white.opacity(0.05))
+                                .foregroundStyle(.orange)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+
+                            Button {
+                                showBlockConfirmation = true
+                            } label: {
+                                HStack {
+                                    Image(systemName: "hand.raised")
+                                    Text("Block")
+                                }
+                                .font(.subheadline)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(Color.red.opacity(0.05))
+                                .foregroundStyle(.red)
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                                )
                             }
                         }
 
@@ -191,6 +245,40 @@ struct VisitorDetailPanel: View {
             .task {
                 await loadVisitData()
             }
+            .alert("Report Visitor", isPresented: $showReportConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Report", role: .destructive) {
+                    Task { await reportVisitor() }
+                }
+            } message: {
+                Text("Report \(visitor.displayName) for inappropriate behavior? Our team will review it.")
+            }
+            .alert("Visitor Reported", isPresented: $showReportSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Thank you for your report. Our team will review it.")
+            }
+            .alert("Block Visitor", isPresented: $showBlockConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Block", role: .destructive) {
+                    Task { await blockVisitor() }
+                }
+            } message: {
+                Text("Block \(visitor.displayName)? They will no longer be able to initiate conversations.")
+            }
+            .alert("Visitor Blocked", isPresented: $showBlockSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("\(visitor.displayName) has been blocked.")
+            }
+            .alert("Error", isPresented: .init(
+                get: { moderationError != nil },
+                set: { if !$0 { moderationError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(moderationError ?? "An error occurred.")
+            }
         }
     }
 
@@ -206,6 +294,34 @@ struct VisitorDetailPanel: View {
             visitData = response
         } catch {
             print("Failed to load visitor visits: \(error)")
+        }
+    }
+
+    /// Reports the visitor for inappropriate behavior.
+    private func reportVisitor() async {
+        do {
+            let request = ReportVisitorRequest(reason: "Inappropriate behavior", messageContent: nil)
+            try await APIClient.shared.post(
+                Endpoints.reportVisitor(projectId: projectId, visitorId: visitor.id),
+                body: request
+            )
+            showReportSuccess = true
+        } catch {
+            moderationError = error.localizedDescription
+        }
+    }
+
+    /// Blocks the visitor from the project.
+    private func blockVisitor() async {
+        do {
+            let request = BlockVisitorRequest(reason: nil)
+            try await APIClient.shared.post(
+                Endpoints.blockVisitor(projectId: projectId, visitorId: visitor.id),
+                body: request
+            )
+            showBlockSuccess = true
+        } catch {
+            moderationError = error.localizedDescription
         }
     }
 

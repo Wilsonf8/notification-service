@@ -49,6 +49,17 @@ struct LoginView: View {
 
                     // Login section
                     VStack(spacing: 12) {
+                        // Sign in with Apple
+                        SignInWithAppleButton(.signIn) { request in
+                            request.requestedScopes = [.fullName, .email]
+                        } onCompletion: { result in
+                            handleAppleSignIn(result)
+                        }
+                        .signInWithAppleButtonStyle(.white)
+                        .frame(height: 54)
+                        .disabled(viewModel.isLoading)
+                        .opacity(viewModel.isLoading ? 0.7 : 1.0)
+
                         // Google sign in button
                         SignInButton(
                             title: "Sign in with Google",
@@ -108,6 +119,27 @@ struct LoginView: View {
             await viewModel.signInWithGoogle(anchor: window)
         case .github:
             await viewModel.signInWithGitHub(anchor: window)
+        }
+    }
+
+    /// Handles the result of Sign in with Apple.
+    /// - Parameter result: The authorization result.
+    @MainActor
+    private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+                return
+            }
+            Task {
+                await viewModel.signInWithApple(credential: credential)
+            }
+        case .failure(let error):
+            // User cancelled — don't show error for cancellation
+            if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
+                return
+            }
+            print("Apple Sign In failed: \(error)")
         }
     }
 }

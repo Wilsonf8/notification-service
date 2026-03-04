@@ -1,5 +1,6 @@
 package com.notificationservice.controller;
 
+import com.notificationservice.security.AppleTokenVerifier;
 import com.notificationservice.service.AccessDeniedException;
 import com.notificationservice.service.RateLimitExceededException;
 import com.notificationservice.service.ResourceNotFoundException;
@@ -63,6 +64,13 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("Validation failed");
         return ResponseEntity.badRequest().body(Map.of("error", message));
+    }
+
+    @ExceptionHandler(AppleTokenVerifier.AppleTokenException.class)
+    public ResponseEntity<Map<String, String>> handleAppleTokenException(AppleTokenVerifier.AppleTokenException e) {
+        log.warn("Apple token verification failed: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", e.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

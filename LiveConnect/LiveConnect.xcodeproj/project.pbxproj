@@ -418,8 +418,9 @@
 				DEVELOPMENT_TEAM = Z2WFWMRPZR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "LiveConnect needs camera access for video calls.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LiveConnect needs microphone access for video calls.";
+				INFOPLIST_KEY_CFBundleDisplayName = "hooman.live";
+				INFOPLIST_KEY_NSCameraUsageDescription = "hooman.live needs camera access for video calls.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "hooman.live needs microphone access for video calls.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -453,8 +454,9 @@
 				DEVELOPMENT_TEAM = Z2WFWMRPZR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_NSCameraUsageDescription = "LiveConnect needs camera access for video calls.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "LiveConnect needs microphone access for video calls.";
+				INFOPLIST_KEY_CFBundleDisplayName = "hooman.live";
+				INFOPLIST_KEY_NSCameraUsageDescription = "hooman.live needs camera access for video calls.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "hooman.live needs microphone access for video calls.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

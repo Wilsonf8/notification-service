@@ -56,7 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/projects/*/liveconnect/ws").permitAll()  // Rep WebSocket
                         .requestMatchers("/webhooks/livekit").permitAll()
                         .requestMatchers("/webhooks/stripe").permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()  // Includes /api/auth/apple/token
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )

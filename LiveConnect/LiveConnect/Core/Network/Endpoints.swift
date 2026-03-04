@@ -23,6 +23,9 @@ enum Endpoints {
     /// Get current authenticated user.
     static let authMe = "/api/auth/me"
 
+    /// Exchange Apple identity token for backend JWT.
+    static let appleToken = "/api/auth/apple/token"
+
     // MARK: - Organizations
 
     /// List user's organizations.
@@ -289,6 +292,37 @@ enum Endpoints {
             .replacingOccurrences(of: "http://", with: "ws://")
         return "\(wsBase)/api/projects/\(projectId)/liveconnect/ws"
     }
+
+    // MARK: - Moderation
+
+    /// Report a visitor or their message.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func reportVisitor(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/report"
+    }
+
+    /// Block a visitor.
+    /// - Parameters:
+    ///   - projectId: The project UUID.
+    ///   - visitorId: The visitor UUID.
+    /// - Returns: Endpoint path.
+    static func blockVisitor(projectId: UUID, visitorId: UUID) -> String {
+        "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/block"
+    }
+
+    // MARK: - Account Deletion
+
+    /// Preflight check before account deletion.
+    static let deletionPreflight = "/api/users/me/deletion-preflight"
+
+    /// Delete current user account (soft-delete with 30-day grace period).
+    static let deleteAccount = "/api/users/me"
+
+    /// Reactivate a soft-deleted account.
+    static let reactivateAccount = "/api/users/me/reactivate"
 
     // MARK: - Device Tokens
 
