@@ -809,19 +809,20 @@ export default function TeamPage({ params }: TeamPageProps) {
               <Label>User</Label>
               {selectedUser ? (
                 <div className="flex items-center justify-between border border-border p-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate">
                       {selectedUser.firstName && selectedUser.lastName
                         ? `${selectedUser.firstName} ${selectedUser.lastName}`
                         : selectedUser.username}
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground truncate">
                       @{selectedUser.username}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="flex-shrink-0"
                     onClick={() => setSelectedUser(null)}
                   >
                     Change
