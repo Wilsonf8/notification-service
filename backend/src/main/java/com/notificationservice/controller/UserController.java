@@ -84,14 +84,14 @@ public class UserController {
      * Clears deletedAt on the user and personal org.
      *
      * @param userId the authenticated user's ID
-     * @return 200 OK on success
+     * @return 204 No Content on success
      */
     @PostMapping("/me/reactivate")
     public ResponseEntity<Void> reactivateAccount(@AuthenticationPrincipal UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         accountDeletionService.reactivateAccount(user);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     private User findUser(UUID userId) {
