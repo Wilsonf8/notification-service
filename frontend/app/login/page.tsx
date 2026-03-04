@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { IconArrowLeft, IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
+import { IconArrowLeft, IconBrandApple, IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
 
 /** Backend API base URL for OAuth redirect */
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8081";
@@ -70,6 +70,10 @@ function LoginForm() {
             <Button onClick={() => handleOAuthLogin("google")} className="w-full gap-2">
               <IconBrandGoogle className="h-5 w-5" />
               Sign in with Google
+            </Button>
+            <Button onClick={() => handleOAuthLogin("apple")} variant="secondary" className="w-full gap-2 bg-black text-white hover:bg-black/90">
+              <IconBrandApple className="h-5 w-5" />
+              Sign in with Apple
             </Button>
             <Button onClick={() => handleOAuthLogin("github")} variant="outline" className="w-full gap-2">
               <IconBrandGithub className="h-5 w-5" />
