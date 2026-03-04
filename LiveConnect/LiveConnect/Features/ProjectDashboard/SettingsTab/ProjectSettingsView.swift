@@ -56,16 +56,36 @@ struct ProjectSettingsView: View {
                     // Support Section
                     SettingsSection(title: "Support") {
                         Button {
-                            // Open help URL
                             if let url = URL(string: "https://hooman.live/docs") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
                             HStack {
+                                Image(systemName: "book")
+                                    .foregroundStyle(.yellow)
                                 Text("Documentation")
                                     .foregroundStyle(.white)
                                 Spacer()
                                 Image(systemName: "arrow.up.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding()
+                            .background(Color.white.opacity(0.05))
+                        }
+
+                        Button {
+                            if let url = URL(string: "mailto:support@hooman.live") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "envelope")
+                                    .foregroundStyle(.yellow)
+                                Text("Contact Support")
+                                    .foregroundStyle(.white)
+                                Spacer()
+                                Text("support@hooman.live")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

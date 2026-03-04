@@ -31,6 +31,9 @@ struct ContentView: View {
             if isCheckingAuth {
                 // Splash/loading state
                 splashView
+            } else if AuthManager.shared.isPendingDeletion {
+                // Account pending deletion: show reactivation screen
+                ReactivationView()
             } else if AuthManager.shared.isAuthenticated {
                 // Authenticated: show dashboard or project selection
                 authenticatedView

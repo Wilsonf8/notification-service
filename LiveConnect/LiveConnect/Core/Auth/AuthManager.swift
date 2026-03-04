@@ -24,6 +24,12 @@ final class AuthManager {
     /// The last authentication error.
     private(set) var error: Error?
 
+    /// Whether the user's account is pending deletion.
+    private(set) var isPendingDeletion = false
+
+    /// The date when the account will be permanently deleted.
+    private(set) var deletionDate: String?
+
     /// Whether the user is authenticated.
     var isAuthenticated: Bool {
         currentUser != nil
@@ -52,7 +58,15 @@ final class AuthManager {
 
         do {
             currentUser = try await APIClient.shared.get(Endpoints.authMe)
+            isPendingDeletion = false
         } catch {
+            if case APIError.forbidden = error {
+                // 403 means account is soft-deleted — show reactivation flow
+                isPendingDeletion = true
+                print("RestoreSession: account is pending deletion")
+                isLoading = false
+                return
+            }
             // Token is invalid, clear it
             print("RestoreSession error: \(error)")
             if case APIError.decodingError(let underlyingError) = error {
@@ -86,16 +100,85 @@ final class AuthManager {
         error = nil
 
         do {
-            let token = try await performOAuthFlow(endpoint: endpoint, presentationAnchor: presentationAnchor)
-            print("Token received: \(token.prefix(50))...")
-            KeychainService.shared.setToken(token)
-            currentUser = try await APIClient.shared.get(Endpoints.authMe)
-            print("User loaded: \(currentUser?.username ?? "nil")")
+            let callbackResult = try await performOAuthFlow(endpoint: endpoint, presentationAnchor: presentationAnchor)
+            print("Token received: \(callbackResult.token.prefix(50))...")
+            KeychainService.shared.setToken(callbackResult.token)
+
+            if callbackResult.pendingDeletion {
+                // Account is pending deletion — show reactivation flow
+                isPendingDeletion = true
+                deletionDate = callbackResult.deletionDate
+            } else {
+                currentUser = try await APIClient.shared.get(Endpoints.authMe)
+                isPendingDeletion = false
+                print("User loaded: \(currentUser?.username ?? "nil")")
+            }
         } catch {
             print("SignIn error: \(error)")
             if case APIError.decodingError(let underlyingError) = error {
                 print("Decoding error details: \(underlyingError)")
             }
+            self.error = error
+        }
+
+        isLoading = false
+    }
+
+    /// Clears the current user, forcing a return to the login screen.
+    func clearCurrentUser() {
+        currentUser = nil
+        isPendingDeletion = false
+        deletionDate = nil
+        error = nil
+    }
+
+    /// Clears the pending deletion state after reactivation.
+    func clearPendingDeletion() {
+        isPendingDeletion = false
+        deletionDate = nil
+    }
+
+    /// Initiates Sign in with Apple authentication flow.
+    /// Uses native ASAuthorizationAppleIDProvider and sends the identity token to the backend.
+    /// - Parameter credential: The Apple ID credential from ASAuthorizationController.
+    func signInWithApple(credential: ASAuthorizationAppleIDCredential) async {
+        isLoading = true
+        error = nil
+
+        do {
+            guard let identityTokenData = credential.identityToken,
+                  let identityToken = String(data: identityTokenData, encoding: .utf8) else {
+                throw AuthError.missingToken
+            }
+
+            // Extract name (only available on first sign-in)
+            let firstName = credential.fullName?.givenName
+            let lastName = credential.fullName?.familyName
+
+            let request = AppleTokenRequest(
+                identityToken: identityToken,
+                authorizationCode: credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) },
+                firstName: firstName,
+                lastName: lastName
+            )
+
+            let response: AppleTokenResponse = try await APIClient.shared.post(
+                Endpoints.appleToken,
+                body: request
+            )
+
+            KeychainService.shared.setToken(response.token)
+
+            if response.pendingDeletion {
+                isPendingDeletion = true
+                deletionDate = response.deletionDate
+            } else {
+                currentUser = try await APIClient.shared.get(Endpoints.authMe)
+                isPendingDeletion = false
+                print("User loaded via Apple: \(currentUser?.username ?? "nil")")
+            }
+        } catch {
+            print("Apple SignIn error: \(error)")
             self.error = error
         }
 
@@ -117,12 +200,19 @@ final class AuthManager {
 
     // MARK: - Private Methods
 
+    /// Result from an OAuth callback containing the token and deletion status.
+    private struct OAuthCallbackResult {
+        let token: String
+        let pendingDeletion: Bool
+        let deletionDate: String?
+    }
+
     /// Performs the OAuth flow using ASWebAuthenticationSession.
     /// - Parameters:
     ///   - endpoint: The OAuth endpoint path.
     ///   - presentationAnchor: The window to present the auth sheet from.
-    /// - Returns: The JWT token from the callback.
-    private func performOAuthFlow(endpoint: String, presentationAnchor: ASPresentationAnchor) async throws -> String {
+    /// - Returns: The OAuth callback result with token and deletion status.
+    private func performOAuthFlow(endpoint: String, presentationAnchor: ASPresentationAnchor) async throws -> OAuthCallbackResult {
         let authURL = URL(string: Endpoints.baseURL + endpoint + "?mobile=true")!
 
         // Store context provider to keep it alive
@@ -159,7 +249,16 @@ final class AuthManager {
                     return
                 }
 
-                continuation.resume(returning: token)
+                let pendingDeletion = components.queryItems?
+                    .first(where: { $0.name == "pending_deletion" })?.value == "true"
+                let deletionDate = components.queryItems?
+                    .first(where: { $0.name == "deletion_date" })?.value
+
+                continuation.resume(returning: OAuthCallbackResult(
+                    token: token,
+                    pendingDeletion: pendingDeletion,
+                    deletionDate: deletionDate
+                ))
             }
 
             session.presentationContextProvider = contextProvider
@@ -179,6 +278,23 @@ final class AuthManager {
             }
         }
     }
+}
+
+// MARK: - Apple Token Exchange Models
+
+/// Request body for Apple token exchange with the backend.
+struct AppleTokenRequest: Encodable {
+    let identityToken: String
+    let authorizationCode: String?
+    let firstName: String?
+    let lastName: String?
+}
+
+/// Response from the backend Apple token exchange endpoint.
+struct AppleTokenResponse: Decodable {
+    let token: String
+    let pendingDeletion: Bool
+    let deletionDate: String?
 }
 
 // MARK: - AuthError

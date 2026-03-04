@@ -20,6 +20,10 @@ struct ConversationDetailView: View {
     @State private var messages: [Message] = []
     @State private var isLoading = false
     @State private var error: Error?
+    @State private var reportMessage: Message?
+    @State private var showReportConfirmation = false
+    @State private var showReportSuccess = false
+    @State private var reportError: String?
 
     var body: some View {
         NavigationStack {
@@ -53,6 +57,31 @@ struct ConversationDetailView: View {
                         }
                     }
                 }
+            }
+            .alert("Report Message", isPresented: $showReportConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    reportMessage = nil
+                }
+                Button("Report", role: .destructive) {
+                    Task {
+                        await submitReport()
+                    }
+                }
+            } message: {
+                Text("Report this message as inappropriate? Our team will review it.")
+            }
+            .alert("Message Reported", isPresented: $showReportSuccess) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Thank you for your report. Our team will review it.")
+            }
+            .alert("Report Failed", isPresented: .init(
+                get: { reportError != nil },
+                set: { if !$0 { reportError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(reportError ?? "Failed to submit report.")
             }
         }
         .task {
@@ -92,6 +121,16 @@ struct ConversationDetailView: View {
                 // Messages
                 ForEach(messages) { message in
                     MessageRow(message: message)
+                        .contextMenu {
+                            if message.senderType == .user {
+                                Button(role: .destructive) {
+                                    reportMessage = message
+                                    showReportConfirmation = true
+                                } label: {
+                                    Label("Report Message", systemImage: "exclamationmark.bubble")
+                                }
+                            }
+                        }
                 }
             }
             .padding()
@@ -155,6 +194,28 @@ struct ConversationDetailView: View {
         }
 
         isLoading = false
+    }
+
+    // MARK: - Report
+
+    private func submitReport() async {
+        guard let message = reportMessage else { return }
+
+        do {
+            let request = ReportVisitorRequest(
+                reason: "Inappropriate message",
+                messageContent: message.content
+            )
+            try await APIClient.shared.post(
+                Endpoints.reportVisitor(projectId: projectId, visitorId: conversation.visitor.id),
+                body: request
+            )
+            showReportSuccess = true
+        } catch {
+            reportError = error.localizedDescription
+        }
+
+        reportMessage = nil
     }
 }
 
