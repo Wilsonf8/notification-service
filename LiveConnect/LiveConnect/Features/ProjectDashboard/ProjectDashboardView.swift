@@ -35,6 +35,7 @@ struct ProjectDashboardView: View {
     @State private var selectedTab: DashboardTab = .liveUsers
     @State private var showSidebar = false
     @State private var showAccountSheet = false
+    @State private var showInvitationsSheet = false
     @State private var activeCall: AcceptedCallResponse?
     @State private var activeCallVisitorName: String?
     @Environment(\.scenePhase) private var scenePhase
@@ -57,6 +58,11 @@ struct ProjectDashboardView: View {
             }
             .sheet(isPresented: $showAccountSheet) {
                 AccountSheetView()
+            }
+            .sheet(isPresented: $showInvitationsSheet) {
+                PendingInvitationsView {
+                    await sidebarViewModel.loadOrganizations()
+                }
             }
             .fullScreenCover(item: $activeCall) { call in
                 VideoCallView(
@@ -197,6 +203,30 @@ struct ProjectDashboardView: View {
             }
 
             Spacer()
+
+            // Invitation bell
+            Button {
+                showInvitationsSheet = true
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "bell.fill")
+                        .font(.title2)
+                        .foregroundStyle(.white)
+                        .frame(width: 44, height: 44)
+                        .glassBackground()
+
+                    if InvitationService.shared.pendingCount > 0 {
+                        Text("\(InvitationService.shared.pendingCount)")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(.black)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.yellow)
+                            .offset(x: 6, y: -4)
+                    }
+                }
+            }
 
             // Account button
             Button {

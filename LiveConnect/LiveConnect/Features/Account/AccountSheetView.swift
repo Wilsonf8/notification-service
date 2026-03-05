@@ -13,6 +13,7 @@ struct AccountSheetView: View {
     @Environment(\.openURL) private var openURL
     @State private var viewModel = AccountViewModel()
     @State private var showLogoutConfirmation = false
+    @State private var showInvitations = false
     @State private var deleteConfirmationText = ""
 
     var body: some View {
@@ -26,6 +27,9 @@ struct AccountSheetView: View {
                         if let user = viewModel.currentUser {
                             userInfoSection(user)
                         }
+
+                        // Invitations section
+                        invitationsSection
 
                         // Links section
                         linksSection
@@ -103,6 +107,9 @@ struct AccountSheetView: View {
             } message: {
                 Text(viewModel.deletionError ?? "An unexpected error occurred.")
             }
+            .sheet(isPresented: $showInvitations) {
+                PendingInvitationsView()
+            }
         }
     }
 
@@ -154,6 +161,38 @@ struct AccountSheetView: View {
             .padding(.horizontal)
         }
         .padding(.top, 32)
+    }
+
+    // MARK: - Invitations Section
+
+    private var invitationsSection: some View {
+        Button {
+            showInvitations = true
+        } label: {
+            HStack {
+                Image(systemName: "envelope")
+                    .foregroundStyle(.secondary)
+                    .frame(width: 24)
+                Text("Invitations")
+                    .foregroundStyle(.white)
+                Spacer()
+                if InvitationService.shared.pendingCount > 0 {
+                    Text("\(InvitationService.shared.pendingCount)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.yellow)
+                }
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+        }
+        .background(Color.white.opacity(0.05))
+        .padding(.horizontal)
     }
 
     // MARK: - Links Section

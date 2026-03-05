@@ -12,6 +12,9 @@ struct ContentView: View {
     @State private var isCheckingAuth = true
     @State private var sidebarViewModel = OrganizationSidebarViewModel()
 
+    /// Whether to show invitations sheet from a push notification.
+    @State private var showInvitationsFromNotification = false
+
     /// Sheet for accepting call requests from notifications.
     @State private var requestAcceptSheet: RequestAcceptSheetData?
 
@@ -46,9 +49,18 @@ struct ContentView: View {
             await checkAuthentication()
         }
         .onChange(of: AuthManager.shared.isAuthenticated) { oldValue, newValue in
-            if !newValue {
+            if newValue && !oldValue {
+                // User signed in — start invitation polling
+                InvitationService.shared.startPolling()
+            } else if !newValue {
                 // User signed out — reset all cached state
                 sidebarViewModel.reset()
+                InvitationService.shared.reset()
+            }
+        }
+        .sheet(isPresented: $showInvitationsFromNotification) {
+            PendingInvitationsView {
+                await sidebarViewModel.loadOrganizations()
             }
         }
         .onChange(of: NotificationRouter.shared.pendingNavigation) { _, navigation in
@@ -189,6 +201,11 @@ struct ContentView: View {
         // Re-register push token after session restore
         await PushNotificationManager.shared.registerCurrentTokenIfNeeded()
 
+        // Start invitation polling if authenticated
+        if AuthManager.shared.isAuthenticated {
+            InvitationService.shared.startPolling()
+        }
+
         // Small delay for smoother transition
         try? await Task.sleep(for: .milliseconds(500))
 
@@ -219,6 +236,11 @@ struct ContentView: View {
         case .conversationDetail(let projectId, _):
             // Navigate to project — ConversationsListView will handle opening the conversation
             sidebarViewModel.selectedProjectId = projectId
+
+        case .invitation:
+            // Show pending invitations sheet
+            showInvitationsFromNotification = true
+            NotificationRouter.shared.clearPendingNavigation()
         }
     }
 }
