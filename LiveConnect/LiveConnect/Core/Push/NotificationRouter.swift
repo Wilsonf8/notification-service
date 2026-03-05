@@ -54,6 +54,9 @@ final class NotificationRouter {
                 pendingNavigation = .conversationDetail(projectId: projectId, conversationId: conversationId)
             }
 
+        case "org_invitation":
+            pendingNavigation = .invitation
+
         default:
             print("NotificationRouter: Unknown notification type: \(type)")
         }
@@ -75,4 +78,7 @@ enum NotificationNavigation: Equatable {
 
     /// Navigate to conversation detail view.
     case conversationDetail(projectId: UUID, conversationId: UUID)
+
+    /// Show pending invitations sheet.
+    case invitation
 }

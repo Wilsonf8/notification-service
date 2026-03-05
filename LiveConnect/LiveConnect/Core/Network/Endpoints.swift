@@ -324,6 +324,115 @@ enum Endpoints {
     /// Reactivate a soft-deleted account.
     static let reactivateAccount = "/api/users/me/reactivate"
 
+    // MARK: - Organization Management
+
+    /// Get or update a specific organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organization(slug: String) -> String {
+        "/api/organizations/\(slug)"
+    }
+
+    /// Get tier limits for an organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organizationTier(slug: String) -> String {
+        "/api/organizations/\(slug)/tier"
+    }
+
+    // MARK: - Organization Members
+
+    /// List members of an organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organizationMembers(slug: String) -> String {
+        "/api/organizations/\(slug)/members"
+    }
+
+    /// Update or remove a specific organization member.
+    /// - Parameters:
+    ///   - slug: The organization slug.
+    ///   - memberId: The member UUID.
+    /// - Returns: Endpoint path.
+    static func organizationMember(slug: String, memberId: UUID) -> String {
+        "/api/organizations/\(slug)/members/\(memberId)"
+    }
+
+    /// Update a member's role in the organization.
+    /// - Parameters:
+    ///   - slug: The organization slug.
+    ///   - memberId: The member UUID.
+    /// - Returns: Endpoint path.
+    static func organizationMemberRole(slug: String, memberId: UUID) -> String {
+        "/api/organizations/\(slug)/members/\(memberId)/role"
+    }
+
+    /// Leave an organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organizationLeave(slug: String) -> String {
+        "/api/organizations/\(slug)/leave"
+    }
+
+    /// Transfer ownership of an organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organizationTransferOwnership(slug: String) -> String {
+        "/api/organizations/\(slug)/transfer-ownership"
+    }
+
+    // MARK: - Organization Invitations
+
+    /// List or create invitations for an organization.
+    /// - Parameter slug: The organization slug.
+    /// - Returns: Endpoint path.
+    static func organizationInvitations(slug: String) -> String {
+        "/api/organizations/\(slug)/invitations"
+    }
+
+    /// Revoke a specific invitation.
+    /// - Parameters:
+    ///   - slug: The organization slug.
+    ///   - invitationId: The invitation UUID.
+    /// - Returns: Endpoint path.
+    static func organizationInvitation(slug: String, invitationId: UUID) -> String {
+        "/api/organizations/\(slug)/invitations/\(invitationId)"
+    }
+
+    // MARK: - User Invitations
+
+    /// Get pending invitations for the current user.
+    static let pendingInvitations = "/api/invitations/pending"
+
+    /// Get count of pending invitations for the current user.
+    static let pendingInvitationsCount = "/api/invitations/pending/count"
+
+    /// Accept a pending invitation.
+    /// - Parameter invitationId: The invitation UUID.
+    /// - Returns: Endpoint path.
+    static func acceptInvitation(invitationId: UUID) -> String {
+        "/api/invitations/\(invitationId)/accept"
+    }
+
+    /// Decline a pending invitation.
+    /// - Parameter invitationId: The invitation UUID.
+    /// - Returns: Endpoint path.
+    static func declineInvitation(invitationId: UUID) -> String {
+        "/api/invitations/\(invitationId)/decline"
+    }
+
+    // MARK: - User Search
+
+    /// Search for users to invite to an organization.
+    /// - Parameters:
+    ///   - query: The search query string.
+    ///   - excludeOrgId: Organization UUID to exclude current members from results.
+    /// - Returns: Endpoint path.
+    static func userSearch(query: String, excludeOrgId: UUID) -> String {
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? query
+        return "/api/users/search?query=\(encodedQuery)&excludeOrgId=\(excludeOrgId)"
+    }
+
     // MARK: - Device Tokens
 
     /// Register or unregister device tokens for push notifications.
