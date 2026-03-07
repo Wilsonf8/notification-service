@@ -1,5 +1,7 @@
 package com.notificationservice.service;
 
+import com.notificationservice.dto.UpdateProfileRequest;
+import com.notificationservice.dto.UserDto;
 import com.notificationservice.dto.UserSearchResultDto;
 import com.notificationservice.entity.User;
 import com.notificationservice.repository.UserRepository;
@@ -41,6 +43,46 @@ public class UserService {
         return users.stream()
                 .map(this::toSearchResult)
                 .toList();
+    }
+
+    /**
+     * Updates the profile (first name, last name) for the given user.
+     *
+     * @param userId the ID of the user to update
+     * @param request the update request containing firstName and lastName
+     * @return the updated user as a DTO
+     * @throws ResourceNotFoundException if the user is not found or is deleted
+     * @throws IllegalArgumentException if firstName or lastName exceeds 50 characters
+     */
+    @Transactional
+    public UserDto updateProfile(UUID userId, UpdateProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .filter(u -> !u.isDeleted())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        String firstName = request.firstName() != null ? request.firstName().trim() : null;
+        String lastName = request.lastName() != null ? request.lastName().trim() : null;
+
+        if (firstName != null && firstName.length() > 50) {
+            throw new IllegalArgumentException("First name must not exceed 50 characters");
+        }
+        if (lastName != null && lastName.length() > 50) {
+            throw new IllegalArgumentException("Last name must not exceed 50 characters");
+        }
+
+        // Store empty strings as null for consistency
+        user.setFirstName(firstName != null && firstName.isEmpty() ? null : firstName);
+        user.setLastName(lastName != null && lastName.isEmpty() ? null : lastName);
+        userRepository.save(user);
+
+        return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getAvatarUrl()
+        );
     }
 
     /**

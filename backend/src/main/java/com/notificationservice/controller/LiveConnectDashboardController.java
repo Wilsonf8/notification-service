@@ -431,7 +431,7 @@ public class LiveConnectDashboardController {
         String token = liveKitTokenService.generateToken(
                 conversation.getLiveKitRoomName(),
                 "rep_" + userId,
-                rep.getUser().getUsername()
+                rep.getUser().getDisplayName()
         );
 
         return ResponseEntity.ok(new TokenResponse(

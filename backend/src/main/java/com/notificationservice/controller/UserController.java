@@ -1,6 +1,8 @@
 package com.notificationservice.controller;
 
 import com.notificationservice.dto.DeletionPreflightResponse;
+import com.notificationservice.dto.UpdateProfileRequest;
+import com.notificationservice.dto.UserDto;
 import com.notificationservice.dto.UserSearchResultDto;
 import com.notificationservice.entity.User;
 import com.notificationservice.repository.UserRepository;
@@ -43,6 +45,20 @@ public class UserController {
             @RequestParam("excludeOrgId") UUID excludeOrgId,
             @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(userService.searchUsers(query, excludeOrgId));
+    }
+
+    /**
+     * Updates the authenticated user's profile (first name, last name).
+     *
+     * @param request the profile update request
+     * @param userId the authenticated user's ID
+     * @return the updated user profile
+     */
+    @PutMapping("/me")
+    public ResponseEntity<UserDto> updateProfile(
+            @RequestBody UpdateProfileRequest request,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
 
     /**

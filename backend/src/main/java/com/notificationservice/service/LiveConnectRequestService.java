@@ -186,7 +186,7 @@ public class LiveConnectRequestService {
         String repToken = liveKitTokenService.generateToken(
                 roomName,
                 "rep_" + rep.getUser().getId(),
-                rep.getUser().getUsername()
+                rep.getUser().getDisplayName()
         );
         String visitorToken = liveKitTokenService.generateToken(
                 roomName,
@@ -221,7 +221,7 @@ public class LiveConnectRequestService {
                 request.getVisitor().getName(),
                 rep.getId(),
                 rep.getUser().getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 conversation.getStartedAt()
         );
         broadcaster.broadcastToProject(projectId, callStartedBroadcast);
@@ -230,7 +230,7 @@ public class LiveConnectRequestService {
         RequestAcceptedByOtherEvent acceptedEvent = new RequestAcceptedByOtherEvent(
                 requestId,
                 rep.getId(),
-                rep.getUser().getUsername()
+                rep.getUser().getDisplayName()
         );
         broadcaster.broadcastToProject(projectId, acceptedEvent);
 
@@ -479,7 +479,7 @@ public class LiveConnectRequestService {
         String repToken = liveKitTokenService.generateToken(
                 roomName,
                 "rep_" + rep.getUser().getId(),
-                rep.getUser().getUsername()
+                rep.getUser().getDisplayName()
         );
         String visitorToken = liveKitTokenService.generateToken(
                 roomName,
@@ -506,7 +506,7 @@ public class LiveConnectRequestService {
                 request.getVisitor().getName(),
                 rep.getId(),
                 rep.getUser().getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 conversation.getStartedAt()
         );
         broadcaster.broadcastToProject(projectId, callStartedBroadcast);
@@ -646,7 +646,7 @@ public class LiveConnectRequestService {
         RepStatusChangedEvent event = new RepStatusChangedEvent(
                 rep.getId(),
                 rep.getUser().getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 rep.getUser().getEmail(),
                 rep.getAvailability().name(),
                 rep.getPresence().name()

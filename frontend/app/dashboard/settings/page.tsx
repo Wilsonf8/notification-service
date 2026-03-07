@@ -28,13 +28,14 @@ import {
 } from "@/components/ui/dialog";
 import {
   getCurrentUser,
+  updateProfile,
   deletionPreflight,
   deleteAccount,
 } from "@/lib/api";
 import { removeToken } from "@/lib/auth";
 import type { DeletionPreflightResponse } from "@/lib/api/account";
 import type { User } from "@/lib/types";
-import { IconAlertTriangle, IconLoader2 } from "@tabler/icons-react";
+import { IconAlertTriangle, IconLoader2, IconPencil, IconCheck, IconX } from "@tabler/icons-react";
 
 /**
  * User settings page component.
@@ -44,6 +45,13 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Profile edit state
+  const [editing, setEditing] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Deletion flow state
   const [preflightLoading, setPreflightLoading] = useState(false);
@@ -68,6 +76,38 @@ export default function SettingsPage() {
     };
     fetchUser();
   }, []);
+
+  /**
+   * Enters edit mode with current values pre-filled.
+   */
+  const handleEditClick = () => {
+    setEditFirstName(user?.firstName || "");
+    setEditLastName(user?.lastName || "");
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  /**
+   * Saves the updated profile and exits edit mode.
+   */
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const updated = await updateProfile(
+        editFirstName.trim() || null,
+        editLastName.trim() || null
+      );
+      setUser(updated);
+      setEditing(false);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Failed to update profile"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   /**
    * Runs the preflight check and shows either the blockers dialog
@@ -134,36 +174,112 @@ export default function SettingsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-          <CardDescription>Your account information</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Profile</CardTitle>
+            <CardDescription>Your account information</CardDescription>
+          </div>
+          {!editing && (
+            <Button variant="outline" size="sm" onClick={handleEditClick}>
+              <IconPencil className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="text-lg">
-                {user?.firstName?.charAt(0).toUpperCase() ||
-                  user?.username?.charAt(0).toUpperCase() ||
-                  "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="font-medium">
-                {user?.firstName && user?.lastName
-                  ? `${user.firstName} ${user.lastName}`
-                  : user?.username || "User"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {user?.email || "No email"}
-              </p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <p className="text-sm font-medium">Username</p>
-            <p className="text-sm text-muted-foreground">
-              {user?.username || "Unknown"}
-            </p>
-          </div>
+          {editing ? (
+            <>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="text-lg">
+                    {editFirstName.charAt(0).toUpperCase() ||
+                      user?.username?.charAt(0).toUpperCase() ||
+                      "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium">First Name</p>
+                      <Input
+                        id="firstName"
+                        value={editFirstName}
+                        onChange={(e) => setEditFirstName(e.target.value)}
+                        placeholder="First name"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium">Last Name</p>
+                      <Input
+                        id="lastName"
+                        value={editLastName}
+                        onChange={(e) => setEditLastName(e.target.value)}
+                        placeholder="Last name"
+                        maxLength={50}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Username</p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.username || "Unknown"}
+                </p>
+              </div>
+              {saveError && (
+                <p className="text-sm text-destructive">{saveError}</p>
+              )}
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSave} disabled={saving}>
+                  {saving ? (
+                    <IconLoader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <IconCheck className="h-4 w-4 mr-1" />
+                  )}
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditing(false)}
+                  disabled={saving}
+                >
+                  <IconX className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="text-lg">
+                    {user?.firstName?.charAt(0).toUpperCase() ||
+                      user?.username?.charAt(0).toUpperCase() ||
+                      "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">
+                    {user?.firstName && user?.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user?.username || "User"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {user?.email || "No email"}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Username</p>
+                <p className="text-sm text-muted-foreground">
+                  {user?.username || "Unknown"}
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

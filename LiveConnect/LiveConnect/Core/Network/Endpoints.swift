@@ -313,6 +313,11 @@ enum Endpoints {
         "/api/projects/\(projectId)/liveconnect/visitors/\(visitorId)/block"
     }
 
+    // MARK: - Profile
+
+    /// Update the current user's profile (firstName, lastName).
+    static let updateProfile = "/api/users/me"
+
     // MARK: - Account Deletion
 
     /// Preflight check before account deletion.

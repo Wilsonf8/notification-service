@@ -16,6 +16,15 @@ final class AccountViewModel {
         AuthManager.shared.currentUser
     }
 
+    /// Whether a profile update is in progress.
+    var isProfileSaving = false
+
+    /// Error from profile update operations.
+    var profileError: String?
+
+    /// Whether the edit profile sheet should be shown.
+    var showEditProfile = false
+
     /// Whether a deletion-related operation is in progress.
     var isDeletionLoading = false
 
@@ -34,6 +43,32 @@ final class AccountViewModel {
     /// Signs out the current user.
     func signOut() {
         AuthManager.shared.signOut()
+    }
+
+    /// Updates the user's profile (first name, last name).
+    /// - Parameters:
+    ///   - firstName: The new first name (or nil to clear).
+    ///   - lastName: The new last name (or nil to clear).
+    func updateProfile(firstName: String?, lastName: String?) async {
+        isProfileSaving = true
+        profileError = nil
+
+        do {
+            let request = UpdateProfileRequest(
+                firstName: firstName?.trimmingCharacters(in: .whitespaces),
+                lastName: lastName?.trimmingCharacters(in: .whitespaces)
+            )
+            let updated: User = try await APIClient.shared.put(
+                Endpoints.updateProfile,
+                body: request
+            )
+            AuthManager.shared.updateCurrentUser(updated)
+            showEditProfile = false
+        } catch {
+            profileError = error.localizedDescription
+        }
+
+        isProfileSaving = false
     }
 
     /// Checks whether the account can be deleted.
@@ -97,4 +132,10 @@ final class AccountViewModel {
             return false
         }
     }
+}
+
+/// Request body for updating user profile.
+struct UpdateProfileRequest: Encodable {
+    let firstName: String?
+    let lastName: String?
 }

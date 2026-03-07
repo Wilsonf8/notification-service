@@ -236,7 +236,7 @@ public class LiveConnectRepService {
             RepStatusChangedEvent event = new RepStatusChangedEvent(
                     rep.getId(),
                     rep.getUser().getId(),
-                    rep.getUser().getUsername(),
+                    rep.getUser().getDisplayName(),
                     rep.getUser().getEmail(),
                     rep.getAvailability().name(),
                     rep.getPresence().name()
@@ -267,7 +267,7 @@ public class LiveConnectRepService {
         return new LiveConnectRepDto(
                 rep.getId(),
                 user.getId(),
-                user.getUsername(),
+                user.getDisplayName(),
                 user.getEmail(),
                 rep.getAvailability().name(),
                 rep.getPresence().name(),

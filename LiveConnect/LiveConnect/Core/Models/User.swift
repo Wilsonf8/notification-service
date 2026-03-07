@@ -16,11 +16,17 @@ struct User: Codable, Identifiable, Sendable {
     let email: String?
     let avatarUrl: String?
 
-    /// Full name if available, otherwise falls back to username.
+    /// Display name with priority: firstName+lastName → firstName → lastName → username → email → "User".
     var displayName: String {
-        if let first = firstName, let last = lastName {
+        let first = firstName?.trimmingCharacters(in: .whitespaces)
+        let last = lastName?.trimmingCharacters(in: .whitespaces)
+        if let first, !first.isEmpty, let last, !last.isEmpty {
             return "\(first) \(last)"
         }
-        return username
+        if let first, !first.isEmpty { return first }
+        if let last, !last.isEmpty { return last }
+        if !username.isEmpty { return username }
+        if let email, !email.isEmpty { return email }
+        return "User"
     }
 }

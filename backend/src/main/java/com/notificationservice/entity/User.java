@@ -55,6 +55,32 @@ public class User {
         return deletedAt != null;
     }
 
+    /**
+     * Builds a display name for this user.
+     * Priority: firstName+lastName → firstName → lastName → username → email → "User"
+     * @return the best available display name
+     */
+    public String getDisplayName() {
+        boolean hasFirst = firstName != null && !firstName.isBlank();
+        boolean hasLast = lastName != null && !lastName.isBlank();
+        if (hasFirst && hasLast) {
+            return firstName + " " + lastName;
+        }
+        if (hasFirst) {
+            return firstName;
+        }
+        if (hasLast) {
+            return lastName;
+        }
+        if (username != null && !username.isBlank()) {
+            return username;
+        }
+        if (email != null && !email.isBlank()) {
+            return email;
+        }
+        return "User";
+    }
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<UserIdentity> identities = new ArrayList<>();

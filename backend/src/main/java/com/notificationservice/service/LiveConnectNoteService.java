@@ -44,7 +44,7 @@ public class LiveConnectNoteService {
                 .map(n -> new VisitorNoteDto(
                         n.getId(),
                         n.getContent(),
-                        n.getAuthorRep().getUser().getUsername(),
+                        n.getAuthorRep().getUser().getDisplayName(),
                         n.getAuthorRep().getId(),
                         n.getCreatedAt()
                 ));
@@ -78,7 +78,7 @@ public class LiveConnectNoteService {
         return new VisitorNoteDto(
                 note.getId(),
                 note.getContent(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 rep.getId(),
                 note.getCreatedAt()
         );

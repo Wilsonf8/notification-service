@@ -172,7 +172,7 @@ public class LiveConnectSessionService {
                 .map(r -> {
                     String repName = null;
                     if (r.getDirection() == RequestDirection.REP_TO_USER && r.getInitiatedByRep() != null) {
-                        repName = r.getInitiatedByRep().getUser().getUsername();
+                        repName = r.getInitiatedByRep().getUser().getDisplayName();
                     }
                     return new PendingRequestInfo(r.getId(), r.getExpiresAt(), r.getDirection().name(), repName);
                 })

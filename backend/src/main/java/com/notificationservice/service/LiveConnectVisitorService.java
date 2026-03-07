@@ -210,7 +210,7 @@ public class LiveConnectVisitorService {
         // Broadcast ping to visitor
         IncomingPingEvent event = new IncomingPingEvent(
                 request.getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 expiresAt
         );
         broadcaster.sendToVisitor(visitor.getId(), event);
@@ -321,7 +321,7 @@ public class LiveConnectVisitorService {
                 visitor.getName(),
                 rep.getId(),
                 rep.getUser().getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 conversation.getStartedAt()
         );
     }

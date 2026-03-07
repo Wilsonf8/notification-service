@@ -132,6 +132,12 @@ final class AuthManager {
         error = nil
     }
 
+    /// Updates the cached current user after a profile change.
+    /// - Parameter user: The updated user.
+    func updateCurrentUser(_ user: User) {
+        currentUser = user
+    }
+
     /// Clears the pending deletion state after reactivation.
     func clearPendingDeletion() {
         isPendingDeletion = false

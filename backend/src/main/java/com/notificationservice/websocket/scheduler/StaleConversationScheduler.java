@@ -105,7 +105,7 @@ public class StaleConversationScheduler {
             RepStatusChangedEvent repStatusEvent = new RepStatusChangedEvent(
                     rep.getId(),
                     rep.getUser().getId(),
-                    rep.getUser().getUsername(),
+                    rep.getUser().getDisplayName(),
                     rep.getUser().getEmail(),
                     rep.getAvailability().name(),
                     rep.getPresence().name()

@@ -273,7 +273,7 @@ public class LiveConnectCrmService {
                         Map.of(
                                 "status", conv.getStatus().name(),
                                 "endedAt", conv.getEndedAt() != null ? conv.getEndedAt().toString() : "",
-                                "repName", conv.getRep() != null ? conv.getRep().getUser().getUsername() : ""
+                                "repName", conv.getRep() != null ? conv.getRep().getUser().getDisplayName() : ""
                         )
                 )));
 
@@ -285,7 +285,7 @@ public class LiveConnectCrmService {
                         note.getCreatedAt(),
                         Map.of(
                                 "content", note.getContent(),
-                                "authorName", note.getAuthorRep().getUser().getUsername()
+                                "authorName", note.getAuthorRep().getUser().getDisplayName()
                         )
                 )));
 
@@ -346,7 +346,7 @@ public class LiveConnectCrmService {
         return new LiveConnectRepDto(
                 rep.getId(),
                 rep.getUser().getId(),
-                rep.getUser().getUsername(),
+                rep.getUser().getDisplayName(),
                 rep.getUser().getEmail(),
                 rep.getAvailability().name(),
                 rep.getPresence().name(),

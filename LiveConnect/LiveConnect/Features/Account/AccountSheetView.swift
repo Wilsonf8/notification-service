@@ -15,6 +15,8 @@ struct AccountSheetView: View {
     @State private var showLogoutConfirmation = false
     @State private var showInvitations = false
     @State private var deleteConfirmationText = ""
+    @State private var editFirstName = ""
+    @State private var editLastName = ""
 
     var body: some View {
         NavigationStack {
@@ -110,6 +112,11 @@ struct AccountSheetView: View {
             .sheet(isPresented: $showInvitations) {
                 PendingInvitationsView()
             }
+            .sheet(isPresented: $viewModel.showEditProfile) {
+                viewModel.profileError = nil
+            } content: {
+                editProfileSheet
+            }
         }
     }
 
@@ -156,6 +163,28 @@ struct AccountSheetView: View {
                 DetailRow(icon: "envelope", label: "Email", value: user.email ?? "Not set")
                 Divider().background(Color.white.opacity(0.1))
                 DetailRow(icon: "key", label: "User ID", value: String(user.id.uuidString.prefix(8)) + "...")
+            }
+            .background(Color.white.opacity(0.05))
+            .padding(.horizontal)
+
+            // Edit Profile button
+            Button {
+                editFirstName = user.firstName ?? ""
+                editLastName = user.lastName ?? ""
+                viewModel.showEditProfile = true
+            } label: {
+                HStack {
+                    Image(systemName: "pencil")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24)
+                    Text("Edit Profile")
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
             }
             .background(Color.white.opacity(0.05))
             .padding(.horizontal)
@@ -375,6 +404,95 @@ struct AccountSheetView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
         .presentationDetents([.large])
+    }
+
+    // MARK: - Edit Profile Sheet
+
+    private var editProfileSheet: some View {
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+
+                VStack(spacing: 24) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("First Name")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            TextField("First name", text: $editFirstName)
+                                .textFieldStyle(.plain)
+                                .padding()
+                                .background(Color.white.opacity(0.05))
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                                .autocorrectionDisabled()
+                        }
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Last Name")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            TextField("Last name", text: $editLastName)
+                                .textFieldStyle(.plain)
+                                .padding()
+                                .background(Color.white.opacity(0.05))
+                                .overlay(
+                                    Rectangle()
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                                .autocorrectionDisabled()
+                        }
+                    }
+
+                    if let error = viewModel.profileError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+
+                    Button {
+                        Task {
+                            await viewModel.updateProfile(
+                                firstName: editFirstName.isEmpty ? nil : editFirstName,
+                                lastName: editLastName.isEmpty ? nil : editLastName
+                            )
+                        }
+                    } label: {
+                        HStack {
+                            if viewModel.isProfileSaving {
+                                ProgressView()
+                                    .tint(.black)
+                            }
+                            Text("Save")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.yellow)
+                    }
+                    .disabled(viewModel.isProfileSaving)
+
+                    Spacer()
+                }
+                .padding()
+            }
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        viewModel.showEditProfile = false
+                    }
+                    .foregroundStyle(.white)
+                }
+            }
+            .toolbarBackground(.black, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+        .presentationDetents([.medium])
     }
 
     private func avatarPlaceholder(for user: User) -> some View {
