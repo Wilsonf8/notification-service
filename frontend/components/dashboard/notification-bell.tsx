@@ -124,7 +124,7 @@ export function NotificationBell() {
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
-      <DropdownMenuTrigger className="relative flex h-8 w-8 items-center justify-center outline-none">
+      <DropdownMenuTrigger className="relative flex h-8 w-8 items-center justify-center outline-none" data-tour="notification-bell">
         <IconBell className="h-5 w-5 text-muted-foreground" />
         {count > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center bg-yellow-500 px-1 text-[10px] font-bold text-black">

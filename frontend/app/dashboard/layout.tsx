@@ -9,6 +9,9 @@ import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { OrganizationProvider } from "@/lib/contexts/organization-context";
 import { ProjectProvider } from "@/lib/contexts/project-context";
+import { TourProvider } from "@/lib/tour/tour-context";
+import { TourOverlay } from "@/components/tour/tour-overlay";
+import { TourPopover } from "@/components/tour/tour-popover";
 
 /** Props for the dashboard layout */
 interface DashboardLayoutProps {
@@ -28,13 +31,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <OrganizationProvider>
       <ProjectProvider>
-        <div className="flex min-h-screen">
-          <DashboardSidebar />
-          <div className="flex flex-1 flex-col">
-            <DashboardHeader />
-            <main className="flex-1 p-3 md:p-6">{children}</main>
+        <TourProvider>
+          <div className="flex min-h-screen">
+            <DashboardSidebar />
+            <div className="flex flex-1 flex-col">
+              <DashboardHeader />
+              <main className="flex-1 p-3 md:p-6" data-tour="main-content">{children}</main>
+            </div>
           </div>
-        </div>
+          <TourOverlay />
+          <TourPopover />
+        </TourProvider>
       </ProjectProvider>
     </OrganizationProvider>
   );

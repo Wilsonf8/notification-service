@@ -36,6 +36,7 @@ import {
 } from "@/components/dashboard/sidebar";
 import { ProjectSwitcher } from "@/components/dashboard/project-switcher";
 import { NotificationBell } from "@/components/dashboard/notification-bell";
+import { TourLauncher } from "@/components/tour/tour-launcher";
 import { useOrganization } from "@/lib/contexts/organization-context";
 import { useProjectContext } from "@/lib/contexts/project-context";
 import type { User } from "@/lib/types";
@@ -181,8 +182,9 @@ export function DashboardHeader() {
       </div>
       <div className="flex items-center gap-2">
         <NotificationBell />
+        <TourLauncher />
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center outline-none">
+          <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center outline-none" data-tour="user-menu">
             <Avatar className="h-8 w-8">
               <AvatarFallback>{getAvatarInitial(user)}</AvatarFallback>
             </Avatar>

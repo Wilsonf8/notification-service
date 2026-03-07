@@ -184,13 +184,13 @@ export function DashboardSidebar() {
           </Link>
         </div>
       ) : (
-        <div className="border-b border-border py-2">
+        <div className="border-b border-border py-2" data-tour="project-switcher">
           <ProjectSwitcher />
         </div>
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4" data-tour="sidebar-nav">
         <ul className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
